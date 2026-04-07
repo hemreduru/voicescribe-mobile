@@ -18,6 +18,8 @@ export interface TranscriptChunk {
   transcriptId: string;
   chunkIndex: number;
   text: string;
+  audioPath?: string | null;
+  recordedAt?: string | null;
   startTime: number;
   endTime: number;
   speakerLabel: string | null;
