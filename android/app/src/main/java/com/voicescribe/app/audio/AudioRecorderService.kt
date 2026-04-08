@@ -200,6 +200,7 @@ class AudioRecorderService : Service() {
         val intent = Intent(ACTION_CHUNK_READY)
         intent.setPackage(packageName)
         intent.putExtra(EXTRA_CHUNK_PATH, file.absolutePath)
+        intent.putExtra("chunk_duration", durationSec)
         sendBroadcast(intent)
         
         Log.i(TAG, "Chunk broadcast sent: ${file.name}")

@@ -12,6 +12,7 @@ import {
 import { colors, fontSize, spacing } from '../../../../shared/theme';
 import { VoiceScribeAudio } from '../../../../native/audio/NativeAudioModule';
 import { useRecordingStore, useTranscriptStore } from '../../../../shared/stores';
+import { removeOverlap } from '../../../../shared/utils/textUtils';
 import type { Transcript } from '../../../../shared/types';
 
 // Dynamic chunking config
@@ -60,42 +61,15 @@ export const RecordingScreen: React.FC = () => {
 
   // Audio chunk handling
   useEffect(() => {
+    // Only local UI updates now — global store updates moved to App.tsx
     const chunkSubscription = VoiceScribeAudio.onChunkReady(({ path }) => {
       try {
         const recordingState = useRecordingStore.getState();
-        const transcriptId =
-          recordingState.currentTranscriptId ?? lastRecordingTranscriptIdRef.current;
-        if (!transcriptId) {
-          // Ignore orphan chunk events instead of implicitly starting a new recording session.
-          return;
-        }
-
-        const nextChunkIndex = recordingState.chunkCount + 1;
-        const nowIso = new Date().toISOString();
-
-        appendChunk({
-          id: `${transcriptId}-chunk-${nextChunkIndex}`,
-          transcriptId,
-          chunkIndex: nextChunkIndex,
-          text: '',
-          audioPath: path,
-          recordedAt: nowIso,
-          startTime: (nextChunkIndex - 1) * MAX_CHUNK_DURATION_SECONDS,
-          endTime: nextChunkIndex * MAX_CHUNK_DURATION_SECONDS,
-          speakerLabel: null,
-          confidence: null,
-        });
-
         if (recordingState.isRecording) {
           useRecordingStore.getState().incrementChunkCount();
         }
-        updateTranscript(transcriptId, {
-          updatedAt: nowIso,
-          statusKey: 'transcribing',
-          durationSeconds: nextChunkIndex * MAX_CHUNK_DURATION_SECONDS,
-        });
       } catch (err) {
-        console.warn('Chunk handling error:', err);
+        console.warn('Chunk UI handling error:', err);
       }
     });
 
@@ -104,39 +78,37 @@ export const RecordingScreen: React.FC = () => {
         const normalizedText = text?.trim() || '';
         if (normalizedText.length > 0) {
           setTranscriptionError(null);
-          updateChunkTextByAudioPath(chunkPath, normalizedText);
-          const matchedChunk = useTranscriptStore
-            .getState()
-            .allChunks.find((chunk) => chunk.audioPath === chunkPath);
-          if (matchedChunk?.transcriptId) {
-            updateTranscript(matchedChunk.transcriptId, {
-              updatedAt: new Date().toISOString(),
-              statusKey: 'completed',
-            });
-            if (matchedChunk.transcriptId === lastRecordingTranscriptIdRef.current) {
-              isStoppingRef.current = false;
+          
+          let deduplicatedText = normalizedText;
+          const store = useTranscriptStore.getState();
+          const matchedChunk = store.allChunks.find((chunk) => chunk.audioPath === chunkPath);
+          
+          if (matchedChunk) {
+            const sessionChunks = store.allChunks
+              .filter(c => c.transcriptId === matchedChunk.transcriptId)
+              .sort((a, b) => a.chunkIndex - b.chunkIndex);
+              
+            const prevChunk = sessionChunks.find(c => c.chunkIndex === matchedChunk.chunkIndex - 1);
+            if (prevChunk && prevChunk.text) {
+              deduplicatedText = removeOverlap(prevChunk.text, normalizedText);
             }
           }
+          
+          if (matchedChunk?.transcriptId && matchedChunk.transcriptId === lastRecordingTranscriptIdRef.current) {
+            isStoppingRef.current = false;
+          }
           setLiveTranscriptPreview((prev) => {
-            const merged = `${prev} ${normalizedText}`.replace(/\s+/g, ' ').trim();
+            const merged = `${prev} ${deduplicatedText}`.replace(/\s+/g, ' ').trim();
             return merged.length > 500 ? merged.slice(-500) : merged;
           });
         }
       } catch (err) {
-        console.warn('Transcript handling error:', err);
+        console.warn('Transcript UI handling error:', err);
       }
     });
 
     const errorSubscription = VoiceScribeAudio.onTranscriptionError(({ message }) => {
       setTranscriptionError(message);
-      const fallbackId =
-        useRecordingStore.getState().currentTranscriptId ?? lastRecordingTranscriptIdRef.current;
-      if (fallbackId) {
-        updateTranscript(fallbackId, {
-          updatedAt: new Date().toISOString(),
-          statusKey: 'transcription_error',
-        });
-      }
     });
 
     VoiceScribeAudio.isWhisperModelLoaded()
