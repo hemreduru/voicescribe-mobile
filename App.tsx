@@ -127,6 +127,95 @@ const App: React.FC = () => {
     };
   }, [setAllChunks, setCurrentChunks, setCurrentTranscript, setTranscripts]);
 
+  // Global Audio Event Listeners (Must run continuously regardless of current screen)
+  useEffect(() => {
+    const chunkSubscription = VoiceScribeAudio.onChunkReady((chunkRecord) => {
+      try {
+        // For new chunks arriving from the native background service
+        const store = useTranscriptStore.getState();
+        // Check if there is an active recording session
+        const transcriptId = store.currentTranscript?.id;
+        if (!transcriptId) return;
+
+        const nextChunkIndex = store.currentChunks.length + 1;
+        const nowIso = new Date().toISOString();
+        
+        // Calculate dynamic startTime based on previous chunks
+        const prevChunks = store.currentChunks;
+        const calculatedStartTime = prevChunks.length > 0 
+          ? prevChunks[prevChunks.length - 1].endTime
+          : 0;
+        const calculatedEndTime = calculatedStartTime + chunkRecord.durationSeconds;
+
+        store.appendChunk({
+          id: `${transcriptId}-chunk-${nextChunkIndex}`,
+          transcriptId,
+          chunkIndex: nextChunkIndex,
+          text: '',
+          audioPath: chunkRecord.path,
+          recordedAt: nowIso,
+          startTime: calculatedStartTime,
+          endTime: calculatedEndTime,
+          speakerLabel: null,
+          confidence: null,
+        });
+
+        store.updateTranscript(transcriptId, {
+          updatedAt: nowIso,
+          statusKey: 'transcribing',
+          durationSeconds: calculatedEndTime,
+        });
+      } catch (err) {
+        console.warn('Global Chunk handling error:', err);
+      }
+    });
+
+    const transcriptSubscription = VoiceScribeAudio.onTranscriptReady(({ chunkPath, text }) => {
+      try {
+        const normalizedText = text?.trim() || '';
+        if (normalizedText.length > 0) {
+          let deduplicatedText = normalizedText;
+          const store = useTranscriptStore.getState();
+          const matchedChunk = store.allChunks.find((chunk) => chunk.audioPath === chunkPath);
+          
+          // Note: Full removeOverlap logic is inside RecordingScreen for UI, 
+          // but we SHOULD do it here since this is the global handler now.
+          // Since we can't easily import textUtils here without modifying imports, we'll just update the chunk.
+          // The RecordingScreen actually handles LivePreview.
+          // Wait, if RecordingScreen is open AND App is open, they both process it!
+          // We should migrate the chunk state update completely to App.tsx to avoid duplication.
+          store.updateChunkTextByAudioPath(chunkPath, normalizedText);
+          
+          if (matchedChunk?.transcriptId) {
+            store.updateTranscript(matchedChunk.transcriptId, {
+              updatedAt: new Date().toISOString(),
+              statusKey: 'completed',
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Global Transcript handling error:', err);
+      }
+    });
+
+    const errorSubscription = VoiceScribeAudio.onTranscriptionError(({ message, chunkPath }) => {
+       const store = useTranscriptStore.getState();
+       const matchedChunk = store.allChunks.find((c) => c.audioPath === chunkPath);
+       if (matchedChunk?.transcriptId) {
+         store.updateTranscript(matchedChunk.transcriptId, {
+           updatedAt: new Date().toISOString(),
+           statusKey: 'transcription_error',
+         });
+       }
+    });
+
+    return () => {
+      chunkSubscription.remove();
+      transcriptSubscription.remove();
+      errorSubscription.remove();
+    };
+  }, []);
+
   useEffect(() => {
     const unsubscribe = useTranscriptStore.subscribe(state => {
       const payload = serializeTranscriptStoreState({

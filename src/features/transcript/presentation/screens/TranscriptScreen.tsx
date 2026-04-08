@@ -221,23 +221,6 @@ export const TranscriptScreen: React.FC = () => {
                     : getSessionFallbackText(selectedSession.statusKey)}
                 </Text>
               </View>
-
-              {/* Chunks Breakdown */}
-              {selectedSession.chunks.length > 0 && (
-                <View style={styles.chunksSection}>
-                  <Text style={styles.sectionTitle}>Chunks Breakdown</Text>
-                  {selectedSession.chunks.map((chunk, index) => (
-                    <View key={chunk.id} style={styles.chunkItem}>
-                      <Text style={styles.chunkHeader}>
-                        Chunk {index + 1} • {formatDuration(chunk.endTime - chunk.startTime)}
-                      </Text>
-                      <Text style={styles.chunkText}>
-                        {chunk.text.trim() || '(No speech detected)'}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
             </ScrollView>
           </View>
         )}

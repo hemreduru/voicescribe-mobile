@@ -24,6 +24,8 @@ class WhisperEngine {
     @Volatile
     private var initialized = false
 
+    val isBusy = java.util.concurrent.atomic.AtomicBoolean(false)
+
     /**
      * Initialize a whisper model, returning true on success.
      * Safe to call multiple times — will free any previous context first.
@@ -50,6 +52,7 @@ class WhisperEngine {
      * Transcribe float PCM audio data.  Thread-safe per instance because
      * each instance owns a separate native context.
      */
+    @Synchronized
     fun transcribeAudio(audioData: FloatArray): String {
         val id = contextId
         if (!initialized || id < 0) {

@@ -74,8 +74,12 @@ class NativeAudioModule(reactContext: ReactApplicationContext) : ReactContextBas
             when (intent?.action) {
                 AudioRecorderService.ACTION_CHUNK_READY -> {
                     val chunkPath = intent.getStringExtra(AudioRecorderService.EXTRA_CHUNK_PATH)
+                    val chunkDuration = intent.getFloatExtra("chunk_duration", 20f)
                     chunkPath?.let {
-                        sendEvent(EVENT_AUDIO_CHUNK_READY, it)
+                        val payload = Arguments.createMap()
+                        payload.putString("path", it)
+                        payload.putDouble("durationSeconds", chunkDuration.toDouble())
+                        sendEvent(EVENT_AUDIO_CHUNK_READY, payload)
                         if (isWhisperModelLoaded) {
                             queueTranscription(it)
                         }
@@ -405,20 +409,37 @@ class NativeAudioModule(reactContext: ReactApplicationContext) : ReactContextBas
         Log.d(TAG, "Active transcriptions: $activeCount")
 
         try {
-            // Find an available worker engine
+            // Find an available worker engine that is not busy
+            var engineToUse: WhisperEngine? = null
             for (i in whisperWorkers.indices) {
                 val engine = whisperWorkers[i]
-                if (engine != null && engine.isInitialized()) {
-                    return engine.transcribeAudio(boostedAudio).trim()
+                if (engine != null && engine.isInitialized() && engine.isBusy.compareAndSet(false, true)) {
+                    engineToUse = engine
+                    break
                 }
             }
-            // No initialized worker found — fallback to primary
+
+            if (engineToUse != null) {
+                try {
+                    return engineToUse.transcribeAudio(boostedAudio).trim()
+                } finally {
+                    engineToUse.isBusy.set(false)
+                }
+            }
+
+            // No initialized free worker found — attempt lazy init
             Log.w(TAG, "No initialized worker found, attempting lazy init")
             val modelPath = loadedModelPath
             if (modelPath != null) {
                 val engine = WhisperEngine()
                 if (engine.initModel(modelPath)) {
-                    return engine.transcribeAudio(boostedAudio).trim()
+                    engine.isBusy.set(true)
+                    try {
+                        return engine.transcribeAudio(boostedAudio).trim()
+                    } finally {
+                        engine.isBusy.set(false)
+                        engine.freeModel() // Free temp engine
+                    }
                 }
             }
             return ""
@@ -453,6 +474,16 @@ class NativeAudioModule(reactContext: ReactApplicationContext) : ReactContextBas
                 val transcript = transcribeWithWorker(chunkPath)
                 val duration = System.currentTimeMillis() - startTime
                 Log.i(TAG, "Transcription completed in ${duration}ms, length=${transcript.length} chars")
+                
+                // Cleanup chunk file to prevent storage leaks
+                try {
+                    val file = File(chunkPath)
+                    if (file.exists()) {
+                        file.delete()
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to delete chunk file: $chunkPath")
+                }
                 
                 if (transcript.isNotBlank()) {
                     val payload = Arguments.createMap()
