@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { colors, fontSize, spacing } from '../../../../shared/theme';
+import { colors, fontSize, spacing, borderRadius } from '../../../../shared/theme';
+import { GlassCard } from '../../../../shared/components/GlassCard';
 import { useTranscriptStore } from '../../../../shared/stores';
 import type { Transcript, TranscriptChunk } from '../../../../shared/types';
 
@@ -24,36 +25,18 @@ interface SessionCardItem {
 }
 
 const formatDuration = (durationSeconds: number): string => {
-  if (durationSeconds <= 0) {
-    return '0s';
-  }
-
+  if (durationSeconds <= 0) return '0s';
   const minutes = Math.floor(durationSeconds / 60);
   const seconds = durationSeconds % 60;
-  if (minutes <= 0) {
-    return `${seconds}s`;
-  }
-
+  if (minutes <= 0) return `${seconds}s`;
   return `${minutes}m ${seconds}s`;
 };
 
 const getSessionFallbackText = (statusKey: string): string => {
-  if (statusKey === 'transcription_error') {
-    return 'Transcription failed for this session.';
-  }
-
-  if (statusKey === 'transcribing') {
-    return 'Transcription in progress... Please wait a moment.';
-  }
-
-  if (statusKey === 'completed') {
-    return 'Transcript is being finalized...';
-  }
-
-  if (statusKey === 'empty') {
-    return 'No speech was captured in this session.';
-  }
-
+  if (statusKey === 'transcription_error') return 'Transcription failed for this session.';
+  if (statusKey === 'transcribing') return 'Transcription in progress... Please wait a moment.';
+  if (statusKey === 'completed') return 'Transcript is being finalized...';
+  if (statusKey === 'empty') return 'No speech was captured in this session.';
   return 'No transcript text generated yet.';
 };
 
@@ -97,7 +80,9 @@ const buildSessionCards = (
       return {
         id: transcript.id,
         title: safeTitle,
-        recordedAtLabel: new Date(transcript.recordedAt ?? transcript.createdAt).toLocaleString(),
+        recordedAtLabel: new Date(transcript.recordedAt ?? transcript.createdAt).toLocaleDateString(undefined, {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        }),
         durationLabel: formatDuration(transcript.durationSeconds),
         chunkCount: sessionChunks.length,
         statusKey: transcript.statusKey,
@@ -123,11 +108,10 @@ export const TranscriptScreen: React.FC = () => {
       <View style={styles.container}>
         <View style={styles.content}>
           <Text style={styles.icon}>📝</Text>
-          <Text style={styles.title}>Transcripts</Text>
+          <Text style={styles.title}>Logs</Text>
           <Text style={styles.subtitle}>
-            Each recording session appears here as one merged transcript.
+            Your audio archives will elegantly appear here.
           </Text>
-          <Text style={styles.hint}>No meeting sessions yet.</Text>
         </View>
       </View>
     );
@@ -141,8 +125,8 @@ export const TranscriptScreen: React.FC = () => {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.title}>Transcripts</Text>
-            <Text style={styles.subtitle}>Recorded sessions: {sessionCards.length}</Text>
+            <Text style={styles.title}>Logs</Text>
+            <Text style={styles.subtitle}>All recorded sessions</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -152,24 +136,25 @@ export const TranscriptScreen: React.FC = () => {
               : getSessionFallbackText(item.statusKey);
 
           return (
-            <TouchableOpacity
-              style={styles.sessionCard}
-              onPress={() => setSelectedSession(item)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.sessionTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.statusBadge}>{item.statusKey}</Text>
-              </View>
-              <Text style={styles.sessionMeta}>
-                {item.recordedAtLabel} • {item.durationLabel} • {item.chunkCount} chunks
-              </Text>
-              <Text style={styles.sessionSummary} numberOfLines={3}>
-                {summaryText}
-              </Text>
-              <Text style={styles.tapHint}>Tap to view full transcript →</Text>
+            <TouchableOpacity onPress={() => setSelectedSession(item)} activeOpacity={0.8}>
+              <GlassCard intensity="low" padding="lg" style={styles.sessionCard}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.sessionTitle} numberOfLines={1}>{item.title}</Text>
+                  <View style={styles.statusBadgeLayer}>
+                    <Text style={styles.statusBadgeText}>{item.statusKey}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.metaRow}>
+                  <Text style={styles.sessionMeta}>{item.recordedAtLabel}</Text>
+                  <View style={styles.metaDot} />
+                  <Text style={styles.sessionMeta}>{item.durationLabel}</Text>
+                </View>
+
+                <View style={styles.summaryContainer}>
+                  <Text style={styles.sessionSummary} numberOfLines={3}>{summaryText}</Text>
+                </View>
+              </GlassCard>
             </TouchableOpacity>
           );
         }}
@@ -184,43 +169,34 @@ export const TranscriptScreen: React.FC = () => {
       >
         {selectedSession && (
           <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
+            <GlassCard intensity="medium" style={styles.modalHeader}>
               <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                <Text style={styles.closeButtonText}>← Back</Text>
+                <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
               <Text style={styles.modalTitle} numberOfLines={1}>
                 {selectedSession.title}
               </Text>
-            </View>
+            </GlassCard>
 
             <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScrollContent}>
-              {/* Session Info */}
-              <View style={styles.infoSection}>
-                <Text style={styles.infoLabel}>📅 Recorded</Text>
-                <Text style={styles.infoValue}>{selectedSession.recordedAtLabel}</Text>
-              </View>
-              <View style={styles.infoSection}>
-                <Text style={styles.infoLabel}>⏱️ Duration</Text>
-                <Text style={styles.infoValue}>{selectedSession.durationLabel}</Text>
-              </View>
-              <View style={styles.infoSection}>
-                <Text style={styles.infoLabel}>📦 Chunks</Text>
-                <Text style={styles.infoValue}>{selectedSession.chunkCount}</Text>
-              </View>
-              <View style={styles.infoSection}>
-                <Text style={styles.infoLabel}>📊 Status</Text>
-                <Text style={styles.infoValue}>{selectedSession.statusKey}</Text>
+              <View style={styles.inlineMetaRow}>
+                <GlassCard padding="md" intensity="low" style={styles.metaChip}>
+                  <Text style={styles.infoLabel}>Date</Text>
+                  <Text style={styles.infoValue}>{selectedSession.recordedAtLabel}</Text>
+                </GlassCard>
+                <GlassCard padding="md" intensity="low" style={styles.metaChip}>
+                  <Text style={styles.infoLabel}>Duration</Text>
+                  <Text style={styles.infoValue}>{selectedSession.durationLabel}</Text>
+                </GlassCard>
               </View>
 
-              {/* Full Transcript */}
-              <View style={styles.transcriptSection}>
-                <Text style={styles.sectionTitle}>Full Transcript</Text>
+              <GlassCard intensity="low" padding="lg" style={styles.transcriptSection}>
                 <Text style={styles.fullTranscript}>
                   {selectedSession.mergedText.length > 0
                     ? selectedSession.mergedText
                     : getSessionFallbackText(selectedSession.statusKey)}
                 </Text>
-              </View>
+              </GlassCard>
             </ScrollView>
           </View>
         )}
@@ -238,83 +214,92 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  listContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  header: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.xl,
   },
   icon: {
     fontSize: 64,
     marginBottom: spacing.md,
   },
+  header: {
+    paddingTop: 60,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+  },
   title: {
-    fontSize: fontSize.heading,
+    fontFamily: 'sans-serif-medium',
+    fontSize: fontSize.display,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: spacing.sm,
+    letterSpacing: -1,
   },
   subtitle: {
-    fontSize: fontSize.lg,
+    fontFamily: 'sans-serif',
+    fontSize: fontSize.md,
     color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginTop: spacing.xs,
   },
-  hint: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    fontStyle: 'italic',
+  listContent: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: 100, // Offset for global tab bar
   },
   sessionCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   sessionTitle: {
+    fontFamily: 'sans-serif-medium',
     color: colors.text,
     fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontWeight: '600',
     flex: 1,
     marginRight: spacing.sm,
   },
-  statusBadge: {
-    backgroundColor: colors.primary,
-    color: colors.background,
-    fontSize: fontSize.xs,
+  statusBadgeLayer: {
+    backgroundColor: colors.glowPrimary,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 4,
-    overflow: 'hidden',
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
   },
-  sessionMeta: {
-    color: colors.textSecondary,
-    fontSize: fontSize.xs,
-    marginBottom: spacing.sm,
-  },
-  sessionSummary: {
-    color: colors.text,
-    fontSize: fontSize.md,
-    lineHeight: 20,
-    marginBottom: spacing.xs,
-  },
-  tapHint: {
+  statusBadgeText: {
     color: colors.primary,
     fontSize: fontSize.xs,
-    fontWeight: '600',
-    marginTop: spacing.xs,
+    fontFamily: 'sans-serif-medium',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  metaDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.textMuted,
+    marginHorizontal: spacing.sm,
+  },
+  sessionMeta: {
+    fontFamily: 'sans-serif',
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+  },
+  summaryContainer: {
+    borderLeftWidth: 2,
+    borderLeftColor: colors.primaryContainer,
+    paddingLeft: spacing.md,
+  },
+  sessionSummary: {
+    fontFamily: 'sans-serif',
+    color: colors.text,
+    fontSize: fontSize.md,
+    lineHeight: 24,
+    opacity: 0.9,
   },
   // Modal Styles
   modalContainer: {
@@ -324,88 +309,69 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
+    paddingTop: 50,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
   },
   closeButton: {
+    paddingVertical: spacing.sm,
     paddingRight: spacing.md,
   },
   closeButtonText: {
+    fontFamily: 'sans-serif-medium',
     color: colors.primary,
     fontSize: fontSize.md,
-    fontWeight: '600',
   },
   modalTitle: {
     flex: 1,
+    fontFamily: 'sans-serif-medium',
     fontSize: fontSize.lg,
-    fontWeight: '700',
     color: colors.text,
+    textAlign: 'center',
+    paddingRight: 40,
   },
   modalContent: {
     flex: 1,
   },
   modalScrollContent: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl * 2,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl * 3,
   },
-  infoSection: {
+  inlineMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  metaChip: {
+    flex: 1,
+    alignItems: 'center',
   },
   infoLabel: {
+    fontFamily: 'sans-serif',
     color: colors.textSecondary,
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   infoValue: {
+    fontFamily: 'sans-serif-medium',
     color: colors.text,
     fontSize: fontSize.md,
-    fontWeight: '600',
   },
   transcriptSection: {
-    marginTop: spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.md,
+    marginTop: spacing.sm,
   },
   fullTranscript: {
+    fontFamily: 'sans-serif',
     color: colors.text,
-    fontSize: fontSize.md,
-    lineHeight: 24,
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chunksSection: {
-    marginTop: spacing.lg,
-  },
-  chunkItem: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  chunkHeader: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-  },
-  chunkText: {
-    fontSize: fontSize.sm,
-    color: colors.text,
-    lineHeight: 20,
+    fontSize: fontSize.lg, // Highly readable body
+    lineHeight: 30,
+    letterSpacing: 0.2,
   },
 });
+

@@ -1,32 +1,49 @@
 export const colors = {
-  primary: '#6C63FF',
-  primaryDark: '#5A52E0',
-  primaryLight: '#8B85FF',
+  // Brand
+  primary: '#bac3ff',
+  primaryContainer: '#3749ad',
+  onPrimary: '#08218a',
+  
+  secondary: '#67d9c9',
+  secondaryContainer: '#21a293',
+  onSecondary: '#003731',
+  
+  tertiary: '#f9abff',
+  tertiaryContainer: '#8c10a1',
+  onTertiary: '#570066',
 
-  secondary: '#FF6584',
-  secondaryDark: '#E05570',
-  secondaryLight: '#FF8DA0',
+  // Surfaces (Deep Obsidian to Grey)
+  background: '#0B0F19', // The deepest void
+  surface: '#121416',
+  surfaceContainerLow: '#1a1c1e',
+  surfaceContainer: '#1e2022',
+  surfaceContainerHigh: '#282a2c',
+  surfaceContainerHighest: '#333537',
+  
+  surfaceVariant: 'rgba(51, 53, 55, 0.65)', // Glass effect fake
+  surfaceGlass: 'rgba(26, 28, 30, 0.75)',
 
-  background: '#0F0F1A',
-  surface: '#1A1A2E',
-  surfaceLight: '#252540',
-  card: '#16213E',
+  // Text
+  text: '#e2e2e5', // onSurface
+  textSecondary: '#c5c5d5', // onSurfaceVariant
+  textMuted: '#8f909f', // outline
 
-  text: '#EAEAEA',
-  textSecondary: '#A0A0B8',
-  textMuted: '#6B6B80',
-
-  success: '#4ADE80',
+  // Semantic
+  success: '#21a293',
   warning: '#FBBF24',
-  error: '#F87171',
-  info: '#60A5FA',
+  error: '#ffb4ab',
+  errorContainer: '#93000a',
 
-  border: '#2A2A40',
-  divider: '#1E1E35',
-
+  // Structural
+  border: 'rgba(255, 255, 255, 0.05)', // The "Ghost Border"
+  divider: 'rgba(255, 255, 255, 0.03)',
+  transparent: 'transparent',
   white: '#FFFFFF',
   black: '#000000',
-  transparent: 'transparent',
+  
+  // Neon Glows
+  glowPrimary: 'rgba(186, 195, 255, 0.2)',
+  glowSecondary: 'rgba(103, 217, 201, 0.2)',
 } as const;
 
 export const spacing = {
@@ -53,7 +70,7 @@ export const fontSize = {
   lg: 16,
   xl: 20,
   xxl: 24,
-  heading: 32,
+  display: 40,
 } as const;
 
 export const fontWeight = {
@@ -65,3 +82,4 @@ export const fontWeight = {
 
 export type Colors = typeof colors;
 export type Spacing = typeof spacing;
+

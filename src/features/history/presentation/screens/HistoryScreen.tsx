@@ -1,18 +1,27 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import { colors, fontSize, spacing } from '../../../../shared/theme';
+import { GlassCard } from '../../../../shared/components/GlassCard';
 
 export const HistoryScreen: React.FC = () => {
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.icon}>📂</Text>
-        <Text style={styles.title}>History</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>The Vault</Text>
         <Text style={styles.subtitle}>
-          Browse your past recordings and transcripts
+          Secure local audio and summaries
         </Text>
-        <Text style={styles.hint}>Will be populated as you make recordings</Text>
       </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+         <GlassCard intensity="medium" padding="lg" style={styles.emptyState}>
+            <Text style={styles.icon}>🗄️</Text>
+            <Text style={styles.emptyTitle}>Vault is secure and empty</Text>
+            <Text style={styles.emptyDesc}>
+              Past recordings, full audio tracks, and AI summaries will be stored safely on-device here.
+            </Text>
+         </GlassCard>
+      </ScrollView>
     </View>
   );
 };
@@ -22,31 +31,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  header: {
+    paddingTop: 60,
+    paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
   },
+  title: {
+    fontFamily: 'sans-serif-medium',
+    fontSize: fontSize.display,
+    fontWeight: '700',
+    color: colors.text,
+    letterSpacing: -1,
+  },
+  subtitle: {
+    fontFamily: 'sans-serif',
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  content: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 100,
+  },
+  emptyState: {
+    alignItems: 'center',
+    marginTop: spacing.xl,
+  },
   icon: {
-    fontSize: 64,
+    fontSize: 48,
     marginBottom: spacing.md,
   },
-  title: {
-    fontSize: fontSize.heading,
-    fontWeight: '700',
+  emptyTitle: {
+    fontFamily: 'sans-serif-medium',
+    fontSize: fontSize.xl,
     color: colors.text,
     marginBottom: spacing.sm,
   },
-  subtitle: {
-    fontSize: fontSize.lg,
+  emptyDesc: {
+    fontFamily: 'sans-serif',
+    fontSize: fontSize.md,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  hint: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    fontStyle: 'italic',
+    lineHeight: 22,
   },
 });
+

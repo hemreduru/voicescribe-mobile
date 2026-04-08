@@ -8,8 +8,10 @@ import {
   PermissionsAndroid,
   Alert,
   Platform,
+  Dimensions,
 } from 'react-native';
-import { colors, fontSize, spacing } from '../../../../shared/theme';
+import { colors, fontSize, spacing, borderRadius } from '../../../../shared/theme';
+import { GlassCard } from '../../../../shared/components/GlassCard';
 import { VoiceScribeAudio } from '../../../../native/audio/NativeAudioModule';
 import { useRecordingStore, useTranscriptStore } from '../../../../shared/stores';
 import { removeOverlap } from '../../../../shared/utils/textUtils';
@@ -17,6 +19,8 @@ import type { Transcript } from '../../../../shared/types';
 
 // Dynamic chunking config
 const MAX_CHUNK_DURATION_SECONDS = 20;
+
+const { width } = Dimensions.get('window');
 
 export const RecordingScreen: React.FC = () => {
   const isRecording = useRecordingStore((state) => state.isRecording);
@@ -35,9 +39,7 @@ export const RecordingScreen: React.FC = () => {
   const setCurrentTranscript = useTranscriptStore((state) => state.setCurrentTranscript);
   const setCurrentChunks = useTranscriptStore((state) => state.setCurrentChunks);
   const appendChunk = useTranscriptStore((state) => state.appendChunk);
-  const updateChunkTextByAudioPath = useTranscriptStore(
-    (state) => state.updateChunkTextByAudioPath,
-  );
+  const updateChunkTextByAudioPath = useTranscriptStore((state) => state.updateChunkTextByAudioPath);
   const updateTranscript = useTranscriptStore((state) => state.updateTranscript);
 
   const createSessionTranscript = useCallback((manualTitle?: string): Transcript => {
@@ -61,7 +63,6 @@ export const RecordingScreen: React.FC = () => {
 
   // Audio chunk handling
   useEffect(() => {
-    // Only local UI updates now — global store updates moved to App.tsx
     const chunkSubscription = VoiceScribeAudio.onChunkReady(({ path }) => {
       try {
         const recordingState = useRecordingStore.getState();
@@ -123,41 +124,24 @@ export const RecordingScreen: React.FC = () => {
       transcriptSubscription.remove();
       errorSubscription.remove();
     };
-  }, [
-    addTranscript,
-    appendChunk,
-    setCurrentChunks,
-    setCurrentTranscript,
-    updateChunkTextByAudioPath,
-    updateTranscript,
-    createSessionTranscript,
-  ]);
+  }, [addTranscript, appendChunk, setCurrentChunks, setCurrentTranscript, updateChunkTextByAudioPath, updateTranscript, createSessionTranscript]);
 
-  // Audio level handling - direct update without decay
+  // Audio level handling
   useEffect(() => {
     const levelSubscription = VoiceScribeAudio.onAudioLevel(({ level }) => {
       setAudioLevel(Math.max(0, Math.min(level, 1)));
     });
-
-    return () => {
-      levelSubscription.remove();
-    };
+    return () => levelSubscription.remove();
   }, []);
 
-  // Recording duration timer
+  // Timer
   useEffect(() => {
-    if (!isRecording) {
-      return;
-    }
-
+    if (!isRecording) return;
     setRecordingDuration(0);
     const intervalId = setInterval(() => {
       setRecordingDuration((prev) => prev + 1);
     }, 1000);
-
-    return () => {
-      clearInterval(intervalId);
-    };
+    return () => clearInterval(intervalId);
   }, [isRecording]);
 
   const requestMicrophonePermission = async () => {
@@ -175,7 +159,6 @@ export const RecordingScreen: React.FC = () => {
         );
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       } catch (err) {
-        console.warn(err);
         return false;
       }
     }
@@ -185,25 +168,18 @@ export const RecordingScreen: React.FC = () => {
   const handleToggleRecord = async () => {
     try {
       if (isRecording) {
-        // STOP RECORDING
         isStoppingRef.current = true;
         VoiceScribeAudio.stopRecording();
-        if (stopGuardTimerRef.current) {
-          clearTimeout(stopGuardTimerRef.current);
-        }
-        stopGuardTimerRef.current = setTimeout(() => {
-          isStoppingRef.current = false;
-        }, 3000);
+        if (stopGuardTimerRef.current) clearTimeout(stopGuardTimerRef.current);
+        stopGuardTimerRef.current = setTimeout(() => { isStoppingRef.current = false; }, 3000);
         
         const recordingState = useRecordingStore.getState();
         const transcriptId = recordingState.currentTranscriptId;
         const finalChunkCount = recordingState.chunkCount;
         lastRecordingTranscriptIdRef.current = transcriptId;
 
-        // Update store first
         useRecordingStore.getState().stopRecording();
 
-        // Then update transcript if exists
         if (transcriptId) {
           updateTranscript(transcriptId, {
             updatedAt: new Date().toISOString(),
@@ -212,41 +188,29 @@ export const RecordingScreen: React.FC = () => {
           });
         }
       } else {
-        // START RECORDING
-        if (isStoppingRef.current) {
-          // Prevent accidental immediate restart while previous session is still flushing.
-          return;
-        }
+        if (isStoppingRef.current) return;
         const hasPermission = await requestMicrophonePermission();
         if (!hasPermission) {
           Alert.alert('Permission Denied', 'Microphone permission is required.');
           return;
         }
 
-        // Reset state
         setLiveTranscriptPreview('');
         setTranscriptionError(null);
         setAudioLevel(0);
         setRecordingDuration(0);
 
-        // Create transcript
         const transcript = createSessionTranscript(sessionTitleInput);
         addTranscript(transcript);
         setCurrentTranscript(transcript);
         setCurrentChunks([]);
         
-        // Start recording in store
         useRecordingStore.getState().startRecording(transcript.id);
         lastRecordingTranscriptIdRef.current = transcript.id;
-        
-        // Start native recording
         VoiceScribeAudio.startRecording();
-        
-        // Clear input
         setSessionTitleInput('');
       }
     } catch (error) {
-      console.error('Recording toggle error:', error);
       useRecordingStore.getState().stopRecording();
       Alert.alert('Error', String(error));
     }
@@ -255,72 +219,77 @@ export const RecordingScreen: React.FC = () => {
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Simple line visualization based on audio level
-  const lineWidth = Math.max(2, audioLevel * 100);
+  const currentGlowScale = isRecording ? 1 + (audioLevel * 0.4) : 1;
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.icon}>🎙️</Text>
-        <Text style={styles.title}>Recording</Text>
-        
-        {!isRecording && (
-          <TextInput
-            value={sessionTitleInput}
-            onChangeText={setSessionTitleInput}
-            placeholder="Session name (optional)"
-            placeholderTextColor={colors.textMuted}
-            style={styles.sessionInput}
-          />
-        )}
+      <View style={styles.header}>
+        <Text style={styles.title}>VoiceScribe</Text>
+        <Text style={styles.subtitle}>
+          {isModelLoaded ? 'AI Ready' : 'Loading Model...'}
+        </Text>
+      </View>
 
-        {/* Audio Level - Simple Line */}
-        <View style={styles.audioLevelContainer}>
-          <View style={styles.audioLevelTrack}>
-            <View style={[styles.audioLevelFill, { width: `${lineWidth}%` }]} />
-          </View>
-          <Text style={styles.audioLevelText}>
-            {isRecording ? `${Math.round(audioLevel * 100)}%` : 'Ready'}
-          </Text>
-        </View>
+      <View style={styles.centerStage}>
+        {/* Breathing background glow layer */}
+        <View style={[
+          styles.glowRing, 
+          { 
+            transform: [{ scale: currentGlowScale }],
+            opacity: isRecording ? 0.6 : 0 
+          }
+        ]} />
 
-        {/* Record Button */}
+        {/* The large glass record button */}
         <TouchableOpacity 
-          style={[styles.recordButton, isRecording && styles.recordButtonActive]} 
+          style={styles.recordButtonOuter}
+          activeOpacity={0.8}
           onPress={handleToggleRecord}
         >
-          <View style={[styles.recordButtonInner, isRecording && styles.recordButtonInnerActive]} />
+          <View style={[
+            styles.recordButtonInner, 
+            isRecording && styles.recordButtonActive
+          ]}>
+            {isRecording ? (
+              <View style={styles.stopSquare} />
+            ) : (
+              <Text style={styles.micIcon}>🎙️</Text>
+            )}
+          </View>
         </TouchableOpacity>
-        
-        {/* Status */}
-        <Text style={styles.statusText}>
-          {isRecording 
-            ? `Recording: ${formatDuration(recordingDuration)} • Chunks: ${chunkCount}`
-            : 'Tap to start recording'}
-        </Text>
+      </View>
+
+      <View style={styles.bottomSection}>
+        {isRecording ? (
+          <GlassCard intensity="high" padding="lg" style={styles.activePill}>
+            <Text style={styles.timerText}>{formatDuration(recordingDuration)}</Text>
+            <View style={styles.divider} />
+            <Text style={styles.chunkText}>Ch. {chunkCount}</Text>
+          </GlassCard>
+        ) : (
+          <GlassCard intensity="low" padding="md" style={styles.inputContainer}>
+            <TextInput
+              value={sessionTitleInput}
+              onChangeText={setSessionTitleInput}
+              placeholder="Name this session..."
+              placeholderTextColor={colors.textMuted}
+              style={styles.sessionInput}
+            />
+          </GlassCard>
+        )}
 
         {/* Live Transcript Preview */}
-        {isRecording && (
-          <View style={styles.transcriptPreview}>
-            <Text style={styles.previewLabel}>Live Transcript</Text>
-            <Text style={styles.previewText} numberOfLines={5}>
-              {liveTranscriptPreview || 'Listening... speak clearly.'}
+        {isRecording && liveTranscriptPreview.length > 0 && (
+          <GlassCard intensity="low" padding="lg" style={styles.previewContainer}>
+            <Text style={styles.previewText} numberOfLines={3}>
+              {liveTranscriptPreview}
+              <Text style={styles.cursor}>_</Text>
             </Text>
-          </View>
+          </GlassCard>
         )}
-
-        {/* Error Display */}
-        {transcriptionError && (
-          <Text style={styles.errorText}>Error: {transcriptionError}</Text>
-        )}
-
-        {/* Model Status */}
-        <Text style={styles.modelStatus}>
-          Whisper: {isModelLoaded ? '✅ Ready (Auto-detect language)' : '⏳ Loading...'}
-        </Text>
       </View>
     </View>
   );
@@ -331,118 +300,122 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+  },
+  title: {
+    fontFamily: 'sans-serif-medium',
+    fontSize: fontSize.xxl,
+    fontWeight: '700',
+    color: colors.text,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontFamily: 'sans-serif',
+    fontSize: fontSize.sm,
+    color: colors.success,
+    marginTop: spacing.xs,
+  },
+  centerStage: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
   },
-  icon: {
-    fontSize: 64,
-    marginBottom: spacing.md,
+  glowRing: {
+    position: 'absolute',
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: colors.glowPrimary,
   },
-  title: {
-    fontSize: fontSize.heading,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.lg,
-  },
-  sessionInput: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    borderRadius: 10,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.lg,
-    fontSize: fontSize.md,
-  },
-  audioLevelContainer: {
-    width: '100%',
-    marginBottom: spacing.lg,
-    alignItems: 'center',
-  },
-  audioLevelTrack: {
-    width: '100%',
-    height: 8,
-    backgroundColor: colors.surface,
-    borderRadius: 4,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  audioLevelFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 4,
-  },
-  audioLevelText: {
-    marginTop: spacing.xs,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  recordButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.surface,
-    borderWidth: 4,
-    borderColor: colors.primary,
+  recordButtonOuter: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(55, 73, 173, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  recordButtonActive: {
-    borderColor: colors.secondary,
-  },
-  recordButtonInner: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.secondary,
-  },
-  recordButtonInnerActive: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    backgroundColor: colors.secondary,
-  },
-  statusText: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
-  transcriptPreview: {
-    width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: spacing.md,
-    maxHeight: 150,
   },
-  previewLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-    fontWeight: '600',
+  recordButtonInner: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: colors.primaryContainer,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  recordButtonActive: {
+    backgroundColor: colors.secondaryContainer,
+    shadowColor: colors.secondary,
+  },
+  stopSquare: {
+    width: 32,
+    height: 32,
+    backgroundColor: colors.white,
+    borderRadius: 6,
+  },
+  micIcon: {
+    fontSize: 48,
+    color: colors.white,
+  },
+  bottomSection: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 120, // Offset for bottom tab
+    alignItems: 'center',
+  },
+  activePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 40,
+    marginBottom: spacing.lg,
+  },
+  timerText: {
+    fontFamily: 'sans-serif-medium',
+    fontSize: fontSize.xl,
+    color: colors.white,
+    letterSpacing: 2,
+  },
+  divider: {
+    width: 1,
+    height: 20,
+    backgroundColor: colors.divider,
+    marginHorizontal: spacing.lg,
+  },
+  chunkText: {
+    fontFamily: 'sans-serif',
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+  },
+  inputContainer: {
+    width: '100%',
+    borderRadius: borderRadius.lg,
+  },
+  sessionInput: {
+    fontFamily: 'sans-serif',
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  previewContainer: {
+    width: '100%',
+    maxHeight: 120,
   },
   previewText: {
-    fontSize: fontSize.sm,
-    color: colors.text,
-    lineHeight: 20,
+    fontFamily: 'sans-serif',
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    lineHeight: 24,
   },
-  errorText: {
-    fontSize: fontSize.sm,
-    color: colors.secondary,
-    marginBottom: spacing.sm,
-  },
-  modelStatus: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginTop: spacing.md,
+  cursor: {
+    color: colors.primary,
   },
 });
+
