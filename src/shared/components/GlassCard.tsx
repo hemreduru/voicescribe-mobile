@@ -1,49 +1,37 @@
 import React from 'react';
-import { View, StyleSheet, ViewProps } from 'react-native';
-import { colors, borderRadius, spacing } from '../theme';
+import { View, ViewProps, ViewStyle } from 'react-native';
+import { useColors } from '../theme';
+import { borderRadius, spacing } from '../theme/tokens';
 
-interface GlassCardProps extends ViewProps {
-  intensity?: 'low' | 'medium' | 'high';
-  padding?: keyof typeof spacing;
+interface CardProps extends ViewProps {
+  intensity?: 'low' | 'medium' | 'high'; // kept for backward compat
+  padding?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-export const GlassCard = ({ 
-  children, 
-  style, 
-  intensity = 'medium',
-  padding = 'lg',
-  ...rest 
-}: GlassCardProps) => {
-  const getBackgroundColor = () => {
-    switch(intensity) {
-      case 'low': return colors.surfaceContainerLow;
-      case 'high': return colors.surfaceGlass;
-      default: return colors.surfaceVariant;
-    }
-  };
+export const GlassCard = ({ children, style, intensity = 'medium', padding = 'lg', ...rest }: CardProps) => {
+  const colors = useColors();
 
   return (
-    <View 
+    <View
       style={[
-        styles.container, 
-        { 
-          backgroundColor: getBackgroundColor(),
-          padding: spacing[padding]
+        {
+          backgroundColor: colors.surface,
+          borderRadius: borderRadius.lg,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: spacing[padding],
+          // Subtle shadow
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 3,
+          elevation: 1,
         },
-        style
-      ]} 
+        style,
+      ]}
       {...rest}
     >
       {children}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: borderRadius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
-  }
-});

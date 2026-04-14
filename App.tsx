@@ -10,7 +10,7 @@ import {
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppNavigator } from './src/shared/navigation';
-import { colors, fontSize, spacing } from './src/shared/theme';
+import { colors, fontSize, spacing, ThemeProvider, useColors, useTheme } from './src/shared/theme';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   VoiceScribeAudio,
@@ -281,8 +281,9 @@ const App: React.FC = () => {
   };
 
   return (
-    <SafeAreaProvider>
-      <GestureHandlerRootView style={styles.root}>
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={styles.root}>
         <StatusBar barStyle="light-content" backgroundColor={colors.background} />
         {bootstrapState === 'ready' ? (
           <NavigationContainer
@@ -310,8 +311,9 @@ const App: React.FC = () => {
         ) : (
           renderBootstrapScreen()
         )}
-      </GestureHandlerRootView>
-    </SafeAreaProvider>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 };
 

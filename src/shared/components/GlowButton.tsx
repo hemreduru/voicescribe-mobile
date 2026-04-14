@@ -1,92 +1,66 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, TouchableOpacityProps, StyleProp, ViewStyle, TextStyle } from 'react-native';
-import { colors, borderRadius, spacing, fontSize, fontWeight } from '../theme';
+import { TouchableOpacity, Text, TouchableOpacityProps, StyleProp, ViewStyle, TextStyle } from 'react-native';
+import { useColors } from '../theme';
+import { borderRadius, spacing, fontSize, fontWeight } from '../theme/tokens';
 
-interface GlowButtonProps extends TouchableOpacityProps {
+interface ButtonProps extends TouchableOpacityProps {
   title: string;
   variant?: 'primary' | 'secondary' | 'danger';
   size?: 'sm' | 'md' | 'lg';
+  icon?: React.ReactNode; // For lucide icons
   buttonStyle?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
 }
 
-export const GlowButton = ({
-  title,
-  variant = 'primary',
-  size = 'md',
-  buttonStyle,
-  textStyle,
-  ...rest
-}: GlowButtonProps) => {
+export const GlowButton = ({ title, variant = 'primary', size = 'md', icon, buttonStyle, textStyle, disabled, ...rest }: ButtonProps) => {
+  const colors = useColors();
+
   const getVariantStyles = () => {
-    switch(variant) {
+    switch (variant) {
       case 'danger':
-        return {
-          bg: colors.errorContainer,
-          text: colors.error,
-          shadow: colors.error
-        };
+        return { bg: colors.error, text: colors.white };
       case 'secondary':
-        return {
-          bg: colors.surfaceContainerHigh,
-          text: colors.text,
-          shadow: colors.transparent
-        };
+        return { bg: colors.surfaceSecondary, text: colors.text };
       default:
-        return {
-          bg: colors.primaryContainer,
-          text: colors.white,
-          shadow: colors.primary
-        };
+        return { bg: colors.primary, text: colors.textOnPrimary };
     }
   };
 
   const getSizeStyles = () => {
-    switch(size) {
-      case 'sm': return { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, fontSize: fontSize.sm };
-      case 'lg': return { paddingVertical: spacing.lg, paddingHorizontal: spacing.xl, fontSize: fontSize.lg };
-      default: return { paddingVertical: spacing.md, paddingHorizontal: spacing.lg, fontSize: fontSize.md };
+    switch (size) {
+      case 'sm': return { py: spacing.sm, px: spacing.md, fs: fontSize.sm };
+      case 'lg': return { py: spacing.lg, px: spacing.xl, fs: fontSize.lg };
+      default: return { py: spacing.md, px: spacing.lg, fs: fontSize.md };
     }
   };
 
-  const vStyles = getVariantStyles();
-  const sStyles = getSizeStyles();
+  const v = getVariantStyles();
+  const s = getSizeStyles();
 
   return (
     <TouchableOpacity
       style={[
-        styles.button,
         {
-          backgroundColor: vStyles.bg,
-          paddingVertical: sStyles.paddingVertical,
-          paddingHorizontal: sStyles.paddingHorizontal,
-          shadowColor: vStyles.shadow,
+          backgroundColor: v.bg,
+          paddingVertical: s.py,
+          paddingHorizontal: s.px,
+          borderRadius: borderRadius.lg,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.sm,
+          opacity: disabled ? 0.5 : 1,
         },
-        buttonStyle
+        buttonStyle,
       ]}
+      disabled={disabled}
+      activeOpacity={0.7}
       {...rest}
     >
-      <Text style={[styles.text, { color: vStyles.text, fontSize: sStyles.fontSize }, textStyle]}>
+      {icon}
+      <Text style={[{ color: v.text, fontSize: s.fs, fontWeight: fontWeight.medium }, textStyle]}>
         {title}
       </Text>
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  button: {
-    borderRadius: borderRadius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8, // For android
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  text: {
-    fontFamily: 'sans-serif-medium',
-    fontWeight: fontWeight.bold,
-  }
-});

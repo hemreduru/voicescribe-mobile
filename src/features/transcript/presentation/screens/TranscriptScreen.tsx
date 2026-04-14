@@ -7,9 +7,23 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
-import { colors, fontSize, spacing, borderRadius } from '../../../../shared/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  Search,
+  Copy,
+  Download,
+  Edit,
+  Play,
+  Clock,
+  ChevronLeft,
+} from 'lucide-react-native';
+import { useColors } from '../../../../shared/theme';
+import { spacing, borderRadius, fontSize, fontWeight } from '../../../../shared/theme/tokens';
 import { GlassCard } from '../../../../shared/components/GlassCard';
+import { SearchBar } from '../../../../shared/components/SearchBar';
 import { useTranscriptStore } from '../../../../shared/stores';
 import type { Transcript, TranscriptChunk } from '../../../../shared/types';
 
@@ -92,123 +106,272 @@ const buildSessionCards = (
     });
 };
 
+interface SessionCardProps {
+  item: SessionCardItem;
+  onPress: () => void;
+}
+
+const SessionCard: React.FC<SessionCardProps> = ({ item, onPress }) => {
+  const colors = useColors();
+
+  const summaryText =
+    item.mergedText.length > 0
+      ? getSummary(item.mergedText, 150)
+      : getSessionFallbackText(item.statusKey);
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <GlassCard style={styles.sessionCard}>
+        <View style={styles.cardHeader}>
+          <Text style={[styles.sessionTitle, { color: colors.text }]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <View style={[styles.statusBadge, { backgroundColor: colors.primaryContainer }]}>
+            <Text style={[styles.statusBadgeText, { color: colors.primary }]}>
+              {item.statusKey}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.metaRow}>
+          <Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>
+            {item.recordedAtLabel}
+          </Text>
+          <View style={[styles.metaDot, { backgroundColor: colors.textMuted }]} />
+          <Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>
+            {item.durationLabel}
+          </Text>
+        </View>
+
+        <View style={[styles.summaryContainer, { borderLeftColor: colors.primary }]}>
+          <Text style={[styles.sessionSummary, { color: colors.text }]} numberOfLines={3}>
+            {summaryText}
+          </Text>
+        </View>
+      </GlassCard>
+    </TouchableOpacity>
+  );
+};
+
+interface TranscriptSegmentProps {
+  segment: TranscriptChunk;
+}
+
+const TranscriptSegment: React.FC<TranscriptSegmentProps> = ({ segment }) => {
+  const colors = useColors();
+
+  return (
+    <View style={[styles.segmentContainer, { borderLeftColor: colors.primary }]}>
+      <View style={styles.segmentHeader}>
+        <Text style={[styles.speakerLabel, { color: colors.primary }]}>
+          {segment.speakerLabel || 'Speaker'}
+        </Text>
+        <View style={styles.timestampRow}>
+          <Clock size={12} color={colors.textMuted} />
+          <Text style={[styles.timestamp, { color: colors.textMuted }]}>
+            {formatDuration(Math.floor(segment.startTime))}
+          </Text>
+        </View>
+      </View>
+      <Text style={[styles.segmentText, { color: colors.text }]}>
+        {segment.text}
+      </Text>
+    </View>
+  );
+};
+
 export const TranscriptScreen: React.FC = () => {
+  const colors = useColors();
   const transcripts = useTranscriptStore((state) => state.transcripts);
   const allChunks = useTranscriptStore((state) => state.allChunks);
   const [selectedSession, setSelectedSession] = useState<SessionCardItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [detailSearchQuery, setDetailSearchQuery] = useState('');
 
   const sessionCards = useMemo(() => {
     return buildSessionCards(transcripts, allChunks);
   }, [transcripts, allChunks]);
 
-  const closeModal = () => setSelectedSession(null);
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery) return sessionCards;
+    const query = searchQuery.toLowerCase();
+    return sessionCards.filter(
+      (card) =>
+        card.title.toLowerCase().includes(query) ||
+        card.mergedText.toLowerCase().includes(query),
+    );
+  }, [sessionCards, searchQuery]);
 
-  if (sessionCards.length === 0) {
+  const filteredChunks = useMemo(() => {
+    if (!selectedSession) return [];
+    if (!detailSearchQuery) return selectedSession.chunks;
+    const query = detailSearchQuery.toLowerCase();
+    return selectedSession.chunks.filter(
+      (chunk) =>
+        chunk.text.toLowerCase().includes(query) ||
+        (chunk.speakerLabel && chunk.speakerLabel.toLowerCase().includes(query)),
+    );
+  }, [selectedSession, detailSearchQuery]);
+
+  const closeModal = () => {
+    setSelectedSession(null);
+    setDetailSearchQuery('');
+  };
+
+  const handleCopy = () => {
+    if (selectedSession) {
+      // Copy transcript text to clipboard
+      console.log('Copy transcript');
+    }
+  };
+
+  const handleExport = () => {
+    if (selectedSession) {
+      // Export transcript
+      console.log('Export transcript');
+    }
+  };
+
+  const handleEdit = () => {
+    if (selectedSession) {
+      // Edit transcript
+      console.log('Edit transcript');
+    }
+  };
+
+  // Session List View
+  if (!selectedSession) {
+    if (sessionCards.length === 0) {
+      return (
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+          <View style={styles.content}>
+            <Text style={styles.icon}>📝</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Transkript</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Your audio archives will elegantly appear here.
+            </Text>
+          </View>
+        </SafeAreaView>
+      );
+    }
+
     return (
-      <View style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.icon}>📝</Text>
-          <Text style={styles.title}>Logs</Text>
-          <Text style={styles.subtitle}>
-            Your audio archives will elegantly appear here.
-          </Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        {/* Sticky Header */}
+        <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Transkript</Text>
+          <SearchBar
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Kayıtlarda ara..."
+            style={styles.searchBar}
+          />
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity style={styles.actionButton}>
+              <Copy size={20} color={colors.textSecondary} />
+              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Kopyala</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Download size={20} color={colors.textSecondary} />
+              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Dışa Aktar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Edit size={20} color={colors.primary} />
+              <Text style={[styles.actionButtonText, { color: colors.primary }]}>Düzenle</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+
+        <FlatList
+          data={filteredSessions}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <SessionCard item={item} onPress={() => setSelectedSession(item)} />
+          )}
+        />
+      </SafeAreaView>
     );
   }
 
+  // Session Detail View (Modal)
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={sessionCards}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={styles.title}>Logs</Text>
-            <Text style={styles.subtitle}>All recorded sessions</Text>
-          </View>
-        }
-        renderItem={({ item }) => {
-          const summaryText =
-            item.mergedText.length > 0
-              ? getSummary(item.mergedText, 150)
-              : getSessionFallbackText(item.statusKey);
-
-          return (
-            <TouchableOpacity onPress={() => setSelectedSession(item)} activeOpacity={0.8}>
-              <GlassCard intensity="low" padding="lg" style={styles.sessionCard}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.sessionTitle} numberOfLines={1}>{item.title}</Text>
-                  <View style={styles.statusBadgeLayer}>
-                    <Text style={styles.statusBadgeText}>{item.statusKey}</Text>
-                  </View>
-                </View>
-                
-                <View style={styles.metaRow}>
-                  <Text style={styles.sessionMeta}>{item.recordedAtLabel}</Text>
-                  <View style={styles.metaDot} />
-                  <Text style={styles.sessionMeta}>{item.durationLabel}</Text>
-                </View>
-
-                <View style={styles.summaryContainer}>
-                  <Text style={styles.sessionSummary} numberOfLines={3}>{summaryText}</Text>
-                </View>
-              </GlassCard>
+    <Modal
+      visible={selectedSession !== null}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={closeModal}
+    >
+      <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]} edges={['top']}>
+        {/* Sticky Header */}
+        <View style={[styles.modalStickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+          <View style={styles.modalHeaderTop}>
+            <TouchableOpacity onPress={closeModal} style={styles.backButton}>
+              <ChevronLeft size={24} color={colors.text} />
             </TouchableOpacity>
-          );
-        }}
-      />
-
-      {/* Detail Modal */}
-      <Modal
-        visible={selectedSession !== null}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={closeModal}
-      >
-        {selectedSession && (
-          <View style={styles.modalContainer}>
-            <GlassCard intensity="medium" style={styles.modalHeader}>
-              <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-              <Text style={styles.modalTitle} numberOfLines={1}>
-                {selectedSession.title}
-              </Text>
-            </GlassCard>
-
-            <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScrollContent}>
-              <View style={styles.inlineMetaRow}>
-                <GlassCard padding="md" intensity="low" style={styles.metaChip}>
-                  <Text style={styles.infoLabel}>Date</Text>
-                  <Text style={styles.infoValue}>{selectedSession.recordedAtLabel}</Text>
-                </GlassCard>
-                <GlassCard padding="md" intensity="low" style={styles.metaChip}>
-                  <Text style={styles.infoLabel}>Duration</Text>
-                  <Text style={styles.infoValue}>{selectedSession.durationLabel}</Text>
-                </GlassCard>
-              </View>
-
-              <GlassCard intensity="low" padding="lg" style={styles.transcriptSection}>
-                <Text style={styles.fullTranscript}>
-                  {selectedSession.mergedText.length > 0
-                    ? selectedSession.mergedText
-                    : getSessionFallbackText(selectedSession.statusKey)}
-                </Text>
-              </GlassCard>
-            </ScrollView>
+            <Text style={[styles.modalTitle, { color: colors.text }]} numberOfLines={1}>
+              {selectedSession.title}
+            </Text>
           </View>
-        )}
-      </Modal>
-    </View>
+          <SearchBar
+            value={detailSearchQuery}
+            onChangeText={setDetailSearchQuery}
+            placeholder="Metinde ara..."
+            style={styles.modalSearchBar}
+          />
+          <View style={styles.actionButtonsRow}>
+            <TouchableOpacity style={styles.actionButton} onPress={handleCopy}>
+              <Copy size={20} color={colors.textSecondary} />
+              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Kopyala</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleExport}>
+              <Download size={20} color={colors.textSecondary} />
+              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Dışa Aktar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleEdit}>
+              <Edit size={20} color={colors.primary} />
+              <Text style={[styles.actionButtonText, { color: colors.primary }]}>Düzenle</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScrollContent}>
+          {/* Recording Info Card */}
+          <View style={[styles.recordingInfoCard, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]}>
+            <View style={styles.recordingInfoHeader}>
+              <TouchableOpacity style={[styles.playButton, { backgroundColor: colors.primary }]}>
+                <Play size={20} color={colors.textOnPrimary} fill={colors.textOnPrimary} />
+              </TouchableOpacity>
+              <View style={styles.recordingInfoText}>
+                <Text style={[styles.recordingTitle, { color: colors.text }]}>
+                  {selectedSession.title}
+                </Text>
+                <Text style={[styles.recordingDate, { color: colors.textSecondary }]}>
+                  {selectedSession.recordedAtLabel}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Transcript Segments */}
+          {filteredChunks.length > 0 ? (
+            filteredChunks.map((chunk) => (
+              <TranscriptSegment key={chunk.id} segment={chunk} />
+            ))
+          ) : (
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              {detailSearchQuery ? 'No matching text found.' : 'No transcript available.'}
+            </Text>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -220,28 +383,51 @@ const styles = StyleSheet.create({
     fontSize: 64,
     marginBottom: spacing.md,
   },
-  header: {
-    paddingTop: 60,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.md,
-  },
   title: {
-    fontFamily: 'sans-serif-medium',
-    fontSize: fontSize.display,
+    fontSize: fontSize.heading,
     fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -1,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontFamily: 'sans-serif',
     fontSize: fontSize.md,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
+    textAlign: 'center',
   },
-  listContent: {
+  // Sticky Header
+  stickyHeader: {
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: spacing.md,
+  },
+  searchBar: {
+    marginBottom: spacing.md,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    paddingBottom: 100, // Offset for global tab bar
   },
+  actionButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  // List Content
+  listContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 100,
+  },
+  // Session Card
   sessionCard: {
     marginBottom: spacing.md,
   },
@@ -252,86 +438,69 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   sessionTitle: {
-    fontFamily: 'sans-serif-medium',
-    color: colors.text,
     fontSize: fontSize.lg,
     fontWeight: '600',
     flex: 1,
     marginRight: spacing.sm,
   },
-  statusBadgeLayer: {
-    backgroundColor: colors.glowPrimary,
+  statusBadge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   statusBadgeText: {
-    color: colors.primary,
     fontSize: fontSize.xs,
-    fontFamily: 'sans-serif-medium',
+    fontWeight: fontWeight.semibold,
     textTransform: 'uppercase',
-    letterSpacing: 1,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   metaDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.textMuted,
     marginHorizontal: spacing.sm,
   },
   sessionMeta: {
-    fontFamily: 'sans-serif',
-    color: colors.textSecondary,
     fontSize: fontSize.sm,
   },
   summaryContainer: {
-    borderLeftWidth: 2,
-    borderLeftColor: colors.primaryContainer,
+    borderLeftWidth: 4,
     paddingLeft: spacing.md,
   },
   sessionSummary: {
-    fontFamily: 'sans-serif',
-    color: colors.text,
     fontSize: fontSize.md,
     lineHeight: 24,
-    opacity: 0.9,
   },
-  // Modal Styles
+  // Modal Container
   modalContainer: {
     flex: 1,
-    backgroundColor: colors.background,
   },
-  modalHeader: {
+  modalStickyHeader: {
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+  },
+  modalHeaderTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: 0,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
+    marginBottom: spacing.md,
   },
-  closeButton: {
+  backButton: {
     paddingVertical: spacing.sm,
-    paddingRight: spacing.md,
-  },
-  closeButtonText: {
-    fontFamily: 'sans-serif-medium',
-    color: colors.primary,
-    fontSize: fontSize.md,
+    paddingRight: spacing.sm,
   },
   modalTitle: {
     flex: 1,
-    fontFamily: 'sans-serif-medium',
     fontSize: fontSize.lg,
-    color: colors.text,
-    textAlign: 'center',
-    paddingRight: 40,
+    fontWeight: '600',
+  },
+  modalSearchBar: {
+    marginBottom: spacing.md,
   },
   modalContent: {
     flex: 1,
@@ -340,38 +509,68 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing.xl * 3,
   },
-  inlineMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  // Recording Info Card
+  recordingInfoCard: {
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    padding: spacing.md,
     marginBottom: spacing.lg,
-    gap: spacing.md,
   },
-  metaChip: {
-    flex: 1,
+  recordingInfoHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  infoLabel: {
-    fontFamily: 'sans-serif',
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  playButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
   },
-  infoValue: {
-    fontFamily: 'sans-serif-medium',
-    color: colors.text,
+  recordingInfoText: {
+    flex: 1,
+  },
+  recordingTitle: {
     fontSize: fontSize.md,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
   },
-  transcriptSection: {
-    marginTop: spacing.sm,
+  recordingDate: {
+    fontSize: fontSize.sm,
   },
-  fullTranscript: {
-    fontFamily: 'sans-serif',
-    color: colors.text,
-    fontSize: fontSize.lg, // Highly readable body
-    lineHeight: 30,
-    letterSpacing: 0.2,
+  // Transcript Segment
+  segmentContainer: {
+    borderLeftWidth: 4,
+    paddingLeft: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  segmentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  speakerLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+  },
+  timestampRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  timestamp: {
+    fontSize: fontSize.xs,
+  },
+  segmentText: {
+    fontSize: fontSize.md,
+    lineHeight: 24,
+  },
+  emptyText: {
+    fontSize: fontSize.md,
+    textAlign: 'center',
+    marginTop: spacing.xl,
   },
 });
-

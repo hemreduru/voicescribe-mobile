@@ -12,6 +12,7 @@ export type RootTabParamList = {
 
 export type RecordingStackParamList = {
   Recording: undefined;
+  Settings: undefined;
 };
 
 export type TranscriptStackParamList = {

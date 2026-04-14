@@ -8,22 +8,36 @@ import {
   PermissionsAndroid,
   Alert,
   Platform,
-  Dimensions,
+  ScrollView,
 } from 'react-native';
-import { colors, fontSize, spacing, borderRadius } from '../../../../shared/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing,
+  cancelAnimation,
+} from 'react-native-reanimated';
+import { Mic, Pause, Square, Clock, Activity, Settings, Play } from 'lucide-react-native';
+import { useColors } from '../../../../shared/theme';
 import { GlassCard } from '../../../../shared/components/GlassCard';
+import { AudioVisualizer } from '../../../../shared/components/AudioVisualizer';
 import { VoiceScribeAudio } from '../../../../native/audio/NativeAudioModule';
 import { useRecordingStore, useTranscriptStore } from '../../../../shared/stores';
 import { removeOverlap } from '../../../../shared/utils/textUtils';
 import type { Transcript } from '../../../../shared/types';
+import { borderRadius, spacing, fontSize, fontWeight } from '../../../../shared/theme/tokens';
 
 // Dynamic chunking config
 const MAX_CHUNK_DURATION_SECONDS = 20;
 
-const { width } = Dimensions.get('window');
-
 export const RecordingScreen: React.FC = () => {
+  const colors = useColors();
+  
   const isRecording = useRecordingStore((state) => state.isRecording);
+  const isPaused = useRecordingStore((state) => state.isPaused);
   const chunkCount = useRecordingStore((state) => state.chunkCount);
   const [sessionTitleInput, setSessionTitleInput] = useState('');
   const [audioLevel, setAudioLevel] = useState(0);
@@ -34,6 +48,14 @@ export const RecordingScreen: React.FC = () => {
   const lastRecordingTranscriptIdRef = useRef<string | null>(null);
   const isStoppingRef = useRef(false);
   const stopGuardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Animation values for pulsing record button
+  const pulseScale = useSharedValue(1);
+  const pulseOpacity = useSharedValue(0.6);
+
+  // Get recent transcripts (last 3)
+  const transcripts = useTranscriptStore((state) => state.transcripts);
+  const recentTranscripts = transcripts.slice(0, 3);
 
   const addTranscript = useTranscriptStore((state) => state.addTranscript);
   const setCurrentTranscript = useTranscriptStore((state) => state.setCurrentTranscript);
@@ -60,6 +82,38 @@ export const RecordingScreen: React.FC = () => {
       updatedAt: isoNow,
     };
   }, []);
+
+  // Pulsing animation when recording
+  useEffect(() => {
+    if (isRecording && !isPaused) {
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.15, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+      pulseOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.3, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.6, { duration: 800, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+    } else {
+      cancelAnimation(pulseScale);
+      cancelAnimation(pulseOpacity);
+      pulseScale.value = withTiming(1, { duration: 300 });
+      pulseOpacity.value = withTiming(isRecording ? 0.4 : 0, { duration: 300 });
+    }
+  }, [isRecording, isPaused, pulseScale, pulseOpacity]);
+
+  const pulseAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+    opacity: pulseOpacity.value,
+  }));
 
   // Audio chunk handling
   useEffect(() => {
@@ -216,206 +270,412 @@ export const RecordingScreen: React.FC = () => {
     }
   };
 
+  const handlePauseResume = () => {
+    if (isPaused) {
+      useRecordingStore.getState().resumeRecording();
+      VoiceScribeAudio.startRecording();
+    } else {
+      useRecordingStore.getState().pauseRecording();
+      VoiceScribeAudio.stopRecording();
+    }
+  };
+
+  const handleStop = () => {
+    handleToggleRecord();
+  };
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const currentGlowScale = isRecording ? 1 + (audioLevel * 0.4) : 1;
+  const formatTranscriptDate = (isoString: string | null) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+  };
+
+  const formatTranscriptTime = (isoString: string | null) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const getStatusText = () => {
+    if (isRecording) {
+      return isPaused ? 'Kayıt duraklatıldı' : 'Kaydediliyor';
+    }
+    return 'Kayıt başlatmak için butona tıklayın';
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>VoiceScribe</Text>
-        <Text style={styles.subtitle}>
-          {isModelLoaded ? 'AI Ready' : 'Loading Model...'}
-        </Text>
-      </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.text }]}>Kayıt</Text>
+          <TouchableOpacity 
+            style={[styles.settingsButton, { backgroundColor: colors.surfaceSecondary }]}
+            onPress={() => {}}
+          >
+            <Settings size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.centerStage}>
-        {/* Breathing background glow layer */}
-        <View style={[
-          styles.glowRing, 
-          { 
-            transform: [{ scale: currentGlowScale }],
-            opacity: isRecording ? 0.6 : 0 
-          }
-        ]} />
+        {/* Center Stage - Record Button */}
+        <View style={styles.centerStage}>
+          {/* Pulsing ring animation */}
+          <Animated.View 
+            style={[
+              styles.pulseRing,
+              { backgroundColor: isRecording ? colors.error : colors.primary },
+              pulseAnimatedStyle
+            ]} 
+          />
 
-        {/* The large glass record button */}
-        <TouchableOpacity 
-          style={styles.recordButtonOuter}
-          activeOpacity={0.8}
-          onPress={handleToggleRecord}
-        >
-          <View style={[
-            styles.recordButtonInner, 
-            isRecording && styles.recordButtonActive
-          ]}>
+          {/* Large circular record button */}
+          <TouchableOpacity 
+            style={[
+              styles.recordButton,
+              { 
+                backgroundColor: isRecording ? colors.error : colors.primary,
+                borderColor: isRecording ? colors.error : colors.primary,
+              }
+            ]}
+            activeOpacity={0.8}
+            onPress={handleToggleRecord}
+          >
             {isRecording ? (
-              <View style={styles.stopSquare} />
+              <Square size={40} color={colors.white} fill={colors.white} />
             ) : (
-              <Text style={styles.micIcon}>🎙️</Text>
+              <Mic size={48} color={colors.white} />
             )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Timer Display */}
+        <View style={styles.timerContainer}>
+          <Clock size={28} color={colors.textSecondary} />
+          <Text style={[styles.timerText, { color: colors.text }]}>
+            {formatDuration(recordingDuration)}
+          </Text>
+        </View>
+
+        {/* Status Text */}
+        <Text style={[styles.statusText, { color: colors.textSecondary }]}>
+          {getStatusText()}
+        </Text>
+
+        {/* Control Buttons (when recording) */}
+        {isRecording && (
+          <View style={styles.controlButtons}>
+            <TouchableOpacity
+              style={[
+                styles.controlButton,
+                { backgroundColor: isPaused ? colors.success : colors.warning }
+              ]}
+              onPress={handlePauseResume}
+            >
+              {isPaused ? (
+                <Play size={20} color={colors.white} fill={colors.white} />
+              ) : (
+                <Pause size={20} color={colors.white} fill={colors.white} />
+              )}
+              <Text style={styles.controlButtonText}>
+                {isPaused ? 'Devam Et' : 'Duraklat'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.controlButton,
+                { backgroundColor: colors.surface }
+              ]}
+              onPress={handleStop}
+            >
+              <Square size={20} color={colors.white} fill={colors.white} />
+              <Text style={styles.controlButtonText}>Durdur</Text>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.bottomSection}>
-        {isRecording ? (
-          <GlassCard intensity="high" padding="lg" style={styles.activePill}>
-            <Text style={styles.timerText}>{formatDuration(recordingDuration)}</Text>
-            <View style={styles.divider} />
-            <Text style={styles.chunkText}>Ch. {chunkCount}</Text>
-          </GlassCard>
-        ) : (
-          <GlassCard intensity="low" padding="md" style={styles.inputContainer}>
-            <TextInput
-              value={sessionTitleInput}
-              onChangeText={setSessionTitleInput}
-              placeholder="Name this session..."
-              placeholderTextColor={colors.textMuted}
-              style={styles.sessionInput}
-            />
-          </GlassCard>
         )}
 
-        {/* Live Transcript Preview */}
+        {/* Audio Visualizer (when recording) */}
+        {isRecording && !isPaused && (
+          <View style={styles.visualizerContainer}>
+            <AudioVisualizer isActive={isRecording && !isPaused} barCount={20} />
+          </View>
+        )}
+
+        {/* Session Title Input (when not recording) */}
+        {!isRecording && (
+          <View style={styles.inputSection}>
+            <GlassCard intensity="low" padding="md">
+              <TextInput
+                value={sessionTitleInput}
+                onChangeText={setSessionTitleInput}
+                placeholder="Oturum adı girin..."
+                placeholderTextColor={colors.textMuted}
+                style={[styles.sessionInput, { color: colors.text }]}
+              />
+            </GlassCard>
+          </View>
+        )}
+
+        {/* Live Transcript Preview (when recording) */}
         {isRecording && liveTranscriptPreview.length > 0 && (
-          <GlassCard intensity="low" padding="lg" style={styles.previewContainer}>
-            <Text style={styles.previewText} numberOfLines={3}>
-              {liveTranscriptPreview}
-              <Text style={styles.cursor}>_</Text>
-            </Text>
-          </GlassCard>
+          <View style={styles.previewSection}>
+            <GlassCard intensity="low" padding="lg">
+              <Text 
+                style={[styles.previewText, { color: colors.textSecondary }]} 
+                numberOfLines={4}
+              >
+                {liveTranscriptPreview}
+                <Text style={[styles.cursor, { color: colors.primary }]}>_</Text>
+              </Text>
+            </GlassCard>
+          </View>
         )}
-      </View>
-    </View>
+
+        {/* Transcription Error */}
+        {transcriptionError && (
+          <View style={styles.errorContainer}>
+            <Text style={[styles.errorText, { color: colors.error }]}>
+              {transcriptionError}
+            </Text>
+          </View>
+        )}
+
+        {/* Model Status */}
+        <View style={styles.modelStatus}>
+          <Text style={[styles.modelStatusText, { color: isModelLoaded ? colors.success : colors.textMuted }]}>
+            {isModelLoaded ? 'AI Hazır' : 'Model yükleniyor...'}
+          </Text>
+        </View>
+
+        {/* Recent Recordings Section */}
+        <View style={styles.recentSection}>
+          <View style={styles.recentHeader}>
+            <Text style={[styles.recentTitle, { color: colors.text }]}>Son Kayıtlar</Text>
+            <TouchableOpacity onPress={() => {}}>
+              <Text style={[styles.viewAllText, { color: colors.primary }]}>Tümünü Gör</Text>
+            </TouchableOpacity>
+          </View>
+
+          {recentTranscripts.length > 0 ? (
+            recentTranscripts.map((transcript) => (
+              <GlassCard 
+                key={transcript.id} 
+                intensity="low" 
+                padding="md"
+                style={styles.recentCard}
+              >
+                <View style={styles.recentCardContent}>
+                  <View style={[styles.recentIconContainer, { backgroundColor: colors.primaryLight }]}>
+                    <Activity size={20} color={colors.primary} />
+                  </View>
+                  <View style={styles.recentCardInfo}>
+                    <Text style={[styles.recentCardTitle, { color: colors.text }]}>
+                      {transcript.title || 'Adsız Kayıt'}
+                    </Text>
+                    <Text style={[styles.recentCardMeta, { color: colors.textSecondary }]}>
+                      {formatTranscriptDate(transcript.recordedAt)} • {formatTranscriptTime(transcript.recordedAt)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.recentCardDuration, { color: colors.textMuted }]}>
+                    {formatDuration(transcript.durationSeconds)}
+                  </Text>
+                </View>
+              </GlassCard>
+            ))
+          ) : (
+            <GlassCard intensity="low" padding="lg" style={styles.emptyCard}>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                Henüz kayıt bulunmuyor
+              </Text>
+            </GlassCard>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   header: {
-    paddingTop: 60,
-    paddingHorizontal: spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
   title: {
-    fontFamily: 'sans-serif-medium',
-    fontSize: fontSize.xxl,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.5,
+    fontSize: fontSize.heading,
+    fontWeight: fontWeight.bold,
   },
-  subtitle: {
-    fontFamily: 'sans-serif',
-    fontSize: fontSize.sm,
-    color: colors.success,
-    marginTop: spacing.xs,
+  settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   centerStage: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl,
   },
-  glowRing: {
+  pulseRing: {
     position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: colors.glowPrimary,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
   },
-  recordButtonOuter: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(55, 73, 173, 0.1)',
+  recordButton: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  recordButtonInner: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: colors.primaryContainer,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  recordButtonActive: {
-    backgroundColor: colors.secondaryContainer,
-    shadowColor: colors.secondary,
-  },
-  stopSquare: {
-    width: 32,
-    height: 32,
-    backgroundColor: colors.white,
-    borderRadius: 6,
-  },
-  micIcon: {
-    fontSize: 48,
-    color: colors.white,
-  },
-  bottomSection: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: 120, // Offset for bottom tab
-    alignItems: 'center',
-  },
-  activePill: {
+  timerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 40,
-    marginBottom: spacing.lg,
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
   },
   timerText: {
-    fontFamily: 'sans-serif-medium',
-    fontSize: fontSize.xl,
-    color: colors.white,
+    fontSize: 36,
+    fontFamily: 'monospace',
+    fontWeight: '600',
     letterSpacing: 2,
   },
-  divider: {
-    width: 1,
-    height: 20,
-    backgroundColor: colors.divider,
-    marginHorizontal: spacing.lg,
-  },
-  chunkText: {
-    fontFamily: 'sans-serif',
+  statusText: {
     fontSize: fontSize.md,
-    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: spacing.sm,
   },
-  inputContainer: {
-    width: '100%',
-    borderRadius: borderRadius.lg,
+  controlButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  controlButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.full,
+    gap: spacing.sm,
+  },
+  controlButtonText: {
+    color: '#ffffff',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+  },
+  visualizerContainer: {
+    paddingVertical: spacing.lg,
+  },
+  inputSection: {
+    paddingVertical: spacing.md,
   },
   sessionInput: {
-    fontFamily: 'sans-serif',
     fontSize: fontSize.md,
-    color: colors.text,
   },
-  previewContainer: {
-    width: '100%',
-    maxHeight: 120,
+  previewSection: {
+    paddingVertical: spacing.md,
   },
   previewText: {
-    fontFamily: 'sans-serif',
     fontSize: fontSize.md,
-    color: colors.textSecondary,
     lineHeight: 24,
   },
   cursor: {
-    color: colors.primary,
+    fontSize: fontSize.md,
+  },
+  errorContainer: {
+    paddingVertical: spacing.sm,
+  },
+  errorText: {
+    fontSize: fontSize.sm,
+    textAlign: 'center',
+  },
+  modelStatus: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  modelStatusText: {
+    fontSize: fontSize.sm,
+  },
+  recentSection: {
+    paddingTop: spacing.xl,
+  },
+  recentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  recentTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+  },
+  viewAllText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  recentCard: {
+    marginBottom: spacing.sm,
+  },
+  recentCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  recentIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  recentCardInfo: {
+    flex: 1,
+  },
+  recentCardTitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+  },
+  recentCardMeta: {
+    fontSize: fontSize.sm,
+    marginTop: 2,
+  },
+  recentCardDuration: {
+    fontSize: fontSize.sm,
+  },
+  emptyCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  emptyText: {
+    fontSize: fontSize.md,
   },
 });
-
