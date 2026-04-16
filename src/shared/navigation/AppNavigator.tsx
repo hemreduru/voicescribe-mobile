@@ -1,13 +1,16 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StyleSheet, View } from 'react-native';
-import { Mic, FileText, Sparkles, Clock, Users } from 'lucide-react-native';
+import { StyleSheet, View, TouchableOpacity, Platform } from 'react-native';
+import { Mic, FileText, Sparkles, Clock, Users, Settings } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { RecordingStack } from './RecordingStack';
 import { TranscriptStack } from './TranscriptStack';
 import { SummaryStack } from './SummaryStack';
 import { HistoryStack } from './HistoryStack';
 import { SpeakerStack } from './SpeakerStack';
 import { useColors } from '../theme';
+import { useTranslation } from '../i18n';
 import type { RootTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -34,6 +37,11 @@ const TabIcon: React.FC<TabIconProps> = ({ focused, size, color, iconName }) => 
 
 export const AppNavigator: React.FC = () => {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const t = useTranslation();
+
+  // Ensure bottom tab bar has enough padding for gesture navigation bar
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 8 : 0);
 
   return (
     <View style={styles.container}>
@@ -44,8 +52,8 @@ export const AppNavigator: React.FC = () => {
             backgroundColor: colors.tabBarBg,
             borderTopColor: colors.tabBarBorder,
             borderTopWidth: 1,
-            height: 60,
-            paddingBottom: 8,
+            height: 60 + bottomPadding,
+            paddingBottom: bottomPadding,
             paddingTop: 8,
           },
           tabBarActiveTintColor: colors.tabBarActive,
@@ -58,27 +66,27 @@ export const AppNavigator: React.FC = () => {
         <Tab.Screen
           name="RecordingTab"
           component={RecordingStack}
-          options={{ tabBarLabel: 'Kayıt' }}
+          options={{ tabBarLabel: t.tabRecording }}
         />
         <Tab.Screen
           name="TranscriptTab"
           component={TranscriptStack}
-          options={{ tabBarLabel: 'Transkript' }}
+          options={{ tabBarLabel: t.tabTranscript }}
         />
         <Tab.Screen
           name="SummaryTab"
           component={SummaryStack}
-          options={{ tabBarLabel: 'Özet' }}
+          options={{ tabBarLabel: t.tabSummary }}
         />
         <Tab.Screen
           name="HistoryTab"
           component={HistoryStack}
-          options={{ tabBarLabel: 'Geçmiş' }}
+          options={{ tabBarLabel: t.tabHistory }}
         />
         <Tab.Screen
           name="SpeakerTab"
           component={SpeakerStack}
-          options={{ tabBarLabel: 'Konuşmacı' }}
+          options={{ tabBarLabel: t.tabSpeaker }}
         />
       </Tab.Navigator>
     </View>
@@ -90,7 +98,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tabBarLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 11,
+    fontWeight: '600',
   },
 });

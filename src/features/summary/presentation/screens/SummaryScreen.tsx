@@ -20,13 +20,16 @@ import { useColors } from '../../../../shared/theme';
 import { spacing, borderRadius, fontSize, fontWeight } from '../../../../shared/theme/tokens';
 import { GlassCard } from '../../../../shared/components/GlassCard';
 import { GlowButton } from '../../../../shared/components/GlowButton';
+import { ScreenHeader } from '../../../../shared/components/ScreenHeader';
 import { useSummaryStore } from '../../../../shared/stores';
+import { useTranslation } from '../../../../shared/i18n';
 
 type SummaryLength = 'short' | 'medium' | 'long';
 type ModelType = 'local' | 'cloud';
 
 export const SummaryScreen: React.FC = () => {
   const colors = useColors();
+  const t = useTranslation();
   const [modelType, setModelType] = useState<ModelType>('local');
   const [summaryLength, setSummaryLength] = useState<SummaryLength>('medium');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -63,18 +66,18 @@ export const SummaryScreen: React.FC = () => {
   const getLengthLabel = (length: SummaryLength): string => {
     switch (length) {
       case 'short':
-        return 'Kısa';
+        return t.short;
       case 'medium':
-        return 'Orta';
+        return t.medium;
       case 'long':
-        return 'Uzun';
+        return t.long;
       default:
-        return 'Orta';
+        return t.medium;
     }
   };
 
   const getProviderLabel = (type: ModelType): string => {
-    return type === 'local' ? 'Yerel AI' : 'Cloud AI';
+    return type === 'local' ? t.localAI : t.cloudAI;
   };
 
   // Loading State
@@ -84,7 +87,7 @@ export const SummaryScreen: React.FC = () => {
         <View style={styles.loadingContainer}>
           <Sparkles size={48} color={colors.primary} />
           <Text style={[styles.loadingText, { color: colors.text }]}>
-            AI özet oluşturuyor...
+            {t.aiGeneratingSummary}
           </Text>
           <View style={[styles.progressBarContainer, { backgroundColor: colors.surfaceSecondary }]}>
             <View
@@ -105,7 +108,7 @@ export const SummaryScreen: React.FC = () => {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         {/* Sticky Header */}
         <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Özet</Text>
+          <ScreenHeader title={t.summary} />
 
           {/* Local/Cloud Toggle */}
           <View style={styles.toggleContainer}>
@@ -154,7 +157,7 @@ export const SummaryScreen: React.FC = () => {
                     : { color: colors.textSecondary },
                 ]}
               >
-                Cloud
+                {t.cloud}
               </Text>
             </TouchableOpacity>
           </View>
@@ -191,19 +194,19 @@ export const SummaryScreen: React.FC = () => {
             <TouchableOpacity style={styles.actionButton} onPress={handleRegenerate}>
               <RefreshCw size={20} color={colors.primary} />
               <Text style={[styles.actionButtonText, { color: colors.primary }]}>
-                Yeniden Oluştur
+                {t.regenerate}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton} onPress={handleCopy}>
               <Copy size={20} color={colors.textSecondary} />
               <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>
-                Kopyala
+                {t.copy}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton} onPress={handleExport}>
               <Download size={20} color={colors.textSecondary} />
               <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>
-                Dışa Aktar
+                {t.export}
               </Text>
             </TouchableOpacity>
           </View>
@@ -213,13 +216,13 @@ export const SummaryScreen: React.FC = () => {
           <GlassCard style={styles.emptyState}>
             <Text style={styles.icon}>✨</Text>
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              No transcript selected
+              {t.noTranscriptSelected}
             </Text>
             <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-              Select a session from the Vault to generate an AI summary, action items, and structural notes.
+              {t.summaryEmptyDesc}
             </Text>
             <GlowButton
-              title="Generate Summary"
+              title={t.generateSummary}
               variant="primary"
               style={styles.cta}
               disabled
@@ -235,7 +238,7 @@ export const SummaryScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Özet</Text>
+        <ScreenHeader title={t.summary} />
 
         {/* Local/Cloud Toggle */}
         <View style={styles.toggleContainer}>

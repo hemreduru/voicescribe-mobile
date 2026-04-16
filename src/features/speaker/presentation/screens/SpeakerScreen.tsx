@@ -16,6 +16,8 @@ import { spacing, fontSize, borderRadius } from '../../../../shared/theme/tokens
 import { GlassCard } from '../../../../shared/components/GlassCard';
 import { ToggleSwitch } from '../../../../shared/components/ToggleSwitch';
 import { GlowButton } from '../../../../shared/components/GlowButton';
+import { ScreenHeader } from '../../../../shared/components/ScreenHeader';
+import { useTranslation } from '../../../../shared/i18n';
 import type { SpeakerProfile } from '../../../../shared/types';
 
 interface Speaker extends SpeakerProfile {
@@ -26,6 +28,7 @@ interface Speaker extends SpeakerProfile {
 
 export const SpeakerScreen: React.FC = () => {
   const colors = useColors();
+  const t = useTranslation();
   
   const [speakerRecognition, setSpeakerRecognition] = useState(true);
   const [speakers, setSpeakers] = useState<Speaker[]>([
@@ -232,7 +235,7 @@ export const SpeakerScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Sticky Header */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Konuşmacı</Text>
+        <ScreenHeader title={t.speaker} />
         
         {/* Speaker Recognition Card */}
         <GlassCard style={[styles.recognitionCard, { backgroundColor: colors.primaryContainer, borderColor: colors.primaryLight }]}>

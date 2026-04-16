@@ -31,10 +31,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SettingsRow, SectionCard, ToggleSwitch } from '../../../../shared/components';
+import { ScreenHeader } from '../../../../shared/components/ScreenHeader';
 import { useColors, useTheme } from '../../../../shared/theme';
 import { spacing, fontSize, borderRadius } from '../../../../shared/theme/tokens';
 import { useSettingsStore } from '../../../../shared/stores/useSettingsStore';
 import { useAuthStore } from '../../../../shared/stores/useAuthStore';
+import { useTranslation, useI18n } from '../../../../shared/i18n';
 
 export const SettingsScreen: React.FC = () => {
   const colors = useColors();
@@ -42,7 +44,10 @@ export const SettingsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { user, clearAuth } = useAuthStore();
   const settingsStore = useSettingsStore();
+  const t = useTranslation();
+  const { locale, setLocale } = useI18n();
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   const handleLogout = () => {
     clearAuth();
@@ -78,11 +83,11 @@ export const SettingsScreen: React.FC = () => {
   const getThemeText = () => {
     switch (mode) {
       case 'light':
-        return 'Açık';
+        return t.themeLight;
       case 'dark':
-        return 'Koyu';
+        return t.themeDark;
       default:
-        return 'Sistem';
+        return t.themeSystem;
     }
   };
 
@@ -93,13 +98,13 @@ export const SettingsScreen: React.FC = () => {
         <TouchableOpacity style={styles.backButton}>
           <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Ayarlar</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.settings}</Text>
         <View style={styles.backButton} />
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profil Section */}
-        <SectionCard title="Profil">
+        <SectionCard title={t.profile}>
           <View style={styles.profileCard}>
             <View style={styles.profileAvatar}>
               <User size={32} color="#ffffff" />
@@ -115,36 +120,36 @@ export const SettingsScreen: React.FC = () => {
           </View>
           <SettingsRow
             icon={<LogOut size={20} color={colors.error} />}
-            title="Çıkış Yap"
+            title={t.logout}
             onPress={handleLogout}
             danger
           />
           <SettingsRow
             icon={<Trash2 size={20} color={colors.error} />}
-            title="Hesabı Sil"
+            title={t.deleteAccount}
             onPress={handleDeleteAccount}
             danger
           />
         </SectionCard>
 
         {/* Transkripsiyon Section */}
-        <SectionCard title="Transkripsiyon">
+        <SectionCard title={t.transcription}>
           <SettingsRow
             icon={<Globe size={20} color={colors.text} />}
-            title="Dil"
+            title={t.language}
             subtitle="Türkçe"
             showChevron
           />
           <SettingsRow
             icon={<Cpu size={20} color={colors.text} />}
-            title="Model"
+            title={t.model}
             subtitle={settingsStore.whisperModel === 'base' ? 'Base' : 'Tiny'}
             showChevron
           />
           <SettingsRow
             icon={<FileText size={20} color={colors.text} />}
-            title="Otomatik Transkripsiyon"
-            subtitle="Kayıt sonrası otomatik başlat"
+            title={t.autoTranscription}
+            subtitle={t.autoTranscriptionDesc}
             rightElement={
               <ToggleSwitch
                 value={false}
@@ -155,11 +160,11 @@ export const SettingsScreen: React.FC = () => {
         </SectionCard>
 
         {/* Özetleme Section */}
-        <SectionCard title="Özetleme">
+        <SectionCard title={t.summarization}>
           <SettingsRow
             icon={<HardDrive size={20} color={colors.text} />}
-            title="Yerel Özet"
-            subtitle="Cihazda AI ile oluştur"
+            title={t.localSummary}
+            subtitle={t.localSummaryDesc}
             rightElement={
               <ToggleSwitch
                 value={false}
@@ -169,8 +174,8 @@ export const SettingsScreen: React.FC = () => {
           />
           <SettingsRow
             icon={<Cloud size={20} color={colors.text} />}
-            title="Cloud Özet"
-            subtitle="Bulut AI ile oluştur"
+            title={t.cloudSummary}
+            subtitle={t.cloudSummaryDesc}
             rightElement={
               <ToggleSwitch
                 value={settingsStore.cloudSummarizationEnabled}
@@ -180,8 +185,8 @@ export const SettingsScreen: React.FC = () => {
           />
           <SettingsRow
             icon={<FileText size={20} color={colors.text} />}
-            title="Varsayılan Özet Uzunluğu"
-            subtitle="Orta"
+            title={t.defaultSummaryLength}
+            subtitle={t.medium}
             showChevron
           />
           <SettingsRow
@@ -193,11 +198,11 @@ export const SettingsScreen: React.FC = () => {
         </SectionCard>
 
         {/* Senkronizasyon Section */}
-        <SectionCard title="Senkronizasyon">
+        <SectionCard title={t.sync}>
           <SettingsRow
             icon={<RefreshCw size={20} color={colors.text} />}
-            title="Otomatik Sync"
-            subtitle="Kayıtları otomatik senkronize et"
+            title={t.autoSync}
+            subtitle={t.autoSyncDesc}
             rightElement={
               <ToggleSwitch
                 value={settingsStore.syncEnabled}
@@ -207,19 +212,19 @@ export const SettingsScreen: React.FC = () => {
           />
           <SettingsRow
             icon={<Cloud size={20} color={colors.text} />}
-            title="Manuel Sync"
-            subtitle="Son sync: 2 saat önce"
+            title={t.manualSync}
+            subtitle={t.lastSync}
             rightElement={<RefreshCw size={20} color={colors.primary} />}
             onPress={handleManualSync}
           />
         </SectionCard>
 
         {/* Depolama Section */}
-        <SectionCard title="Depolama">
+        <SectionCard title={t.storage}>
           <View style={styles.storageSection}>
             <View style={styles.storageHeader}>
               <Text style={[styles.storageLabel, { color: colors.text }]}>
-                Kullanılan Depolama
+                {t.usedStorage}
               </Text>
               <Text style={[styles.storageValue, { color: colors.textSecondary }]}>
                 2.4 GB / 10 GB
@@ -233,58 +238,59 @@ export const SettingsScreen: React.FC = () => {
           </View>
           <SettingsRow
             icon={<Trash2 size={20} color={colors.text} />}
-            title="Önbelleği Temizle"
+            title={t.clearCache}
             onPress={handleClearCache}
           />
           <SettingsRow
             icon={<Download size={20} color={colors.text} />}
-            title="Verileri Dışa Aktar"
+            title={t.exportData}
             onPress={handleExportData}
           />
         </SectionCard>
 
         {/* Uygulama Section */}
-        <SectionCard title="Uygulama">
+        <SectionCard title={t.app}>
           <SettingsRow
             icon={getThemeIcon()}
-            title="Tema"
+            title={t.theme}
             subtitle={getThemeText()}
             onPress={() => setShowThemeModal(true)}
             showChevron
           />
           <SettingsRow
             icon={<Globe size={20} color={colors.text} />}
-            title="Dil"
-            subtitle="Türkçe"
+            title={t.appLanguage}
+            subtitle={locale === 'tr' ? 'Türkçe' : 'English'}
+            onPress={() => setShowLanguageModal(true)}
             showChevron
           />
           <SettingsRow
             icon={<Bell size={20} color={colors.text} />}
-            title="Bildirimler"
+            title={t.notifications}
             showChevron
           />
           <SettingsRow
             icon={<FileText size={20} color={colors.text} />}
-            title="Versiyon"
+            title={t.version}
             subtitle="1.0.0"
           />
         </SectionCard>
 
         {/* Hakkında Section */}
-        <SectionCard title="Hakkında">
+        <SectionCard title={t.about}>
           <SettingsRow
             icon={<Shield size={20} color={colors.text} />}
-            title="Gizlilik Politikası"
+            title={t.privacyPolicy}
             showChevron
           />
           <SettingsRow
             icon={<FileText size={20} color={colors.text} />}
-            title="Kullanım Koşulları"
+            title={t.termsOfUse}
             showChevron
           />
           <SettingsRow
             icon={<HelpCircle size={20} color={colors.text} />}
-            title="Yardım & Destek"
+            title={t.helpSupport}
             showChevron
           />
         </SectionCard>
@@ -304,46 +310,67 @@ export const SettingsScreen: React.FC = () => {
         >
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              Tema Seçin
+              {t.selectTheme}
             </Text>
             <TouchableOpacity
               style={styles.themeOption}
-              onPress={() => {
-                setMode('light');
-                setShowThemeModal(false);
-              }}
+              onPress={() => { setMode('light'); setShowThemeModal(false); }}
             >
               <Sun size={20} color={colors.text} />
-              <Text style={[styles.themeOptionText, { color: colors.text }]}>
-                Açık
-              </Text>
+              <Text style={[styles.themeOptionText, { color: colors.text }]}>{t.themeLight}</Text>
               {mode === 'light' && <ChevronRight size={20} color={colors.primary} />}
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.themeOption}
-              onPress={() => {
-                setMode('dark');
-                setShowThemeModal(false);
-              }}
+              onPress={() => { setMode('dark'); setShowThemeModal(false); }}
             >
               <Moon size={20} color={colors.text} />
-              <Text style={[styles.themeOptionText, { color: colors.text }]}>
-                Koyu
-              </Text>
+              <Text style={[styles.themeOptionText, { color: colors.text }]}>{t.themeDark}</Text>
               {mode === 'dark' && <ChevronRight size={20} color={colors.primary} />}
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.themeOption}
-              onPress={() => {
-                setMode('system');
-                setShowThemeModal(false);
-              }}
+              onPress={() => { setMode('system'); setShowThemeModal(false); }}
             >
               <Monitor size={20} color={colors.text} />
-              <Text style={[styles.themeOptionText, { color: colors.text }]}>
-                Sistem
-              </Text>
+              <Text style={[styles.themeOptionText, { color: colors.text }]}>{t.themeSystem}</Text>
               {mode === 'system' && <ChevronRight size={20} color={colors.primary} />}
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={showLanguageModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLanguageModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowLanguageModal(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              {t.appLanguage}
+            </Text>
+            <TouchableOpacity
+              style={styles.themeOption}
+              onPress={() => { setLocale('tr'); setShowLanguageModal(false); }}
+            >
+              <Text style={styles.flagEmoji}>🇹🇷</Text>
+              <Text style={[styles.themeOptionText, { color: colors.text }]}>Türkçe</Text>
+              {locale === 'tr' && <ChevronRight size={20} color={colors.primary} />}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.themeOption}
+              onPress={() => { setLocale('en'); setShowLanguageModal(false); }}
+            >
+              <Text style={styles.flagEmoji}>🇬🇧</Text>
+              <Text style={[styles.themeOptionText, { color: colors.text }]}>English</Text>
+              {locale === 'en' && <ChevronRight size={20} color={colors.primary} />}
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -459,5 +486,8 @@ const styles = StyleSheet.create({
   themeOptionText: {
     fontSize: fontSize.md,
     flex: 1,
+  },
+  flagEmoji: {
+    fontSize: 24,
   },
 });

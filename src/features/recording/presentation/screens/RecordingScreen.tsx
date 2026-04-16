@@ -20,13 +20,15 @@ import Animated, {
   Easing,
   cancelAnimation,
 } from 'react-native-reanimated';
-import { Mic, Pause, Square, Clock, Activity, Settings, Play } from 'lucide-react-native';
+import { Mic, Pause, Square, Clock, Activity, Play } from 'lucide-react-native';
 import { useColors } from '../../../../shared/theme';
 import { GlassCard } from '../../../../shared/components/GlassCard';
 import { AudioVisualizer } from '../../../../shared/components/AudioVisualizer';
+import { ScreenHeader } from '../../../../shared/components/ScreenHeader';
 import { VoiceScribeAudio } from '../../../../native/audio/NativeAudioModule';
 import { useRecordingStore, useTranscriptStore } from '../../../../shared/stores';
 import { removeOverlap } from '../../../../shared/utils/textUtils';
+import { useTranslation } from '../../../../shared/i18n';
 import type { Transcript } from '../../../../shared/types';
 import { borderRadius, spacing, fontSize, fontWeight } from '../../../../shared/theme/tokens';
 
@@ -35,6 +37,7 @@ const MAX_CHUNK_DURATION_SECONDS = 20;
 
 export const RecordingScreen: React.FC = () => {
   const colors = useColors();
+  const t = useTranslation();
   
   const isRecording = useRecordingStore((state) => state.isRecording);
   const isPaused = useRecordingStore((state) => state.isPaused);
@@ -304,9 +307,9 @@ export const RecordingScreen: React.FC = () => {
 
   const getStatusText = () => {
     if (isRecording) {
-      return isPaused ? 'Kayıt duraklatıldı' : 'Kaydediliyor';
+      return isPaused ? t.recordingPaused : t.isRecording;
     }
-    return 'Kayıt başlatmak için butona tıklayın';
+    return t.tapToRecord;
   };
 
   return (
@@ -316,15 +319,7 @@ export const RecordingScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Kayıt</Text>
-          <TouchableOpacity 
-            style={[styles.settingsButton, { backgroundColor: colors.surfaceSecondary }]}
-            onPress={() => {}}
-          >
-            <Settings size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader title={t.recording} />
 
         {/* Center Stage - Record Button */}
         <View style={styles.centerStage}>
@@ -386,7 +381,7 @@ export const RecordingScreen: React.FC = () => {
                 <Pause size={20} color={colors.white} fill={colors.white} />
               )}
               <Text style={styles.controlButtonText}>
-                {isPaused ? 'Devam Et' : 'Duraklat'}
+                {isPaused ? t.resume : t.pause}
               </Text>
             </TouchableOpacity>
 
@@ -398,7 +393,7 @@ export const RecordingScreen: React.FC = () => {
               onPress={handleStop}
             >
               <Square size={20} color={colors.white} fill={colors.white} />
-              <Text style={styles.controlButtonText}>Durdur</Text>
+              <Text style={styles.controlButtonText}>{t.stop}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -417,7 +412,7 @@ export const RecordingScreen: React.FC = () => {
               <TextInput
                 value={sessionTitleInput}
                 onChangeText={setSessionTitleInput}
-                placeholder="Oturum adı girin..."
+                placeholder={t.sessionNamePlaceholder}
                 placeholderTextColor={colors.textMuted}
                 style={[styles.sessionInput, { color: colors.text }]}
               />
@@ -452,16 +447,16 @@ export const RecordingScreen: React.FC = () => {
         {/* Model Status */}
         <View style={styles.modelStatus}>
           <Text style={[styles.modelStatusText, { color: isModelLoaded ? colors.success : colors.textMuted }]}>
-            {isModelLoaded ? 'AI Hazır' : 'Model yükleniyor...'}
+            {isModelLoaded ? t.aiReady : t.modelLoading}
           </Text>
         </View>
 
         {/* Recent Recordings Section */}
         <View style={styles.recentSection}>
           <View style={styles.recentHeader}>
-            <Text style={[styles.recentTitle, { color: colors.text }]}>Son Kayıtlar</Text>
+            <Text style={[styles.recentTitle, { color: colors.text }]}>{t.recentRecordings}</Text>
             <TouchableOpacity onPress={() => {}}>
-              <Text style={[styles.viewAllText, { color: colors.primary }]}>Tümünü Gör</Text>
+              <Text style={[styles.viewAllText, { color: colors.primary }]}>{t.viewAll}</Text>
             </TouchableOpacity>
           </View>
 
@@ -479,7 +474,7 @@ export const RecordingScreen: React.FC = () => {
                   </View>
                   <View style={styles.recentCardInfo}>
                     <Text style={[styles.recentCardTitle, { color: colors.text }]}>
-                      {transcript.title || 'Adsız Kayıt'}
+                      {transcript.title || t.unnamed}
                     </Text>
                     <Text style={[styles.recentCardMeta, { color: colors.textSecondary }]}>
                       {formatTranscriptDate(transcript.recordedAt)} • {formatTranscriptTime(transcript.recordedAt)}
@@ -494,7 +489,7 @@ export const RecordingScreen: React.FC = () => {
           ) : (
             <GlassCard intensity="low" padding="lg" style={styles.emptyCard}>
               <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                Henüz kayıt bulunmuyor
+                {t.noRecordings}
               </Text>
             </GlassCard>
           )}

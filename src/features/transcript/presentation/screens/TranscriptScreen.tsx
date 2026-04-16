@@ -24,7 +24,9 @@ import { useColors } from '../../../../shared/theme';
 import { spacing, borderRadius, fontSize, fontWeight } from '../../../../shared/theme/tokens';
 import { GlassCard } from '../../../../shared/components/GlassCard';
 import { SearchBar } from '../../../../shared/components/SearchBar';
+import { ScreenHeader } from '../../../../shared/components/ScreenHeader';
 import { useTranscriptStore } from '../../../../shared/stores';
+import { useTranslation } from '../../../../shared/i18n';
 import type { Transcript, TranscriptChunk } from '../../../../shared/types';
 
 interface SessionCardItem {
@@ -182,6 +184,7 @@ const TranscriptSegment: React.FC<TranscriptSegmentProps> = ({ segment }) => {
 
 export const TranscriptScreen: React.FC = () => {
   const colors = useColors();
+  const t = useTranslation();
   const transcripts = useTranscriptStore((state) => state.transcripts);
   const allChunks = useTranscriptStore((state) => state.allChunks);
   const [selectedSession, setSelectedSession] = useState<SessionCardItem | null>(null);
@@ -244,11 +247,12 @@ export const TranscriptScreen: React.FC = () => {
     if (sessionCards.length === 0) {
       return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+          <ScreenHeader title={t.transcript} />
           <View style={styles.content}>
             <Text style={styles.icon}>📝</Text>
-            <Text style={[styles.title, { color: colors.text }]}>Transkript</Text>
+            <Text style={[styles.title, { color: colors.text }]}>{t.transcript}</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Your audio archives will elegantly appear here.
+              {t.transcriptEmptyDesc}
             </Text>
           </View>
         </SafeAreaView>
@@ -259,25 +263,25 @@ export const TranscriptScreen: React.FC = () => {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         {/* Sticky Header */}
         <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Transkript</Text>
+          <ScreenHeader title={t.transcript} />
           <SearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Kayıtlarda ara..."
+            placeholder={t.searchRecordings}
             style={styles.searchBar}
           />
           <View style={styles.actionButtonsRow}>
             <TouchableOpacity style={styles.actionButton}>
               <Copy size={20} color={colors.textSecondary} />
-              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Kopyala</Text>
+              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>{t.copy}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
               <Download size={20} color={colors.textSecondary} />
-              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Dışa Aktar</Text>
+              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>{t.export}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
               <Edit size={20} color={colors.primary} />
-              <Text style={[styles.actionButtonText, { color: colors.primary }]}>Düzenle</Text>
+              <Text style={[styles.actionButtonText, { color: colors.primary }]}>{t.edit}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import { useColorScheme } from 'react-native';
 import { lightColors, darkColors, type ColorTheme } from './tokens';
+import { useSettingsStore } from '../stores/useSettingsStore';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -15,17 +16,25 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemColorScheme = useColorScheme();
-  const [mode, setMode] = useState<ThemeMode>('light');
+  const darkModeSetting = useSettingsStore((state) => state.darkMode);
+  const setDarkMode = useSettingsStore((state) => state.setDarkMode);
+  const themeMode = useSettingsStore((state) => state.themeMode);
+  const setThemeMode = useSettingsStore((state) => state.setThemeMode);
 
   const isDark = useMemo(() => {
-    if (mode === 'system') return systemColorScheme === 'dark';
-    return mode === 'dark';
-  }, [mode, systemColorScheme]);
+    if (themeMode === 'system') return systemColorScheme === 'dark';
+    return themeMode === 'dark';
+  }, [themeMode, systemColorScheme]);
 
   const colors = useMemo(() => (isDark ? darkColors : lightColors), [isDark]);
 
+  const handleSetMode = useCallback((mode: ThemeMode) => {
+    setThemeMode(mode);
+    setDarkMode(mode === 'dark' || (mode === 'system' && systemColorScheme === 'dark'));
+  }, [setThemeMode, setDarkMode, systemColorScheme]);
+
   return (
-    <ThemeContext.Provider value={{ mode, setMode, isDark, colors }}>
+    <ThemeContext.Provider value={{ mode: themeMode, setMode: handleSetMode, isDark, colors }}>
       {children}
     </ThemeContext.Provider>
   );

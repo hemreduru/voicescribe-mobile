@@ -15,13 +15,16 @@ import { GlassCard } from '../../../../shared/components/GlassCard';
 import { Badge } from '../../../../shared/components/Badge';
 import { SearchBar } from '../../../../shared/components/SearchBar';
 import { GlowButton } from '../../../../shared/components/GlowButton';
+import { ScreenHeader } from '../../../../shared/components/ScreenHeader';
 import { useTranscriptStore } from '../../../../shared/stores/useTranscriptStore';
+import { useTranslation } from '../../../../shared/i18n';
 import type { Transcript } from '../../../../shared/types';
 
 type SortOption = 'newest' | 'oldest' | 'longest';
 
 export const HistoryScreen: React.FC = () => {
   const colors = useColors();
+  const t = useTranslation();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
@@ -216,19 +219,16 @@ export const HistoryScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Sticky Header */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <View style={styles.headerTop}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Geçmiş</Text>
-          
+        <ScreenHeader title={t.history} />
           {hasSelection && (
             <GlowButton
-              title={`Sil (${selectedItems.length})`}
+              title={`${t.delete} (${selectedItems.length})`}
               variant="danger"
               size="sm"
               icon={<Trash2 size={16} color={colors.white} />}
               onPress={handleDelete}
             />
           )}
-        </View>
 
         <View style={styles.searchRow}>
           <SearchBar

@@ -6,3 +6,4 @@ export { SearchBar } from './SearchBar';
 export { SettingsRow } from './SettingsRow';
 export { SectionCard } from './SectionCard';
 export { AudioVisualizer } from './AudioVisualizer';
+export { ScreenHeader } from './ScreenHeader';
