@@ -41,9 +41,15 @@ export interface Translations {
   noTranscriptAvailable: string;
   transcribing: string;
   transcriptionError: string;
-  transcriptionCompleted: string;
   emptySession: string;
   noTextGenerated: string;
+
+  // Statuses
+  status_recording: string;
+  status_transcribing: string;
+  status_completed: string;
+  status_transcription_error: string;
+  status_empty: string;
 
   // Summary Screen
   summary: string;
@@ -200,9 +206,15 @@ export const tr: Translations = {
   noTranscriptAvailable: 'Transkript mevcut değil.',
   transcribing: 'Transkripsiyon devam ediyor... Lütfen bekleyin.',
   transcriptionError: 'Bu oturum için transkripsiyon başarısız.',
-  transcriptionCompleted: 'Transkript sonlandırılıyor...',
   emptySession: 'Bu oturumda konuşma algılanmadı.',
   noTextGenerated: 'Henüz transkript oluşturulmadı.',
+
+  // Statuses
+  status_recording: 'Kaydediliyor',
+  status_transcribing: 'Çevriliyor',
+  status_completed: 'Tamamlandı',
+  status_transcription_error: 'Hata',
+  status_empty: 'Boş Kayıt',
 
   // Summary Screen
   summary: 'Özet',
@@ -359,9 +371,15 @@ export const en: Translations = {
   noTranscriptAvailable: 'No transcript available.',
   transcribing: 'Transcription in progress... Please wait.',
   transcriptionError: 'Transcription failed for this session.',
-  transcriptionCompleted: 'Transcript is being finalized...',
   emptySession: 'No speech was captured in this session.',
   noTextGenerated: 'No transcript text generated yet.',
+
+  // Statuses
+  status_recording: 'Recording',
+  status_transcribing: 'Transcribing',
+  status_completed: 'Completed',
+  status_transcription_error: 'Error',
+  status_empty: 'Empty',
 
   // Summary Screen
   summary: 'Summary',

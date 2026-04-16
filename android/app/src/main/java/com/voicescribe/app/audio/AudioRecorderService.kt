@@ -45,9 +45,9 @@ class AudioRecorderService : Service() {
         // - At 18 seconds, start writing to the next chunk as well (2s overlap)
         // - VAD silence of 1.5s triggers early chunk end (if > MIN_CHUNK_DURATION_SEC)
         // - This overlap ensures words at chunk boundaries are not cut in half
-        private const val MAX_CHUNK_DURATION_SEC = 20
-        private const val OVERLAP_TRIGGER_SEC = 18       // Start overlap buffer at this point
-        private const val OVERLAP_DURATION_SEC = 2        // Seconds of audio shared between chunks
+        private const val MAX_CHUNK_DURATION_SEC = 15
+        private const val OVERLAP_TRIGGER_SEC = 14       // Start overlap buffer at this point
+        private const val OVERLAP_DURATION_SEC = 1        // Seconds of audio shared between chunks
         private const val MIN_CHUNK_DURATION_SEC = 2      // Minimum chunk length to avoid tiny chunks
     }
 

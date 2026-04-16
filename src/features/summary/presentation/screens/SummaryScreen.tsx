@@ -106,9 +106,9 @@ export const SummaryScreen: React.FC = () => {
   if (!currentSummary) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        <ScreenHeader title={t.summary} />
         {/* Sticky Header */}
-        <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-          <ScreenHeader title={t.summary} />
+        <View style={[styles.stickyHeader, { backgroundColor: colors.background }]}>
 
           {/* Local/Cloud Toggle */}
           <View style={styles.toggleContainer}>
@@ -236,9 +236,9 @@ export const SummaryScreen: React.FC = () => {
   // Summary Content View
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScreenHeader title={t.summary} />
       {/* Sticky Header */}
-      <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <ScreenHeader title={t.summary} />
+      <View style={[styles.stickyHeader, { backgroundColor: colors.background }]}>
 
         {/* Local/Cloud Toggle */}
         <View style={styles.toggleContainer}>
@@ -386,10 +386,8 @@ const styles = StyleSheet.create({
   },
   // Sticky Header
   stickyHeader: {
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1,
+    paddingBottom: spacing.lg,
   },
   headerTitle: {
     fontSize: 24,

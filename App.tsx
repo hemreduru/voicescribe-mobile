@@ -23,8 +23,8 @@ import {
   useTranscriptStore,
 } from './src/shared/stores/useTranscriptStore';
 
-const WHISPER_MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin';
-const WHISPER_MODEL_FILE_NAME = 'ggml-tiny.bin';
+const WHISPER_MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin';
+const WHISPER_MODEL_FILE_NAME = 'ggml-base.bin';
 
 type BootstrapState = 'bootstrapping' | 'failed' | 'ready';
 

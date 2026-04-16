@@ -233,9 +233,9 @@ export const SpeakerScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScreenHeader title={t.speaker} />
       {/* Sticky Header */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <ScreenHeader title={t.speaker} />
         
         {/* Speaker Recognition Card */}
         <GlassCard style={[styles.recognitionCard, { backgroundColor: colors.primaryContainer, borderColor: colors.primaryLight }]}>
@@ -381,7 +381,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
     paddingBottom: spacing.md,
   },
   headerTitle: {

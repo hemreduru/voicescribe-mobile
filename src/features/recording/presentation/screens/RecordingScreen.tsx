@@ -14,9 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withRepeat,
   withTiming,
-  withSequence,
   Easing,
   cancelAnimation,
 } from 'react-native-reanimated';
@@ -52,9 +50,10 @@ export const RecordingScreen: React.FC = () => {
   const isStoppingRef = useRef(false);
   const stopGuardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Animation values for pulsing record button
+  // Animation values for pulsing record button — driven by audio level
   const pulseScale = useSharedValue(1);
-  const pulseOpacity = useSharedValue(0.6);
+  const pulseOpacity = useSharedValue(0);
+  const smoothedLevel = useSharedValue(0);
 
   // Get recent transcripts (last 3)
   const transcripts = useTranscriptStore((state) => state.transcripts);
@@ -86,32 +85,29 @@ export const RecordingScreen: React.FC = () => {
     };
   }, []);
 
-  // Pulsing animation when recording
+  // Audio-reactive pulse animation
   useEffect(() => {
     if (isRecording && !isPaused) {
-      pulseScale.value = withRepeat(
-        withSequence(
-          withTiming(1.15, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1,
-        false
-      );
-      pulseOpacity.value = withRepeat(
-        withSequence(
-          withTiming(0.3, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0.6, { duration: 800, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1,
-        false
-      );
+      // Scale and opacity driven by smoothed audio level
+      const levelClamped = Math.max(0, Math.min(audioLevel, 1));
+      const targetScale = 1 + levelClamped * 0.35; // 1.0 → 1.35 based on level
+      const targetOpacity = 0.15 + levelClamped * 0.5; // 0.15 → 0.65 based on level
+
+      pulseScale.value = withTiming(targetScale, {
+        duration: 100,
+        easing: Easing.out(Easing.quad),
+      });
+      pulseOpacity.value = withTiming(targetOpacity, {
+        duration: 100,
+        easing: Easing.out(Easing.quad),
+      });
     } else {
       cancelAnimation(pulseScale);
       cancelAnimation(pulseOpacity);
       pulseScale.value = withTiming(1, { duration: 300 });
-      pulseOpacity.value = withTiming(isRecording ? 0.4 : 0, { duration: 300 });
+      pulseOpacity.value = withTiming(0, { duration: 300 });
     }
-  }, [isRecording, isPaused, pulseScale, pulseOpacity]);
+  }, [isRecording, isPaused, audioLevel, pulseScale, pulseOpacity]);
 
   const pulseAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
@@ -313,14 +309,12 @@ export const RecordingScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScreenHeader title={t.recording} />
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <ScreenHeader title={t.recording} />
-
         {/* Center Stage - Record Button */}
         <View style={styles.centerStage}>
           {/* Pulsing ring animation */}
@@ -401,7 +395,7 @@ export const RecordingScreen: React.FC = () => {
         {/* Audio Visualizer (when recording) */}
         {isRecording && !isPaused && (
           <View style={styles.visualizerContainer}>
-            <AudioVisualizer isActive={isRecording && !isPaused} barCount={20} />
+            <AudioVisualizer isActive={isRecording && !isPaused} barCount={24} audioLevel={audioLevel} />
           </View>
         )}
 

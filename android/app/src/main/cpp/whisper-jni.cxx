@@ -83,7 +83,7 @@ Java_com_voicescribe_app_whisper_WhisperEngine_nativeTranscribe(
     wparams.print_realtime   = false;
     wparams.print_timestamps = false;
     wparams.translate        = false;  // Keep original language
-    wparams.language         = "tr";   // Turkish (or make this configurable)
+    wparams.language         = "auto"; // Auto-detect language from speech
     // Increased from 2 to 4 threads for faster inference on modern mid/high-end devices
     wparams.n_threads        = 4;
     
@@ -175,7 +175,7 @@ Java_com_voicescribe_app_whisper_WhisperEngine_transcribeAudio_1legacy(
     wparams.print_realtime   = false;
     wparams.print_timestamps = false;
     wparams.translate        = false;
-    wparams.language         = "tr";
+    wparams.language         = "auto";
     wparams.n_threads        = 4;
     
     if (whisper_full(legacy_ctx, wparams, body, len) != 0) {

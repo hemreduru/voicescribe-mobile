@@ -217,9 +217,9 @@ export const HistoryScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScreenHeader title={t.history} />
       {/* Sticky Header */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <ScreenHeader title={t.history} />
           {hasSelection && (
             <GlowButton
               title={`${t.delete} (${selectedItems.length})`}
@@ -327,9 +327,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
     paddingBottom: spacing.md,
-    borderBottomWidth: 1,
   },
   headerTop: {
     flexDirection: 'row',

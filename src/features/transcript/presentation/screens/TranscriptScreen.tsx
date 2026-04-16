@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  Pressable,
   View,
   ViewStyle,
   TextStyle,
@@ -16,9 +17,9 @@ import {
   Copy,
   Download,
   Edit,
-  Play,
   Clock,
   ChevronLeft,
+  MoreVertical,
 } from 'lucide-react-native';
 import { useColors } from '../../../../shared/theme';
 import { spacing, borderRadius, fontSize, fontWeight } from '../../../../shared/theme/tokens';
@@ -115,72 +116,51 @@ interface SessionCardProps {
 
 const SessionCard: React.FC<SessionCardProps> = ({ item, onPress }) => {
   const colors = useColors();
+  const t = useTranslation();
 
-  const summaryText =
-    item.mergedText.length > 0
-      ? getSummary(item.mergedText, 150)
-      : getSessionFallbackText(item.statusKey);
+  const getStatusDisplay = () => {
+    switch (item.statusKey) {
+      case 'completed': return { bg: colors.successLight, text: colors.successText, label: t.status_completed };
+      case 'recording': return { bg: colors.warningLight, text: colors.warning, label: t.status_recording };
+      case 'transcribing': return { bg: colors.warningLight, text: colors.warning, label: t.status_transcribing };
+      case 'transcription_error': return { bg: colors.errorLight, text: colors.errorText, label: t.status_transcription_error };
+      default: return { bg: colors.surfaceVariant, text: colors.textSecondary, label: t.status_empty };
+    }
+  };
+
+  const status = getStatusDisplay();
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-      <GlassCard style={styles.sessionCard}>
-        <View style={styles.cardHeader}>
-          <Text style={[styles.sessionTitle, { color: colors.text }]} numberOfLines={1}>
-            {item.title}
-          </Text>
-          <View style={[styles.statusBadge, { backgroundColor: colors.primaryContainer }]}>
-            <Text style={[styles.statusBadgeText, { color: colors.primary }]}>
-              {item.statusKey}
+    <Pressable onPress={onPress}>
+      {({ pressed }) => (
+        <GlassCard style={[styles.sessionCard, pressed && { borderColor: colors.primary, borderWidth: 1 }]}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.sessionTitle, { color: colors.text }]} numberOfLines={1}>
+              {item.title}
+            </Text>
+            <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+              <Text style={[styles.statusBadgeText, { color: status.text }]}>
+                {status.label}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.metaRow}>
+            <Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>
+              {item.recordedAtLabel}
+            </Text>
+            <View style={[styles.metaDot, { backgroundColor: colors.textMuted }]} />
+            <Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>
+              {item.durationLabel}
             </Text>
           </View>
-        </View>
-
-        <View style={styles.metaRow}>
-          <Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>
-            {item.recordedAtLabel}
-          </Text>
-          <View style={[styles.metaDot, { backgroundColor: colors.textMuted }]} />
-          <Text style={[styles.sessionMeta, { color: colors.textSecondary }]}>
-            {item.durationLabel}
-          </Text>
-        </View>
-
-        <View style={[styles.summaryContainer, { borderLeftColor: colors.primary }]}>
-          <Text style={[styles.sessionSummary, { color: colors.text }]} numberOfLines={3}>
-            {summaryText}
-          </Text>
-        </View>
-      </GlassCard>
-    </TouchableOpacity>
+        </GlassCard>
+      )}
+    </Pressable>
   );
 };
 
-interface TranscriptSegmentProps {
-  segment: TranscriptChunk;
-}
-
-const TranscriptSegment: React.FC<TranscriptSegmentProps> = ({ segment }) => {
-  const colors = useColors();
-
-  return (
-    <View style={[styles.segmentContainer, { borderLeftColor: colors.primary }]}>
-      <View style={styles.segmentHeader}>
-        <Text style={[styles.speakerLabel, { color: colors.primary }]}>
-          {segment.speakerLabel || 'Speaker'}
-        </Text>
-        <View style={styles.timestampRow}>
-          <Clock size={12} color={colors.textMuted} />
-          <Text style={[styles.timestamp, { color: colors.textMuted }]}>
-            {formatDuration(Math.floor(segment.startTime))}
-          </Text>
-        </View>
-      </View>
-      <Text style={[styles.segmentText, { color: colors.text }]}>
-        {segment.text}
-      </Text>
-    </View>
-  );
-};
+// Segment rendering completely removed per requirements
 
 export const TranscriptScreen: React.FC = () => {
   const colors = useColors();
@@ -190,6 +170,17 @@ export const TranscriptScreen: React.FC = () => {
   const [selectedSession, setSelectedSession] = useState<SessionCardItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [detailSearchQuery, setDetailSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const getStatusDisplay = (statusKey?: string) => {
+    switch (statusKey) {
+      case 'completed': return { bg: colors.successLight, text: colors.successText, label: t.status_completed };
+      case 'recording': return { bg: colors.warningLight, text: colors.warning, label: t.status_recording };
+      case 'transcribing': return { bg: colors.warningLight, text: colors.warning, label: t.status_transcribing };
+      case 'transcription_error': return { bg: colors.errorLight, text: colors.errorText, label: t.status_transcription_error };
+      default: return { bg: colors.surfaceVariant, text: colors.textSecondary, label: t.status_empty };
+    }
+  };
 
   const sessionCards = useMemo(() => {
     return buildSessionCards(transcripts, allChunks);
@@ -219,6 +210,7 @@ export const TranscriptScreen: React.FC = () => {
   const closeModal = () => {
     setSelectedSession(null);
     setDetailSearchQuery('');
+    setShowDropdown(false);
   };
 
   const handleCopy = () => {
@@ -240,6 +232,7 @@ export const TranscriptScreen: React.FC = () => {
       // Edit transcript
       console.log('Edit transcript');
     }
+    setShowDropdown(false);
   };
 
   // Session List View
@@ -261,29 +254,15 @@ export const TranscriptScreen: React.FC = () => {
 
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        <ScreenHeader title={t.transcript} />
         {/* Sticky Header */}
-        <View style={[styles.stickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-          <ScreenHeader title={t.transcript} />
+        <View style={[styles.stickyHeader, { backgroundColor: colors.background }]}>
           <SearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder={t.searchRecordings}
             style={styles.searchBar}
           />
-          <View style={styles.actionButtonsRow}>
-            <TouchableOpacity style={styles.actionButton}>
-              <Copy size={20} color={colors.textSecondary} />
-              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>{t.copy}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Download size={20} color={colors.textSecondary} />
-              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>{t.export}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Edit size={20} color={colors.primary} />
-              <Text style={[styles.actionButtonText, { color: colors.primary }]}>{t.edit}</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         <FlatList
@@ -298,6 +277,8 @@ export const TranscriptScreen: React.FC = () => {
     );
   }
 
+  const isTranscribing = selectedSession?.statusKey === 'recording' || selectedSession?.statusKey === 'transcribing';
+
   // Session Detail View (Modal)
   return (
     <Modal
@@ -308,60 +289,73 @@ export const TranscriptScreen: React.FC = () => {
     >
       <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]} edges={['top']}>
         {/* Sticky Header */}
-        <View style={[styles.modalStickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <View style={[styles.modalStickyHeader, { backgroundColor: colors.background, borderBottomColor: colors.border, zIndex: 10 }]}>
           <View style={styles.modalHeaderTop}>
             <TouchableOpacity onPress={closeModal} style={styles.backButton}>
               <ChevronLeft size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.text }]} numberOfLines={1}>
-              {selectedSession.title}
+              {selectedSession?.title}
             </Text>
+            <View style={{ position: 'relative' }}>
+              <TouchableOpacity onPress={() => setShowDropdown(!showDropdown)} style={styles.kebabButton}>
+                <MoreVertical size={24} color={colors.text} />
+              </TouchableOpacity>
+              {showDropdown && (
+                <View style={[styles.dropdownMenu, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <TouchableOpacity style={styles.dropdownItem} onPress={handleEdit}>
+                    <Edit size={16} color={colors.text} />
+                    <Text style={[styles.dropdownText, { color: colors.text }]}>{t.edit}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.dropdownItem} onPress={handleCopy}>
+                    <Copy size={16} color={colors.text} />
+                    <Text style={[styles.dropdownText, { color: colors.text }]}>{t.copy}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.dropdownItem} onPress={handleExport}>
+                    <Download size={16} color={colors.text} />
+                    <Text style={[styles.dropdownText, { color: colors.text }]}>{t.export}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </View>
           <SearchBar
             value={detailSearchQuery}
             onChangeText={setDetailSearchQuery}
-            placeholder="Metinde ara..."
+            placeholder={t.searchRecordings}
             style={styles.modalSearchBar}
           />
-          <View style={styles.actionButtonsRow}>
-            <TouchableOpacity style={styles.actionButton} onPress={handleCopy}>
-              <Copy size={20} color={colors.textSecondary} />
-              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Kopyala</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={handleExport}>
-              <Download size={20} color={colors.textSecondary} />
-              <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>Dışa Aktar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={handleEdit}>
-              <Edit size={20} color={colors.primary} />
-              <Text style={[styles.actionButtonText, { color: colors.primary }]}>Düzenle</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScrollContent}>
-          {/* Recording Info Card */}
-          <View style={[styles.recordingInfoCard, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]}>
-            <View style={styles.recordingInfoHeader}>
-              <TouchableOpacity style={[styles.playButton, { backgroundColor: colors.primary }]}>
-                <Play size={20} color={colors.textOnPrimary} fill={colors.textOnPrimary} />
-              </TouchableOpacity>
-              <View style={styles.recordingInfoText}>
-                <Text style={[styles.recordingTitle, { color: colors.text }]}>
-                  {selectedSession.title}
-                </Text>
-                <Text style={[styles.recordingDate, { color: colors.textSecondary }]}>
-                  {selectedSession.recordedAtLabel}
-                </Text>
-              </View>
+          {/* Top Status & Duration Info */}
+          <View style={styles.sessionMetaContainer}>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusDisplay(selectedSession?.statusKey).bg }]}>
+              <Text style={[styles.statusBadgeText, { color: getStatusDisplay(selectedSession?.statusKey).text }]}>
+                {getStatusDisplay(selectedSession?.statusKey).label}
+              </Text>
+            </View>
+            <View style={styles.durationBadge}>
+              <Clock size={16} color={colors.textSecondary} />
+              <Text style={[styles.durationText, { color: colors.textSecondary }]}>
+                {selectedSession?.durationLabel}
+              </Text>
             </View>
           </View>
 
-          {/* Transcript Segments */}
-          {filteredChunks.length > 0 ? (
-            filteredChunks.map((chunk) => (
-              <TranscriptSegment key={chunk.id} segment={chunk} />
-            ))
+          {/* Unified Transcript Block */}
+          {selectedSession?.mergedText && selectedSession.mergedText.length > 0 ? (
+            <View style={[
+              styles.mergedTextContainer, 
+              { 
+                backgroundColor: isTranscribing ? colors.warningLight : colors.successLight,
+                borderColor: isTranscribing ? colors.warning : colors.success,
+              }
+            ]}>
+              <Text style={[styles.mergedText, { color: isTranscribing ? colors.text : colors.successText }]}>
+                {selectedSession.mergedText}
+              </Text>
+            </View>
           ) : (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
               {detailSearchQuery ? 'No matching text found.' : 'No transcript available.'}
@@ -398,10 +392,8 @@ const styles = StyleSheet.create({
   },
   // Sticky Header
   stickyHeader: {
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1,
+    paddingBottom: spacing.lg,
   },
   headerTitle: {
     fontSize: 24,
@@ -429,6 +421,7 @@ const styles = StyleSheet.create({
   // List Content
   listContent: {
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
     paddingBottom: 100,
   },
   // Session Card
@@ -455,12 +448,11 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
-    textTransform: 'uppercase',
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
   metaDot: {
     width: 4,
@@ -513,64 +505,57 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing.xl * 3,
   },
-  // Recording Info Card
-  recordingInfoCard: {
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
+  kebabButton: {
+    padding: spacing.xs,
   },
-  recordingInfoHeader: {
+  dropdownMenu: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    minWidth: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+    zIndex: 999,
+  },
+  dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  playButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  recordingInfoText: {
-    flex: 1,
-  },
-  recordingTitle: {
-    fontSize: fontSize.md,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-  },
-  recordingDate: {
-    fontSize: fontSize.sm,
-  },
-  // Transcript Segment
-  segmentContainer: {
-    borderLeftWidth: 4,
-    paddingLeft: spacing.md,
     paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
   },
-  segmentHeader: {
+  dropdownText: {
+    fontSize: fontSize.md,
+  },
+  sessionMetaContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.lg,
   },
-  speakerLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-  },
-  timestampRow: {
+  durationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
   },
-  timestamp: {
-    fontSize: fontSize.xs,
+  durationText: {
+    fontSize: fontSize.sm,
+    fontWeight: '500',
   },
-  segmentText: {
+  mergedTextContainer: {
+    borderWidth: 1,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  mergedText: {
     fontSize: fontSize.md,
-    lineHeight: 24,
+    lineHeight: 28,
   },
   emptyText: {
     fontSize: fontSize.md,
