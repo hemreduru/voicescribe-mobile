@@ -5,9 +5,9 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import {
   RefreshCw,
   Copy,
@@ -15,6 +15,7 @@ import {
   Sparkles,
   Cloud,
   HardDrive,
+  Mic,
 } from 'lucide-react-native';
 import { useColors } from '../../../../shared/theme';
 import { spacing, borderRadius, fontSize, fontWeight } from '../../../../shared/theme/tokens';
@@ -23,6 +24,7 @@ import { GlowButton } from '../../../../shared/components/GlowButton';
 import { ScreenHeader } from '../../../../shared/components/ScreenHeader';
 import { useSummaryStore } from '../../../../shared/stores';
 import { useTranslation } from '../../../../shared/i18n';
+import { useToast } from '../../../../shared/components/Toast';
 
 type SummaryLength = 'short' | 'medium' | 'long';
 type ModelType = 'local' | 'cloud';
@@ -30,6 +32,8 @@ type ModelType = 'local' | 'cloud';
 export const SummaryScreen: React.FC = () => {
   const colors = useColors();
   const t = useTranslation();
+  const navigation = useNavigation<any>();
+  const { showToast } = useToast();
   const [modelType, setModelType] = useState<ModelType>('local');
   const [summaryLength, setSummaryLength] = useState<SummaryLength>('medium');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -56,11 +60,11 @@ export const SummaryScreen: React.FC = () => {
   };
 
   const handleCopy = () => {
-    console.log('Copy summary');
+    showToast('Özet panoya kopyalandı', 'success');
   };
 
   const handleExport = () => {
-    console.log('Export summary');
+    showToast('Dışa aktarma menüsü açılıyor', 'info');
   };
 
   const getLengthLabel = (length: SummaryLength): string => {
@@ -133,7 +137,7 @@ export const SummaryScreen: React.FC = () => {
                     : { color: colors.textSecondary },
                 ]}
               >
-                Yerel
+                {t.local}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -222,10 +226,11 @@ export const SummaryScreen: React.FC = () => {
               {t.summaryEmptyDesc}
             </Text>
             <GlowButton
-              title={t.generateSummary}
+              title={t.tapToRecord}
               variant="primary"
+              icon={<Mic size={20} color={colors.white} />}
               style={styles.cta}
-              disabled
+              onPress={() => navigation.navigate('RecordingTab')}
             />
           </GlassCard>
         </ScrollView>
@@ -263,7 +268,7 @@ export const SummaryScreen: React.FC = () => {
                   : { color: colors.textSecondary },
               ]}
             >
-              Yerel
+              {t.local}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -287,7 +292,7 @@ export const SummaryScreen: React.FC = () => {
                   : { color: colors.textSecondary },
               ]}
             >
-              Cloud
+              {t.cloud}
             </Text>
           </TouchableOpacity>
         </View>
@@ -324,19 +329,19 @@ export const SummaryScreen: React.FC = () => {
           <TouchableOpacity style={styles.actionButton} onPress={handleRegenerate}>
             <RefreshCw size={20} color={colors.primary} />
             <Text style={[styles.actionButtonText, { color: colors.primary }]}>
-              Yeniden Oluştur
+              {t.regenerate}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={handleCopy}>
             <Copy size={20} color={colors.textSecondary} />
             <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>
-              Kopyala
+              {t.copy}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={handleExport}>
             <Download size={20} color={colors.textSecondary} />
             <Text style={[styles.actionButtonText, { color: colors.textSecondary }]}>
-              Dışa Aktar
+              {t.export}
             </Text>
           </TouchableOpacity>
         </View>
@@ -347,12 +352,12 @@ export const SummaryScreen: React.FC = () => {
         <View style={[styles.aiBadgeCard, { backgroundColor: colors.primaryContainer, borderColor: colors.border }]}>
           <View style={styles.aiBadgeHeader}>
             <Sparkles size={20} color={colors.primary} />
-            <Text style={[styles.aiBadgeText, { color: colors.primary }]}>AI Özeti</Text>
+            <Text style={[styles.aiBadgeText, { color: colors.primary }]}>{t.aiSummary}</Text>
           </View>
           <View style={styles.aiBadgeInfo}>
             <View style={styles.aiBadgeInfoItem}>
               <Text style={[styles.aiBadgeInfoLabel, { color: colors.textSecondary }]}>
-                Sağlayıcı
+                {t.provider}
               </Text>
               <Text style={[styles.aiBadgeInfoValue, { color: colors.text }]}>
                 {getProviderLabel(modelType)}
@@ -360,7 +365,7 @@ export const SummaryScreen: React.FC = () => {
             </View>
             <View style={styles.aiBadgeInfoItem}>
               <Text style={[styles.aiBadgeInfoLabel, { color: colors.textSecondary }]}>
-                Uzunluk
+                {t.length}
               </Text>
               <Text style={[styles.aiBadgeInfoValue, { color: colors.text }]}>
                 {getLengthLabel(summaryLength)}

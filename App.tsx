@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -12,6 +14,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppNavigator } from './src/shared/navigation';
 import { spacing, fontSize, ThemeProvider, useColors, useTheme } from './src/shared/theme';
 import { I18nProvider, useTranslation } from './src/shared/i18n';
+import { ToastProvider } from './src/shared/components/Toast';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   VoiceScribeAudio,
@@ -25,6 +28,11 @@ import {
 
 const WHISPER_MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin';
 const WHISPER_MODEL_FILE_NAME = 'ggml-base.bin';
+
+// Enable LayoutAnimation on Android for smooth list/state transitions
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 type BootstrapState = 'bootstrapping' | 'failed' | 'ready';
 
@@ -320,7 +328,9 @@ const App: React.FC = () => {
       <GestureHandlerRootView style={styles.root}>
         <ThemeProvider>
           <I18nProvider>
-            <AppContent />
+            <ToastProvider>
+              <AppContent />
+            </ToastProvider>
           </I18nProvider>
         </ThemeProvider>
       </GestureHandlerRootView>

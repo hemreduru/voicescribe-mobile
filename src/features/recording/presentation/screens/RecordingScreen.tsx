@@ -9,12 +9,16 @@ import {
   Alert,
   Platform,
   ScrollView,
+  Pressable,
+  LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSpring,
   Easing,
   cancelAnimation,
 } from 'react-native-reanimated';
@@ -31,22 +35,26 @@ import type { Transcript } from '../../../../shared/types';
 import { borderRadius, spacing, fontSize, fontWeight } from '../../../../shared/theme/tokens';
 
 // Dynamic chunking config
-const MAX_CHUNK_DURATION_SECONDS = 20;
 
 export const RecordingScreen: React.FC = () => {
   const colors = useColors();
   const t = useTranslation();
+  const navigation = useNavigation<any>();
   
   const isRecording = useRecordingStore((state) => state.isRecording);
   const isPaused = useRecordingStore((state) => state.isPaused);
-  const chunkCount = useRecordingStore((state) => state.chunkCount);
+
   const [sessionTitleInput, setSessionTitleInput] = useState('');
   const [audioLevel, setAudioLevel] = useState(0);
   const [liveTranscriptPreview, setLiveTranscriptPreview] = useState('');
   const [transcriptionError, setTranscriptionError] = useState<string | null>(null);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingDuration = useRecordingStore((state) => state.durationSeconds);
+  const incrementDuration = useRecordingStore((state) => state.incrementDuration);
   const lastRecordingTranscriptIdRef = useRef<string | null>(null);
+
+  // Press animation value
+  const buttonScale = useSharedValue(1);
   const isStoppingRef = useRef(false);
   const stopGuardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -116,7 +124,7 @@ export const RecordingScreen: React.FC = () => {
 
   // Audio chunk handling
   useEffect(() => {
-    const chunkSubscription = VoiceScribeAudio.onChunkReady(({ path }) => {
+    const chunkSubscription = VoiceScribeAudio.onChunkReady(() => {
       try {
         const recordingState = useRecordingStore.getState();
         if (recordingState.isRecording) {
@@ -189,13 +197,12 @@ export const RecordingScreen: React.FC = () => {
 
   // Timer
   useEffect(() => {
-    if (!isRecording) return;
-    setRecordingDuration(0);
+    if (!isRecording || isPaused) return;
     const intervalId = setInterval(() => {
-      setRecordingDuration((prev) => prev + 1);
+      incrementDuration();
     }, 1000);
     return () => clearInterval(intervalId);
-  }, [isRecording]);
+  }, [isRecording, isPaused, incrementDuration]);
 
   const requestMicrophonePermission = async () => {
     if (Platform.OS === 'android') {
@@ -211,7 +218,7 @@ export const RecordingScreen: React.FC = () => {
           }
         );
         return granted === PermissionsAndroid.RESULTS.GRANTED;
-      } catch (err) {
+      } catch {
         return false;
       }
     }
@@ -240,6 +247,7 @@ export const RecordingScreen: React.FC = () => {
             durationSeconds: recordingDuration,
           });
         }
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       } else {
         if (isStoppingRef.current) return;
         const hasPermission = await requestMicrophonePermission();
@@ -251,7 +259,6 @@ export const RecordingScreen: React.FC = () => {
         setLiveTranscriptPreview('');
         setTranscriptionError(null);
         setAudioLevel(0);
-        setRecordingDuration(0);
 
         const transcript = createSessionTranscript(sessionTitleInput);
         addTranscript(transcript);
@@ -261,6 +268,8 @@ export const RecordingScreen: React.FC = () => {
         useRecordingStore.getState().startRecording(transcript.id);
         lastRecordingTranscriptIdRef.current = transcript.id;
         VoiceScribeAudio.startRecording();
+        
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setSessionTitleInput('');
       }
     } catch (error) {
@@ -282,6 +291,10 @@ export const RecordingScreen: React.FC = () => {
   const handleStop = () => {
     handleToggleRecord();
   };
+
+  const buttonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: buttonScale.value }],
+  }));
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -315,6 +328,21 @@ export const RecordingScreen: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Session Title Input (when not recording) */}
+        {!isRecording && (
+          <View style={styles.inputSection}>
+            <GlassCard intensity="low" padding="md">
+              <TextInput
+                value={sessionTitleInput}
+                onChangeText={setSessionTitleInput}
+                placeholder={t.sessionNamePlaceholder}
+                placeholderTextColor={colors.textMuted}
+                style={[styles.sessionInput, { color: colors.text }]}
+              />
+            </GlassCard>
+          </View>
+        )}
+
         {/* Center Stage - Record Button */}
         <View style={styles.centerStage}>
           {/* Pulsing ring animation */}
@@ -327,23 +355,26 @@ export const RecordingScreen: React.FC = () => {
           />
 
           {/* Large circular record button */}
-          <TouchableOpacity 
-            style={[
+          <Pressable 
+            onPressIn={() => { buttonScale.value = withSpring(0.92, { damping: 10, mass: 0.5 }); }}
+            onPressOut={() => { buttonScale.value = withSpring(1); }}
+            onPress={handleToggleRecord}
+          >
+            <Animated.View style={[
               styles.recordButton,
               { 
                 backgroundColor: isRecording ? colors.error : colors.primary,
                 borderColor: isRecording ? colors.error : colors.primary,
-              }
-            ]}
-            activeOpacity={0.8}
-            onPress={handleToggleRecord}
-          >
-            {isRecording ? (
-              <Square size={40} color={colors.white} fill={colors.white} />
-            ) : (
-              <Mic size={48} color={colors.white} />
-            )}
-          </TouchableOpacity>
+              },
+              buttonAnimatedStyle
+            ]}>
+              {isRecording ? (
+                <Square size={40} color={colors.white} fill={colors.white} />
+              ) : (
+                <Mic size={48} color={colors.white} />
+              )}
+            </Animated.View>
+          </Pressable>
         </View>
 
         {/* Timer Display */}
@@ -399,21 +430,6 @@ export const RecordingScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Session Title Input (when not recording) */}
-        {!isRecording && (
-          <View style={styles.inputSection}>
-            <GlassCard intensity="low" padding="md">
-              <TextInput
-                value={sessionTitleInput}
-                onChangeText={setSessionTitleInput}
-                placeholder={t.sessionNamePlaceholder}
-                placeholderTextColor={colors.textMuted}
-                style={[styles.sessionInput, { color: colors.text }]}
-              />
-            </GlassCard>
-          </View>
-        )}
-
         {/* Live Transcript Preview (when recording) */}
         {isRecording && liveTranscriptPreview.length > 0 && (
           <View style={styles.previewSection}>
@@ -449,15 +465,19 @@ export const RecordingScreen: React.FC = () => {
         <View style={styles.recentSection}>
           <View style={styles.recentHeader}>
             <Text style={[styles.recentTitle, { color: colors.text }]}>{t.recentRecordings}</Text>
-            <TouchableOpacity onPress={() => {}}>
+            <TouchableOpacity onPress={() => navigation.navigate('HistoryTab')}>
               <Text style={[styles.viewAllText, { color: colors.primary }]}>{t.viewAll}</Text>
             </TouchableOpacity>
           </View>
 
           {recentTranscripts.length > 0 ? (
             recentTranscripts.map((transcript) => (
+              <TouchableOpacity
+                key={transcript.id}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('TranscriptTab')}
+              >
               <GlassCard 
-                key={transcript.id} 
                 intensity="low" 
                 padding="md"
                 style={styles.recentCard}
@@ -479,6 +499,7 @@ export const RecordingScreen: React.FC = () => {
                   </Text>
                 </View>
               </GlassCard>
+              </TouchableOpacity>
             ))
           ) : (
             <GlassCard intensity="low" padding="lg" style={styles.emptyCard}>

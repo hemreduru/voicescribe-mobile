@@ -8,6 +8,7 @@ import {
   Modal,
   SafeAreaView,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import {
   ArrowLeft,
   User,
@@ -41,9 +42,9 @@ import { useTranslation, useI18n } from '../../../../shared/i18n';
 export const SettingsScreen: React.FC = () => {
   const colors = useColors();
   const { mode, setMode } = useTheme();
-  const insets = useSafeAreaInsets();
-  const { user, clearAuth } = useAuthStore();
   const settingsStore = useSettingsStore();
+  const { user, clearAuth } = useAuthStore();
+  const navigation = useNavigation<any>();
   const t = useTranslation();
   const { locale, setLocale } = useI18n();
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -59,14 +60,6 @@ export const SettingsScreen: React.FC = () => {
 
   const handleManualSync = () => {
     // TODO: Implement manual sync logic
-  };
-
-  const handleClearCache = () => {
-    // TODO: Implement clear cache logic
-  };
-
-  const handleExportData = () => {
-    // TODO: Implement export data logic
   };
 
   const getThemeIcon = () => {
@@ -95,7 +88,7 @@ export const SettingsScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t.settings}</Text>
@@ -111,10 +104,10 @@ export const SettingsScreen: React.FC = () => {
             </View>
             <View style={styles.profileInfo}>
               <Text style={[styles.profileName, { color: colors.text }]}>
-                {user?.name || 'Ahmet Yılmaz'}
+                {user?.name || t.profile}
               </Text>
               <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>
-                {user?.email || 'ahmet@example.com'}
+                {user?.email || ''}
               </Text>
             </View>
           </View>
@@ -213,38 +206,8 @@ export const SettingsScreen: React.FC = () => {
           <SettingsRow
             icon={<Cloud size={20} color={colors.text} />}
             title={t.manualSync}
-            subtitle={t.lastSync}
             rightElement={<RefreshCw size={20} color={colors.primary} />}
             onPress={handleManualSync}
-          />
-        </SectionCard>
-
-        {/* Depolama Section */}
-        <SectionCard title={t.storage}>
-          <View style={styles.storageSection}>
-            <View style={styles.storageHeader}>
-              <Text style={[styles.storageLabel, { color: colors.text }]}>
-                {t.usedStorage}
-              </Text>
-              <Text style={[styles.storageValue, { color: colors.textSecondary }]}>
-                2.4 GB / 10 GB
-              </Text>
-            </View>
-            <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
-                <View style={[styles.progressBarFill, { width: '24%' }]} />
-              </View>
-            </View>
-          </View>
-          <SettingsRow
-            icon={<Trash2 size={20} color={colors.text} />}
-            title={t.clearCache}
-            onPress={handleClearCache}
-          />
-          <SettingsRow
-            icon={<Download size={20} color={colors.text} />}
-            title={t.exportData}
-            onPress={handleExportData}
           />
         </SectionCard>
 
@@ -404,6 +367,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     paddingHorizontal: spacing.md,
+    paddingBottom: 100,
   },
   profileCard: {
     flexDirection: 'row',

@@ -8,7 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Filter, Trash2, MoreVertical, Play, FileText, Cloud, Check } from 'lucide-react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Filter, Trash2, MoreVertical, Play, FileText, Cloud, Check, Mic } from 'lucide-react-native';
 import { useColors } from '../../../../shared/theme';
 import { spacing, fontSize, borderRadius } from '../../../../shared/theme/tokens';
 import { GlassCard } from '../../../../shared/components/GlassCard';
@@ -25,7 +26,7 @@ type SortOption = 'newest' | 'oldest' | 'longest';
 export const HistoryScreen: React.FC = () => {
   const colors = useColors();
   const t = useTranslation();
-  
+  const navigation = useNavigation<any>();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -36,8 +37,8 @@ export const HistoryScreen: React.FC = () => {
 
   // Filter and sort transcripts
   const filteredTranscripts = useMemo(() => {
-    let filtered = transcripts.filter((t: Transcript) => 
-      t.title?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false
+    let filtered = transcripts.filter((ts: Transcript) => 
+      ts.title?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false
     );
 
     // Sort
@@ -73,7 +74,7 @@ export const HistoryScreen: React.FC = () => {
     if (selectedItems.length === filteredTranscripts.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(filteredTranscripts.map((t: Transcript) => t.id));
+      setSelectedItems(filteredTranscripts.map((ts: Transcript) => ts.id));
     }
   };
 
@@ -82,12 +83,12 @@ export const HistoryScreen: React.FC = () => {
     if (selectedItems.length === 0) return;
     
     Alert.alert(
-      'Kayıtları Sil',
-      `${selectedItems.length} kaydı silmek istediğinize emin misiniz?`,
+      t.deleteRecordings,
+      `${selectedItems.length} ${t.deleteConfirmMessage}`,
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t.cancel, style: 'cancel' },
         { 
-          text: 'Sil', 
+          text: t.delete, 
           style: 'destructive',
           onPress: () => {
             selectedItems.forEach(id => removeTranscript(id));
@@ -158,7 +159,7 @@ export const HistoryScreen: React.FC = () => {
           {/* Content */}
           <View style={styles.cardMain}>
             <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
-              {item.title || `Kayıt ${item.localId}`}
+              {item.title || `${t.tabRecording} ${item.localId}`}
             </Text>
             
             <Text style={[styles.meta, { color: colors.textSecondary }]}>
@@ -168,20 +169,20 @@ export const HistoryScreen: React.FC = () => {
             {/* Badges */}
             <View style={styles.badges}>
               <Badge 
-                label="Senkron" 
+                label={t.synced} 
                 variant="sync" 
                 icon={<Cloud size={12} color={colors.syncBadgeText} />}
               />
               {hasTranscript && (
                 <Badge 
-                  label="Transkript" 
+                  label={t.transcript} 
                   variant="transcript" 
                   icon={<FileText size={12} color={colors.transcriptBadgeText} />}
                 />
               )}
               {hasSummary && (
                 <Badge 
-                  label="Özet" 
+                  label={t.summary} 
                   variant="summary" 
                   icon={<FileText size={12} color={colors.summaryBadgeText} />}
                 />
@@ -207,10 +208,20 @@ export const HistoryScreen: React.FC = () => {
     <View style={styles.emptyContainer}>
       <GlassCard intensity="medium" padding="lg" style={styles.emptyState}>
         <Text style={styles.icon}>📁</Text>
-        <Text style={[styles.emptyTitle, { color: colors.text }]}>Kayıt Bulunamadı</Text>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>{t.noRecordingsFound}</Text>
         <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-          {searchQuery ? 'Arama kriterlerinize uygun kayıt yok.' : 'Henüz hiç kayıtınız yok.'}
+          {searchQuery ? t.noSearchResults : t.noRecordingsYet}
         </Text>
+        {!searchQuery && (
+          <View style={{ marginTop: spacing.xl }}>
+            <GlowButton
+              title={t.tapToRecord}
+              variant="primary"
+              icon={<Mic size={20} color={colors.white} />}
+              onPress={() => navigation.navigate('RecordingTab')}
+            />
+          </View>
+        )}
       </GlassCard>
     </View>
   );
@@ -234,7 +245,7 @@ export const HistoryScreen: React.FC = () => {
           <SearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Kayıtlarda ara..."
+            placeholder={t.searchInRecordings}
             style={styles.searchBar}
           />
           
@@ -258,7 +269,7 @@ export const HistoryScreen: React.FC = () => {
               styles.sortButtonText, 
               { color: sortBy === 'newest' ? colors.primary : colors.textSecondary }
             ]}>
-              En Yeni
+              {t.newest}
             </Text>
           </TouchableOpacity>
           
@@ -273,7 +284,7 @@ export const HistoryScreen: React.FC = () => {
               styles.sortButtonText, 
               { color: sortBy === 'oldest' ? colors.primary : colors.textSecondary }
             ]}>
-              En Eski
+              {t.oldest}
             </Text>
           </TouchableOpacity>
           
@@ -288,7 +299,7 @@ export const HistoryScreen: React.FC = () => {
               styles.sortButtonText, 
               { color: sortBy === 'longest' ? colors.primary : colors.textSecondary }
             ]}>
-              En Uzun
+              {t.longest}
             </Text>
           </TouchableOpacity>
         </View>
@@ -299,7 +310,7 @@ export const HistoryScreen: React.FC = () => {
               {allSelected && <Check size={12} color={colors.white} />}
             </View>
             <Text style={[styles.selectAllText, { color: colors.textSecondary }]}>
-              {allSelected ? 'Tümünü Seçimi Kaldır' : 'Tümünü Seç'}
+              {allSelected ? t.deselectAll : t.selectAll}
             </Text>
           </TouchableOpacity>
         )}

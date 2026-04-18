@@ -62,7 +62,7 @@ export const SpeakerScreen: React.FC = () => {
   // Add new speaker
   const addNewSpeaker = () => {
     if (inputName.trim() === '') {
-      Alert.alert('Hata', 'Lütfen bir isim girin');
+      Alert.alert(t.error, t.enterName);
       return;
     }
     
@@ -84,7 +84,7 @@ export const SpeakerScreen: React.FC = () => {
   // Edit speaker
   const editSpeaker = () => {
     if (!editingSpeaker || inputName.trim() === '') {
-      Alert.alert('Hata', 'Lütfen bir isim girin');
+      Alert.alert(t.error, t.enterName);
       return;
     }
     
@@ -100,12 +100,12 @@ export const SpeakerScreen: React.FC = () => {
   // Delete speaker
   const deleteSpeaker = (id: string) => {
     Alert.alert(
-      'Konuşmacıyı Sil',
-      'Bu konuşmacıyı silmek istediğinize emin misiniz?',
+      t.deleteSpeaker,
+      t.deleteSpeakerConfirm,
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t.cancel, style: 'cancel' },
         { 
-          text: 'Sil', 
+          text: t.delete, 
           style: 'destructive',
           onPress: () => {
             setSpeakers(speakers.filter(s => s.id !== id));
@@ -116,9 +116,9 @@ export const SpeakerScreen: React.FC = () => {
   };
 
   // Record voice sample
-  const recordVoiceSample = (id: string) => {
+  const recordVoiceSample = (_id: string) => {
     // TODO: Implement actual voice recording functionality
-    Alert.alert('Bilgi', 'Ses örneği kaydı yapılacak');
+    Alert.alert(t.info, t.voiceRecordInfo);
   };
 
   // Render speaker card
@@ -135,7 +135,7 @@ export const SpeakerScreen: React.FC = () => {
           <View style={styles.speakerInfo}>
             <Text style={[styles.speakerName, { color: colors.text }]}>{item.name}</Text>
             <Text style={[styles.speakerMeta, { color: colors.textSecondary }]}>
-              {item.recordings} kayıt • Son: {item.lastUsed || 'Henüz yok'}
+              {item.recordings} {t.tabRecording} • {item.lastUsed || '-'}
             </Text>
           </View>
           
@@ -165,7 +165,7 @@ export const SpeakerScreen: React.FC = () => {
               <View style={styles.voiceSampleStatusContainer}>
                 <Mic size={16} color={colors.success} />
                 <Text style={[styles.voiceSampleText, { color: colors.success }]}>
-                  Ses örneği mevcut
+                  {t.voiceSampleAvailable}
                 </Text>
               </View>
             ) : (
@@ -175,7 +175,7 @@ export const SpeakerScreen: React.FC = () => {
               >
                 <Mic size={16} color={colors.primary} />
                 <Text style={[styles.voiceSampleText, { color: colors.primary }]}>
-                  Ses örneği kaydet
+                  {t.recordVoiceSample}
                 </Text>
               </TouchableOpacity>
             )}
@@ -187,12 +187,12 @@ export const SpeakerScreen: React.FC = () => {
               
               <View style={styles.sampleHeader}>
                 <Text style={[styles.sampleHeaderText, { color: colors.text }]}>
-                  Ses Örneği
+                  {t.voiceSample}
                 </Text>
                 <TouchableOpacity style={styles.listenButton}>
                   <Volume2 size={16} color={colors.primary} />
                   <Text style={[styles.listenButtonText, { color: colors.primary }]}>
-                    Dinle
+                    {t.listen}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -223,9 +223,9 @@ export const SpeakerScreen: React.FC = () => {
     <View style={styles.emptyContainer}>
       <GlassCard intensity="medium" padding="lg" style={styles.emptyState}>
         <Text style={styles.icon}>🎙️</Text>
-        <Text style={[styles.emptyTitle, { color: colors.text }]}>Hiç Konuşmacı Yok</Text>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>{t.noSpeakers}</Text>
         <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-          Konuşmacı tanımayı kullanabilmek için ilk konuşmacınızı ekleyin.
+          {t.noSpeakersDesc}
         </Text>
       </GlassCard>
     </View>
@@ -242,7 +242,7 @@ export const SpeakerScreen: React.FC = () => {
           <View style={styles.recognitionHeader}>
             <Volume2 size={24} color={colors.primary} />
             <Text style={[styles.recognitionTitle, { color: colors.text }]}>
-              Konuşmacı Tanıma
+              {t.speakerRecognition}
             </Text>
             <ToggleSwitch 
               value={speakerRecognition} 
@@ -251,13 +251,13 @@ export const SpeakerScreen: React.FC = () => {
           </View>
           
           <Text style={[styles.recognitionDescription, { color: colors.textSecondary }]}>
-            Kayıtlardaki konuşmacıları otomatik olarak tanımla ve etiketle
+            {t.speakerRecognitionDesc}
           </Text>
         </GlassCard>
         
         {/* Add Speaker Button */}
         <GlowButton
-          title="Yeni Konuşmacı Ekle"
+          title={t.addNewSpeaker}
           variant="primary"
           icon={<Plus size={20} color={colors.white} />}
           onPress={() => {
@@ -276,7 +276,7 @@ export const SpeakerScreen: React.FC = () => {
         <>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Kayıtlı Konuşmacılar ({speakers.length})
+              {t.registeredSpeakers} ({speakers.length})
             </Text>
           </View>
           
@@ -290,34 +290,7 @@ export const SpeakerScreen: React.FC = () => {
         </>
       )}
 
-      {/* Speaker Match History Card */}
-      <GlassCard style={[styles.historyCard, { backgroundColor: colors.infoLight, borderColor: colors.info }]}>
-        <View style={styles.historyHeader}>
-          <Volume2 size={24} color={colors.info} />
-          <Text style={[styles.historyTitle, { color: colors.text }]}>
-            Konuşmacı Eşleşme Geçmişi
-          </Text>
-        </View>
-        
-        <Text style={[styles.historyDescription, { color: colors.textSecondary }]}>
-          Son 30 kayıtta 156 konuşmacı eşleşmesi yapıldı
-        </Text>
-        
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-              Başarılı eşleşme
-            </Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>
-              142 (%91)
-            </Text>
-          </View>
-        </View>
-        
-        <View style={[styles.progressBar, { backgroundColor: colors.surfaceContainerLow }]}>
-          <View style={[styles.progressFill, { backgroundColor: colors.info, width: '91%' }]} />
-        </View>
-      </GlassCard>
+      {/* Speaker Match History Card — removed: no real data source yet */}
 
       {/* Modal for adding/editing speakers */}
       <Modal
@@ -329,13 +302,13 @@ export const SpeakerScreen: React.FC = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {editingSpeaker ? 'Konuşmacıyı Düzenle' : 'Yeni Konuşmacı Ekle'}
+              {editingSpeaker ? t.editSpeaker : t.addNewSpeaker}
             </Text>
             
             <TextInput
               value={inputName}
               onChangeText={setInputName}
-              placeholder="Konuşmacı adı"
+              placeholder={t.speakerName}
               placeholderTextColor={colors.textMuted}
               style={[styles.input, { 
                 backgroundColor: colors.surfaceContainerLow,
@@ -355,7 +328,7 @@ export const SpeakerScreen: React.FC = () => {
                 }}
               >
                 <Text style={[styles.modalButtonText, { color: colors.textSecondary }]}>
-                  İptal
+                  {t.cancel}
                 </Text>
               </TouchableOpacity>
               
@@ -364,7 +337,7 @@ export const SpeakerScreen: React.FC = () => {
                 onPress={editingSpeaker ? editSpeaker : addNewSpeaker}
               >
                 <Text style={[styles.modalButtonText, { color: colors.textOnPrimary }]}>
-                  {editingSpeaker ? 'Güncelle' : 'Ekle'}
+                  {editingSpeaker ? t.update : t.add}
                 </Text>
               </TouchableOpacity>
             </View>

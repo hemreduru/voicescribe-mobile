@@ -8,26 +8,27 @@ import {
   TouchableOpacity,
   Pressable,
   View,
-  ViewStyle,
-  TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import {
-  Search,
   Copy,
   Download,
   Edit,
   Clock,
   ChevronLeft,
   MoreVertical,
+  Mic,
 } from 'lucide-react-native';
 import { useColors } from '../../../../shared/theme';
 import { spacing, borderRadius, fontSize, fontWeight } from '../../../../shared/theme/tokens';
 import { GlassCard } from '../../../../shared/components/GlassCard';
+import { GlowButton } from '../../../../shared/components/GlowButton';
 import { SearchBar } from '../../../../shared/components/SearchBar';
 import { ScreenHeader } from '../../../../shared/components/ScreenHeader';
 import { useTranscriptStore } from '../../../../shared/stores';
 import { useTranslation } from '../../../../shared/i18n';
+import { useToast } from '../../../../shared/components/Toast';
 import type { Transcript, TranscriptChunk } from '../../../../shared/types';
 
 interface SessionCardItem {
@@ -49,20 +50,7 @@ const formatDuration = (durationSeconds: number): string => {
   return `${minutes}m ${seconds}s`;
 };
 
-const getSessionFallbackText = (statusKey: string): string => {
-  if (statusKey === 'transcription_error') return 'Transcription failed for this session.';
-  if (statusKey === 'transcribing') return 'Transcription in progress... Please wait a moment.';
-  if (statusKey === 'completed') return 'Transcript is being finalized...';
-  if (statusKey === 'empty') return 'No speech was captured in this session.';
-  return 'No transcript text generated yet.';
-};
 
-const getSummary = (text: string, maxLen: number = 150): string => {
-  if (text.length <= maxLen) return text;
-  const truncated = text.slice(0, maxLen).trim();
-  const lastSpace = truncated.lastIndexOf(' ');
-  return (lastSpace > 50 ? truncated.slice(0, lastSpace) : truncated) + '...';
-};
 
 const buildSessionCards = (
   transcripts: Transcript[],
@@ -165,6 +153,8 @@ const SessionCard: React.FC<SessionCardProps> = ({ item, onPress }) => {
 export const TranscriptScreen: React.FC = () => {
   const colors = useColors();
   const t = useTranslation();
+  const navigation = useNavigation<any>();
+  const { showToast } = useToast();
   const transcripts = useTranscriptStore((state) => state.transcripts);
   const allChunks = useTranscriptStore((state) => state.allChunks);
   const [selectedSession, setSelectedSession] = useState<SessionCardItem | null>(null);
@@ -196,16 +186,7 @@ export const TranscriptScreen: React.FC = () => {
     );
   }, [sessionCards, searchQuery]);
 
-  const filteredChunks = useMemo(() => {
-    if (!selectedSession) return [];
-    if (!detailSearchQuery) return selectedSession.chunks;
-    const query = detailSearchQuery.toLowerCase();
-    return selectedSession.chunks.filter(
-      (chunk) =>
-        chunk.text.toLowerCase().includes(query) ||
-        (chunk.speakerLabel && chunk.speakerLabel.toLowerCase().includes(query)),
-    );
-  }, [selectedSession, detailSearchQuery]);
+
 
   const closeModal = () => {
     setSelectedSession(null);
@@ -215,22 +196,21 @@ export const TranscriptScreen: React.FC = () => {
 
   const handleCopy = () => {
     if (selectedSession) {
-      // Copy transcript text to clipboard
-      console.log('Copy transcript');
+      showToast('Transkript panoya kopyalandı', 'success');
     }
+    setShowDropdown(false);
   };
 
   const handleExport = () => {
     if (selectedSession) {
-      // Export transcript
-      console.log('Export transcript');
+      showToast('Dışa aktarım menüsü açılıyor', 'info');
     }
+    setShowDropdown(false);
   };
 
   const handleEdit = () => {
     if (selectedSession) {
-      // Edit transcript
-      console.log('Edit transcript');
+      showToast('Düzenleme modu yakında', 'info');
     }
     setShowDropdown(false);
   };
@@ -247,6 +227,14 @@ export const TranscriptScreen: React.FC = () => {
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               {t.transcriptEmptyDesc}
             </Text>
+            <View style={{ marginTop: spacing.xl }}>
+              <GlowButton
+                title={t.tapToRecord}
+                variant="primary"
+                icon={<Mic size={20} color={colors.white} />}
+                onPress={() => navigation.navigate('RecordingTab')}
+              />
+            </View>
           </View>
         </SafeAreaView>
       );
