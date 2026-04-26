@@ -1,4 +1,4 @@
-import '../models/domain.dart';
+import 'package:voicescribe_mobile/shared/models/domain.dart';
 
 String normalizeWhitespace(String value) {
   return value.replaceAll(RegExp(r'\s+'), ' ').trim();

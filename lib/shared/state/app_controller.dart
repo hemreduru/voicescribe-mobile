@@ -1,41 +1,58 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier;
 import 'package:flutter_riverpod/legacy.dart';
 
-import '../models/domain.dart';
-import '../services/audio_recording_service.dart';
-import '../services/transcript_repository.dart';
-import '../services/whisper_service.dart';
-import '../utils/text_utils.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final transcriptRepositoryProvider = Provider<TranscriptRepository>(
-  (ref) => const JsonTranscriptRepository(),
-);
+import 'package:voicescribe_mobile/shared/models/domain.dart';
+import 'package:voicescribe_mobile/shared/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/shared/services/database/sqflite_transcript_repository.dart';
+import 'package:voicescribe_mobile/shared/services/summary_service.dart';
+import 'package:voicescribe_mobile/shared/services/transcript_repository.dart';
+import 'package:voicescribe_mobile/shared/services/whisper_service.dart';
+import 'package:voicescribe_mobile/shared/state/controllers/recording_controller.dart';
+import 'package:voicescribe_mobile/shared/state/controllers/speaker_controller.dart';
+import 'package:voicescribe_mobile/shared/state/controllers/summary_controller.dart';
+import 'package:voicescribe_mobile/shared/state/controllers/transcript_controller.dart';
 
-final whisperServiceProvider = Provider<WhisperTranscriptionService>((ref) {
+part 'app_controller.g.dart';
+
+@Riverpod(keepAlive: true)
+TranscriptRepository transcriptRepository(Ref ref) {
+  return SqfliteTranscriptRepository();
+}
+
+@Riverpod(keepAlive: true)
+TranscriptionService transcriptionService(Ref ref) {
   final service = WhisperTranscriptionService();
   ref.onDispose(() {
     unawaited(service.dispose());
   });
   return service;
-});
+}
 
-final audioRecordingServiceProvider = Provider<AudioRecordingService>((ref) {
+@Riverpod(keepAlive: true)
+RecordingService audioRecordingService(Ref ref) {
   final service = AudioRecordingService();
   ref.onDispose(() {
     unawaited(service.dispose());
   });
   return service;
-});
+}
+
+@Riverpod(keepAlive: true)
+SummaryService summaryService(Ref ref) {
+  return const LocalSummaryService();
+}
 
 final appControllerProvider = ChangeNotifierProvider<AppController>((ref) {
   final controller = AppController(
     repository: ref.watch(transcriptRepositoryProvider),
-    whisperService: ref.watch(whisperServiceProvider),
+    transcriptionService: ref.watch(transcriptionServiceProvider),
     audioService: ref.watch(audioRecordingServiceProvider),
+    summaryService: ref.watch(summaryServiceProvider),
   );
   ref.onDispose(controller.dispose);
   unawaited(controller.bootstrap());
@@ -47,17 +64,19 @@ enum ModelBootstrapState { bootstrapping, ready, failed }
 class AppController extends ChangeNotifier {
   AppController({
     required TranscriptRepository repository,
-    required WhisperTranscriptionService whisperService,
-    required AudioRecordingService audioService,
+    required TranscriptionService transcriptionService,
+    required RecordingService audioService,
+    required SummaryService summaryService,
   }) : _repository = repository,
-       _whisperService = whisperService,
-       _audioService = audioService {
+       _transcriptionService = transcriptionService,
+       _audioService = audioService,
+       _summaryService = summaryService {
     _chunkSubscription = _audioService.chunks.listen(_handleAudioChunk);
     _levelSubscription = _audioService.levels.listen((value) {
-      audioLevel = value;
+      recordingController.applyAudioLevel(value);
       _notify();
     });
-    _modelProgressSubscription = _whisperService.downloadProgress.listen((
+    _modelProgressSubscription = _transcriptionService.downloadProgress.listen((
       progress,
     ) {
       downloadProgress = progress;
@@ -66,41 +85,45 @@ class AppController extends ChangeNotifier {
   }
 
   final TranscriptRepository _repository;
-  final WhisperTranscriptionService _whisperService;
-  final AudioRecordingService _audioService;
+  final TranscriptionService _transcriptionService;
+  final RecordingService _audioService;
+  final SummaryService _summaryService;
+
+  final RecordingController recordingController = RecordingController();
+  final TranscriptController transcriptController = TranscriptController();
+  final SpeakerController speakerController = SpeakerController();
+  final SummaryController summaryController = SummaryController();
+
   StreamSubscription<RecordedAudioChunk>? _chunkSubscription;
   StreamSubscription<double>? _levelSubscription;
   StreamSubscription<ModelDownloadProgress>? _modelProgressSubscription;
   Timer? _durationTimer;
   bool _disposed = false;
-  int _pendingTranscriptions = 0;
 
   ModelBootstrapState modelState = ModelBootstrapState.bootstrapping;
   ModelDownloadProgress? downloadProgress;
   String? bootstrapError;
-  String? lastError;
 
-  List<Transcript> transcripts = [];
-  Transcript? currentTranscript;
-  List<TranscriptChunk> currentChunks = [];
-  List<TranscriptChunk> allChunks = [];
-  List<SpeakerProfile> speakers = [
-    SpeakerProfile(
-      id: 'speaker-1',
-      name: 'Konuşmacı 1',
-      embedding: const [],
-      createdAt: DateTime.now(),
-    ),
-  ];
+  List<Transcript> get transcripts => transcriptController.transcripts;
+  Transcript? get currentTranscript => transcriptController.currentTranscript;
+  List<TranscriptChunk> get currentChunks => transcriptController.currentChunks;
+  List<TranscriptChunk> get allChunks => transcriptController.allChunks;
+  String? get lastError => transcriptController.lastError;
 
-  bool isRecording = false;
-  bool isPaused = false;
-  int durationSeconds = 0;
-  int chunkCount = 0;
-  double audioLevel = 0;
-  String liveTranscriptPreview = '';
+  List<SpeakerProfile> get speakers => speakerController.speakers;
+  bool get speakerRecognitionEnabled => speakerController.recognitionEnabled;
 
-  bool get hasPendingTranscriptions => _pendingTranscriptions > 0;
+  bool get isRecording => recordingController.isRecording;
+  bool get isPaused => recordingController.isPaused;
+  int get durationSeconds => recordingController.durationSeconds;
+  int get chunkCount => recordingController.chunkCount;
+  double get audioLevel => recordingController.audioLevel;
+  String get liveTranscriptPreview => recordingController.liveTranscriptPreview;
+
+  List<Summary> get summaries => summaryController.summaries;
+  String get summaryProvider => summaryController.provider;
+  String get summaryLength => summaryController.length;
+  bool get summaryGenerating => summaryController.generating;
 
   Future<void> bootstrap() async {
     modelState = ModelBootstrapState.bootstrapping;
@@ -108,14 +131,20 @@ class AppController extends ChangeNotifier {
     _notify();
 
     final saved = await _repository.load();
-    transcripts = saved.transcripts;
-    currentTranscript = saved.currentTranscript;
-    currentChunks = saved.currentChunks;
-    allChunks = saved.allChunks;
+    transcriptController.hydrate(saved);
+    speakerController.hydrate(
+      saved.speakers,
+      recognitionEnabled: saved.speakerRecognitionEnabled,
+    );
+    summaryController.hydrate(
+      summaries: saved.summaries,
+      provider: saved.summaryProvider,
+      length: saved.summaryLength,
+    );
     _notify();
 
     try {
-      await _whisperService.ensureModel();
+      await _transcriptionService.ensureModel();
       modelState = ModelBootstrapState.ready;
     } catch (error) {
       bootstrapError = error.toString();
@@ -129,42 +158,18 @@ class AppController extends ChangeNotifier {
       return;
     }
 
-    final now = DateTime.now();
-    final id = 'local-${now.millisecondsSinceEpoch}';
-    final transcript = Transcript(
-      id: id,
-      localId: id,
-      title: title?.trim().isNotEmpty == true
-          ? title!.trim()
-          : now.toLocal().toString(),
-      durationSeconds: 0,
-      status: TranscriptStatus.recording,
-      recordedAt: now,
-      createdAt: now,
-      updatedAt: now,
-    );
-
-    transcripts = [transcript, ...transcripts];
-    currentTranscript = transcript;
-    currentChunks = [];
-    isRecording = true;
-    isPaused = false;
-    durationSeconds = 0;
-    chunkCount = 0;
-    liveTranscriptPreview = '';
-    lastError = null;
+    final transcript = transcriptController.startSession(title);
+    recordingController.start();
     _notify();
 
     try {
       await _audioService.start();
       _startTimer();
-      await _persist();
+      await _repository.saveTranscript(transcript);
     } catch (error) {
-      transcripts = transcripts.where((item) => item.id != id).toList();
-      currentTranscript = null;
-      isRecording = false;
-      isPaused = false;
-      lastError = error.toString();
+      transcriptController.removeTranscript(transcript.id);
+      recordingController.stop();
+      transcriptController.lastError = error.toString();
       _notify();
       rethrow;
     }
@@ -177,21 +182,13 @@ class AppController extends ChangeNotifier {
     _stopTimer();
     await _audioService.stop();
 
-    isRecording = false;
-    isPaused = false;
-    audioLevel = 0;
-
-    final transcript = currentTranscript;
-    if (transcript != null) {
-      _updateTranscript(
-        transcript.id,
-        status: currentChunks.isEmpty
-            ? TranscriptStatus.empty
-            : TranscriptStatus.transcribing,
-        durationSeconds: durationSeconds,
-      );
+    recordingController.stop();
+    transcriptController.markRecordingStopped(
+      durationSeconds: recordingController.durationSeconds,
+    );
+    if (currentTranscript != null) {
+      await _repository.saveTranscript(currentTranscript!);
     }
-    await _persist();
     _notify();
   }
 
@@ -201,72 +198,89 @@ class AppController extends ChangeNotifier {
     }
     if (isPaused) {
       await _audioService.resume();
-      isPaused = false;
+      recordingController.resume();
       _startTimer();
     } else {
       await _audioService.pause();
-      isPaused = true;
+      recordingController.pause();
       _stopTimer();
     }
     _notify();
   }
 
   void removeTranscript(String id) {
-    transcripts = transcripts.where((item) => item.id != id).toList();
-    allChunks = allChunks.where((item) => item.transcriptId != id).toList();
-    if (currentTranscript?.id == id) {
-      currentTranscript = null;
-      currentChunks = [];
-    }
-    unawaited(_persist());
+    transcriptController.removeTranscript(id);
+    unawaited(_repository.deleteTranscript(id));
+    _notify();
+  }
+
+  void setSpeakerRecognitionEnabled({required bool value}) {
+    speakerController.applyRecognitionEnabled(value: value);
+    unawaited(
+      _repository.saveSetting('speakerRecognitionEnabled', value.toString()),
+    );
     _notify();
   }
 
   void addSpeaker(String name) {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) {
-      return;
-    }
-    speakers = [
-      ...speakers,
-      SpeakerProfile(
-        id: 'speaker-${DateTime.now().microsecondsSinceEpoch}',
-        name: trimmed,
-        embedding: const [],
-        createdAt: DateTime.now(),
-      ),
-    ];
+    speakerController.addSpeaker(name);
+    unawaited(_repository.saveSpeaker(speakers.last));
     _notify();
   }
 
   void updateSpeaker(String id, String name) {
-    final trimmed = name.trim();
-    if (trimmed.isEmpty) {
-      return;
-    }
-    speakers = speakers
-        .map(
-          (speaker) =>
-              speaker.id == id ? speaker.copyWith(name: trimmed) : speaker,
-        )
-        .toList();
+    speakerController.updateSpeaker(id, name);
+    final speaker = speakers.firstWhere((s) => s.id == id);
+    unawaited(_repository.saveSpeaker(speaker));
     _notify();
   }
 
   void deleteSpeaker(String id) {
-    speakers = speakers.where((speaker) => speaker.id != id).toList();
+    speakerController.deleteSpeaker(id);
+    unawaited(_repository.deleteSpeaker(id));
     _notify();
   }
 
+  void setSummaryProvider(String value) {
+    summaryController.applyProvider(value);
+    unawaited(_repository.saveSetting('summaryProvider', value));
+    _notify();
+  }
+
+  void setSummaryLength(String value) {
+    summaryController.applyLength(value);
+    unawaited(_repository.saveSetting('summaryLength', value));
+    _notify();
+  }
+
+  Summary? latestSummaryFor(String transcriptId) {
+    return summaryController.latestForTranscript(transcriptId);
+  }
+
+  Future<Summary?> generateSummaryForLatest() async {
+    if (transcripts.isEmpty) {
+      return null;
+    }
+    final transcript = transcripts.first;
+    final text = transcriptText(transcript.id);
+    final summary = await summaryController.generate(
+      transcript: transcript,
+      transcriptText: text,
+      summaryService: _summaryService,
+    );
+    if (summary != null) {
+      await _repository.saveSummary(summary);
+    }
+    _notify();
+    return summary;
+  }
+
   List<TranscriptChunk> chunksFor(String transcriptId) {
-    final chunks =
-        allChunks.where((chunk) => chunk.transcriptId == transcriptId).toList()
-          ..sort((a, b) => a.chunkIndex.compareTo(b.chunkIndex));
-    return chunks;
+    return transcriptController.chunksFor(transcriptId);
   }
 
   String transcriptText(String transcriptId) {
-    return mergeTranscriptChunks(chunksFor(transcriptId));
+    return transcriptController.transcriptText(transcriptId);
   }
 
   @override
@@ -285,143 +299,55 @@ class AppController extends ChangeNotifier {
       return;
     }
 
-    final previousEnd = currentChunks.isEmpty
-        ? 0.0
-        : currentChunks.last.endTime;
-    final now = DateTime.now();
-    final chunk = TranscriptChunk(
-      id: '${transcript.id}-chunk-${currentChunks.length + 1}',
-      transcriptId: transcript.id,
-      chunkIndex: currentChunks.length + 1,
-      text: '',
-      audioPath: audioChunk.path,
-      recordedAt: now,
-      startTime: previousEnd,
-      endTime: previousEnd + audioChunk.durationSeconds,
-      speakerLabel: null,
-      confidence: null,
-    );
-
-    currentChunks = [...currentChunks, chunk];
-    allChunks = [...allChunks, chunk];
-    chunkCount = currentChunks.length;
-    _updateTranscript(
-      transcript.id,
-      status: TranscriptStatus.transcribing,
-      durationSeconds: chunk.endTime.round(),
-    );
-    unawaited(_persist());
+    final chunk = transcriptController.addRecordedChunk(audioChunk);
+    recordingController.incrementChunkCount();
     _notify();
+    unawaited(_repository.saveChunk(chunk));
     unawaited(_transcribe(chunk));
   }
 
   Future<void> _transcribe(TranscriptChunk chunk) async {
-    _pendingTranscriptions++;
     try {
-      final rawText = await _whisperService.transcribeChunk(
+      final rawText = await _transcriptionService.transcribeChunk(
         chunk.audioPath ?? '',
       );
-      final text = normalizeWhitespace(rawText);
-      if (text.isEmpty) {
-        return;
-      }
-
-      final previousChunk = chunksFor(
-        chunk.transcriptId,
-      ).where((item) => item.chunkIndex == chunk.chunkIndex - 1).firstOrNull;
-      final deduped = previousChunk == null
-          ? text
-          : removeOverlap(previousChunk.text, text);
-      _updateChunkText(chunk.id, deduped);
-      liveTranscriptPreview = normalizeWhitespace(
-        '$liveTranscriptPreview $deduped',
+      transcriptController.applyTranscriptionSuccess(chunk, rawText);
+      final updatedChunk = transcriptController.allChunks.firstWhere(
+        (c) => c.id == chunk.id,
       );
-      if (liveTranscriptPreview.length > 500) {
-        liveTranscriptPreview = liveTranscriptPreview.substring(
-          liveTranscriptPreview.length - 500,
-        );
+      unawaited(_repository.saveChunk(updatedChunk));
+      final matches = currentChunks.where((item) => item.id == chunk.id);
+      final current = matches.isEmpty ? null : matches.first;
+      if (current != null && current.text.trim().isNotEmpty) {
+        recordingController.appendPreview(current.text);
       }
-      _updateTranscript(
-        chunk.transcriptId,
-        status: TranscriptStatus.completed,
-        updatedAt: DateTime.now(),
-      );
     } catch (error) {
-      lastError = error.toString();
-      _updateTranscript(
-        chunk.transcriptId,
-        status: TranscriptStatus.transcriptionError,
-        updatedAt: DateTime.now(),
+      transcriptController.applyTranscriptionError(chunk, error);
+      final updatedChunk = transcriptController.allChunks.firstWhere(
+        (c) => c.id == chunk.id,
       );
+      unawaited(_repository.saveChunk(updatedChunk));
     } finally {
-      _pendingTranscriptions--;
       final path = chunk.audioPath;
       if (path != null) {
         unawaited(File(path).delete().catchError((_) => File(path)));
       }
-      await _persist();
+      if (currentTranscript != null) {
+        unawaited(_repository.saveTranscript(currentTranscript!));
+      }
       _notify();
     }
-  }
-
-  void _updateChunkText(String chunkId, String text) {
-    currentChunks = currentChunks
-        .map(
-          (chunk) => chunk.id == chunkId ? chunk.copyWith(text: text) : chunk,
-        )
-        .toList();
-    allChunks = allChunks
-        .map(
-          (chunk) => chunk.id == chunkId ? chunk.copyWith(text: text) : chunk,
-        )
-        .toList();
-  }
-
-  void _updateTranscript(
-    String id, {
-    TranscriptStatus? status,
-    int? durationSeconds,
-    DateTime? updatedAt,
-  }) {
-    final nextUpdatedAt = updatedAt ?? DateTime.now();
-    transcripts = transcripts
-        .map(
-          (transcript) => transcript.id == id
-              ? transcript.copyWith(
-                  status: status,
-                  durationSeconds: durationSeconds,
-                  updatedAt: nextUpdatedAt,
-                )
-              : transcript,
-        )
-        .toList();
-    if (currentTranscript?.id == id) {
-      currentTranscript = currentTranscript!.copyWith(
-        status: status,
-        durationSeconds: durationSeconds,
-        updatedAt: nextUpdatedAt,
-      );
-    }
-  }
-
-  Future<void> _persist() {
-    return _repository.save(
-      PersistedTranscriptState(
-        transcripts: transcripts,
-        currentTranscript: currentTranscript,
-        currentChunks: currentChunks,
-        allChunks: allChunks,
-      ),
-    );
   }
 
   void _startTimer() {
     _durationTimer?.cancel();
     _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      durationSeconds++;
-      final transcript = currentTranscript;
-      if (transcript != null) {
-        _updateTranscript(transcript.id, durationSeconds: durationSeconds);
+      recordingController.tick();
+      transcriptController.updateCurrentDuration(
+        recordingController.durationSeconds,
+      );
+      if (currentTranscript != null) {
+        unawaited(_repository.saveTranscript(currentTranscript!));
       }
       _notify();
     });
@@ -436,15 +362,5 @@ class AppController extends ChangeNotifier {
     if (!_disposed) {
       notifyListeners();
     }
-  }
-}
-
-extension FirstOrNullExtension<T> on Iterable<T> {
-  T? get firstOrNull {
-    final iterator = this.iterator;
-    if (iterator.moveNext()) {
-      return iterator.current;
-    }
-    return null;
   }
 }

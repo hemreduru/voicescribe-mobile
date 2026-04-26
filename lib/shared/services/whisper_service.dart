@@ -3,6 +3,10 @@ import 'dart:io';
 
 import 'package:whisper_ggml_plus/whisper_ggml_plus.dart';
 
+// Model bootstrap needs file metadata checks and cleanup around downloaded
+// assets. These calls run outside frame-critical UI paths.
+// ignore_for_file: avoid_slow_async_io
+
 class ModelDownloadProgress {
   const ModelDownloadProgress({
     required this.bytesDownloaded,
@@ -33,7 +37,15 @@ class WhisperBootstrapResult {
   final bool loaded;
 }
 
-class WhisperTranscriptionService {
+abstract class TranscriptionService {
+  Stream<ModelDownloadProgress> get downloadProgress;
+
+  Future<WhisperBootstrapResult> ensureModel();
+  Future<String> transcribeChunk(String audioPath);
+  Future<void> dispose();
+}
+
+class WhisperTranscriptionService implements TranscriptionService {
   WhisperTranscriptionService({
     WhisperController? controller,
     this.model = WhisperModel.base,
@@ -44,9 +56,11 @@ class WhisperTranscriptionService {
   final _progressController =
       StreamController<ModelDownloadProgress>.broadcast();
 
+  @override
   Stream<ModelDownloadProgress> get downloadProgress =>
       _progressController.stream;
 
+  @override
   Future<WhisperBootstrapResult> ensureModel() async {
     final modelPath = await _controller.getPath(model);
     final file = File(modelPath);
@@ -65,6 +79,7 @@ class WhisperTranscriptionService {
     );
   }
 
+  @override
   Future<String> transcribeChunk(String audioPath) async {
     final result = await _controller.transcribe(
       model: model,
@@ -73,11 +88,11 @@ class WhisperTranscriptionService {
       withTimestamps: false,
       convert: false,
       threads: 4,
-      vadMode: WhisperVadMode.auto,
     );
     return result?.transcription.text.trim() ?? '';
   }
 
+  @override
   Future<void> dispose() async {
     await _controller.dispose(model: model);
     await _progressController.close();

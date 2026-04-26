@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
+import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader({

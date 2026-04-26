@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../shared/i18n/app_strings.dart';
-import '../../shared/models/domain.dart';
-import '../../shared/state/app_controller.dart';
-import '../../shared/theme/app_theme.dart';
-import '../../shared/utils/text_utils.dart';
-import '../../shared/widgets/app_card.dart';
-import '../../shared/widgets/premium_widgets.dart';
+import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
+import 'package:voicescribe_mobile/shared/models/domain.dart';
+import 'package:voicescribe_mobile/shared/state/app_controller.dart';
+import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
+import 'package:voicescribe_mobile/shared/utils/text_utils.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
+import 'package:voicescribe_mobile/shared/widgets/premium_widgets.dart';
 
 enum HistorySort { newest, oldest, longest }
 
@@ -20,13 +20,13 @@ class HistoryScreen extends ConsumerStatefulWidget {
 }
 
 class _HistoryScreenState extends ConsumerState<HistoryScreen> {
-  static const _strings = AppStrings();
   String _query = '';
   HistorySort _sort = HistorySort.newest;
   final Set<String> _selected = {};
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final app = ref.watch(appControllerProvider);
     final items =
         app.transcripts.where((transcript) {
@@ -46,13 +46,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_strings.history),
+        title: Text(l10n.history),
         actions: [
           if (_selected.isNotEmpty)
             IconButton(
               onPressed: () => _deleteSelected(app),
               icon: const Icon(Icons.delete),
-              tooltip: _strings.delete,
+              tooltip: l10n.delete,
             ),
         ],
       ),
@@ -63,7 +63,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             children: [
               TextField(
                 decoration: InputDecoration(
-                  hintText: _strings.searchRecordings,
+                  hintText: l10n.searchRecordings,
                   prefixIcon: const Icon(Icons.search),
                 ),
                 onChanged: (value) => setState(() => _query = value),
@@ -75,21 +75,21 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   children: [
                     Expanded(
                       child: SegmentedButton<HistorySort>(
-                        segments: const [
+                        segments: [
                           ButtonSegment(
                             value: HistorySort.newest,
-                            label: Text('Yeni'),
-                            icon: Icon(Icons.arrow_downward),
+                            label: Text(l10n.newest),
+                            icon: const Icon(Icons.arrow_downward),
                           ),
                           ButtonSegment(
                             value: HistorySort.oldest,
-                            label: Text('Eski'),
-                            icon: Icon(Icons.arrow_upward),
+                            label: Text(l10n.oldest),
+                            icon: const Icon(Icons.arrow_upward),
                           ),
                           ButtonSegment(
                             value: HistorySort.longest,
-                            label: Text('Uzun'),
-                            icon: Icon(Icons.timer_outlined),
+                            label: Text(l10n.longest),
+                            icon: const Icon(Icons.timer_outlined),
                           ),
                         ],
                         selected: {_sort},
@@ -112,14 +112,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                           alignment: Alignment.centerLeft,
                           child: StatusPill(
                             icon: Icons.check_circle,
-                            label: '${_selected.length} ${_strings.selected}',
+                            label: '${_selected.length} ${l10n.selected}',
                           ),
                         ),
                       ),
                       OutlinedButton.icon(
                         onPressed: () => _deleteSelected(app),
                         icon: const Icon(Icons.delete_outline),
-                        label: Text(_strings.delete),
+                        label: Text(l10n.delete),
                       ),
                     ],
                   ),
@@ -130,10 +130,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 child: items.isEmpty
                     ? EmptyState(
                         icon: Icons.folder_open,
-                        title: _strings.noRecordings,
+                        title: l10n.noRecordings,
                         description: _query.isEmpty
-                            ? _strings.noRecordings
-                            : _strings.noMatchingText,
+                            ? l10n.noRecordings
+                            : l10n.noMatchingText,
                       )
                     : ListView.separated(
                         itemCount: items.length,
@@ -190,6 +190,7 @@ class _HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final date = transcript.recordedAt ?? transcript.createdAt;
     return AppCard(
@@ -225,7 +226,7 @@ class _HistoryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  transcript.title ?? const AppStrings().unnamed,
+                  transcript.title ?? l10n.unnamed,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -244,10 +245,10 @@ class _HistoryCard extends StatelessWidget {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    const _MiniBadge(label: 'Yerel', icon: Icons.storage),
+                    _MiniBadge(label: l10n.localBadge, icon: Icons.storage),
                     if (hasTranscript)
-                      const _MiniBadge(
-                        label: 'Transkript',
+                      _MiniBadge(
+                        label: l10n.transcriptBadge,
                         icon: Icons.description,
                       ),
                   ],

@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../shared/i18n/app_strings.dart';
-import '../../shared/models/domain.dart';
-import '../../shared/state/app_controller.dart';
-import '../../shared/theme/app_theme.dart';
-import '../../shared/utils/text_utils.dart';
-import '../../shared/widgets/app_card.dart';
-import '../../shared/widgets/audio_visualizer.dart';
-import '../../shared/widgets/premium_widgets.dart';
+import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
+import 'package:voicescribe_mobile/shared/models/domain.dart';
+import 'package:voicescribe_mobile/shared/state/app_controller.dart';
+import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
+import 'package:voicescribe_mobile/shared/utils/text_utils.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
+import 'package:voicescribe_mobile/shared/widgets/audio_visualizer.dart';
+import 'package:voicescribe_mobile/shared/widgets/premium_widgets.dart';
 
 class RecordingScreen extends ConsumerStatefulWidget {
   const RecordingScreen({super.key});
@@ -20,7 +20,6 @@ class RecordingScreen extends ConsumerStatefulWidget {
 
 class _RecordingScreenState extends ConsumerState<RecordingScreen> {
   final _titleController = TextEditingController();
-  static const _strings = AppStrings();
 
   @override
   void dispose() {
@@ -30,12 +29,13 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final app = ref.watch(appControllerProvider);
     final theme = Theme.of(context);
     final recent = app.transcripts.take(3).toList();
 
     return Scaffold(
-      appBar: AppBar(title: Text(_strings.recording)),
+      appBar: AppBar(title: Text(l10n.recording)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -47,12 +47,12 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SectionHeader(
-                    title: _strings.recordingStatus,
+                    title: l10n.recordingStatus,
                     subtitle: app.isRecording
                         ? app.isPaused
-                              ? _strings.recordingPaused
-                              : _strings.isRecording
-                        : _strings.tapToRecord,
+                              ? l10n.recordingPaused
+                              : l10n.isRecording
+                        : l10n.tapToRecord,
                   ),
                   const SizedBox(height: 14),
                   Wrap(
@@ -64,8 +64,8 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                             ? Icons.check_circle
                             : Icons.sync,
                         label: app.modelState == ModelBootstrapState.ready
-                            ? _strings.modelReady
-                            : _strings.modelLoading,
+                            ? l10n.modelReady
+                            : l10n.modelLoading,
                         color: app.modelState == ModelBootstrapState.ready
                             ? AppTheme.teal
                             : theme.colorScheme.secondary,
@@ -73,12 +73,12 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                       MetricPill(
                         icon: Icons.timer_outlined,
                         value: formatCompactDuration(app.durationSeconds),
-                        label: _strings.duration,
+                        label: l10n.duration,
                       ),
                       MetricPill(
                         icon: Icons.graphic_eq,
                         value: '${app.chunkCount}',
-                        label: _strings.chunks,
+                        label: l10n.chunks,
                         color: AppTheme.amber,
                       ),
                     ],
@@ -88,7 +88,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                     TextField(
                       controller: _titleController,
                       decoration: InputDecoration(
-                        hintText: _strings.sessionNamePlaceholder,
+                        hintText: l10n.sessionNamePlaceholder,
                         prefixIcon: const Icon(Icons.edit_note),
                       ),
                     ),
@@ -129,15 +129,13 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                   FilledButton.icon(
                     onPressed: app.togglePause,
                     icon: Icon(app.isPaused ? Icons.play_arrow : Icons.pause),
-                    label: Text(
-                      app.isPaused ? _strings.resume : _strings.pause,
-                    ),
+                    label: Text(app.isPaused ? l10n.resume : l10n.pause),
                   ),
                   const SizedBox(width: 12),
                   OutlinedButton.icon(
                     onPressed: app.stopRecording,
                     icon: const Icon(Icons.stop),
-                    label: Text(_strings.stop),
+                    label: Text(l10n.stop),
                   ),
                 ],
               ),
@@ -155,8 +153,8 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SectionHeader(
-                      title: _strings.liveTranscript,
-                      subtitle: '${app.chunkCount} ${_strings.chunks}',
+                      title: l10n.liveTranscript,
+                      subtitle: '${app.chunkCount} ${l10n.chunks}',
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -179,14 +177,14 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
             ],
             const SizedBox(height: 24),
             SectionHeader(
-              title: _strings.recentRecordings,
+              title: l10n.recentRecordings,
               subtitle: recent.isEmpty ? null : '${recent.length} kayıt',
             ),
             const SizedBox(height: 12),
             if (recent.isEmpty)
               AppCard(
                 child: Text(
-                  _strings.noRecordings,
+                  l10n.noRecordings,
                   style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                 ),
               )
@@ -270,6 +268,7 @@ class _RecentTranscriptCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final recordedAt = transcript.recordedAt ?? transcript.createdAt;
     return AppCard(
@@ -287,9 +286,9 @@ class _RecentTranscriptCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  transcript.title?.trim().isNotEmpty == true
+                  transcript.title?.trim().isNotEmpty ?? false
                       ? transcript.title!
-                      : const AppStrings().unnamed,
+                      : l10n.unnamed,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(

@@ -5,8 +5,8 @@ import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
-import 'pcm_chunker.dart';
-import 'wav_writer.dart';
+import 'package:voicescribe_mobile/shared/services/pcm_chunker.dart';
+import 'package:voicescribe_mobile/shared/services/wav_writer.dart';
 
 class RecordedAudioChunk {
   const RecordedAudioChunk({
@@ -20,7 +20,18 @@ class RecordedAudioChunk {
   final int index;
 }
 
-class AudioRecordingService {
+abstract class RecordingService {
+  Stream<RecordedAudioChunk> get chunks;
+  Stream<double> get levels;
+
+  Future<void> start();
+  Future<void> pause();
+  Future<void> resume();
+  Future<void> stop();
+  Future<void> dispose();
+}
+
+class AudioRecordingService implements RecordingService {
   AudioRecordingService({
     AudioRecorder? recorder,
     PcmChunker? chunker,
@@ -40,9 +51,13 @@ class AudioRecordingService {
   StreamSubscription<List<int>>? _recordingSubscription;
   bool _isRecording = false;
 
+  @override
   Stream<RecordedAudioChunk> get chunks => _chunksController.stream;
+
+  @override
   Stream<double> get levels => _levelsController.stream;
 
+  @override
   Future<void> start() async {
     if (_isRecording) {
       return;
@@ -58,9 +73,6 @@ class AudioRecordingService {
         sampleRate: 16000,
         numChannels: 1,
         streamBufferSize: 3200,
-        autoGain: false,
-        echoCancel: false,
-        noiseSuppress: false,
       ),
     );
     _isRecording = true;
@@ -74,6 +86,7 @@ class AudioRecordingService {
     }, onError: _levelsController.addError);
   }
 
+  @override
   Future<void> pause() async {
     if (!_isRecording) {
       return;
@@ -81,6 +94,7 @@ class AudioRecordingService {
     await _recorder.pause();
   }
 
+  @override
   Future<void> resume() async {
     if (!_isRecording) {
       return;
@@ -88,6 +102,7 @@ class AudioRecordingService {
     await _recorder.resume();
   }
 
+  @override
   Future<void> stop() async {
     if (!_isRecording) {
       return;
@@ -103,6 +118,7 @@ class AudioRecordingService {
     _levelsController.add(0);
   }
 
+  @override
   Future<void> dispose() async {
     await stop();
     await _recorder.dispose();

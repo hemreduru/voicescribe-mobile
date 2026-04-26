@@ -31,8 +31,32 @@ void main() {
           endTime: 12,
           speakerLabel: null,
           confidence: null,
+          transcriptionError: null,
         ),
       ],
+      speakers: [
+        SpeakerProfile(
+          id: 'speaker-1',
+          name: 'Ahmet',
+          embedding: const [],
+          createdAt: now,
+        ),
+      ],
+      summaries: [
+        Summary(
+          id: 'summary-1',
+          transcriptId: 'local-1',
+          providerKey: 'local',
+          model: 'local-default',
+          summaryText: 'Kisa ozet',
+          tokenCount: 12,
+          processingTimeMs: 10,
+          createdAt: now,
+        ),
+      ],
+      summaryProvider: 'local',
+      summaryLength: 'medium',
+      speakerRecognitionEnabled: true,
     );
 
     final decoded = PersistedTranscriptState.fromJson(state.toJson());
@@ -40,6 +64,8 @@ void main() {
     expect(decoded.transcripts.single.title, 'Demo');
     expect(decoded.transcripts.single.status, TranscriptStatus.completed);
     expect(decoded.allChunks.single.text, 'Merhaba');
+    expect(decoded.speakers.single.name, 'Ahmet');
+    expect(decoded.summaries.single.summaryText, 'Kisa ozet');
   });
 
   test('PersistedTranscriptState tolerates missing arrays', () {
@@ -48,5 +74,7 @@ void main() {
     expect(decoded.transcripts, isEmpty);
     expect(decoded.currentTranscript, isNull);
     expect(decoded.allChunks, isEmpty);
+    expect(decoded.speakers, isEmpty);
+    expect(decoded.summaries, isEmpty);
   });
 }

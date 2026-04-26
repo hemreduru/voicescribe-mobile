@@ -10,7 +10,6 @@ class AppTheme {
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(
       seedColor: rose,
-      brightness: Brightness.light,
       primary: rose,
       secondary: violet,
       tertiary: teal,

@@ -32,6 +32,22 @@ class Transcript {
     required this.updatedAt,
   });
 
+  factory Transcript.fromJson(Map<String, Object?> json) {
+    final createdAt = _readDate(json['createdAt']) ?? DateTime.now();
+    return Transcript(
+      id:
+          _readString(json['id']) ??
+          'local-${createdAt.millisecondsSinceEpoch}',
+      localId: _readString(json['localId']) ?? _readString(json['id']) ?? '',
+      title: _readString(json['title']),
+      durationSeconds: _readInt(json['durationSeconds']),
+      status: TranscriptStatus.fromKey(_readString(json['statusKey'])),
+      recordedAt: _readDate(json['recordedAt']),
+      createdAt: createdAt,
+      updatedAt: _readDate(json['updatedAt']) ?? createdAt,
+    );
+  }
+
   final String id;
   final String localId;
   final String? title;
@@ -77,22 +93,6 @@ class Transcript {
       'updatedAt': updatedAt.toIso8601String(),
     };
   }
-
-  factory Transcript.fromJson(Map<String, Object?> json) {
-    final createdAt = _readDate(json['createdAt']) ?? DateTime.now();
-    return Transcript(
-      id:
-          _readString(json['id']) ??
-          'local-${createdAt.millisecondsSinceEpoch}',
-      localId: _readString(json['localId']) ?? _readString(json['id']) ?? '',
-      title: _readString(json['title']),
-      durationSeconds: _readInt(json['durationSeconds']),
-      status: TranscriptStatus.fromKey(_readString(json['statusKey'])),
-      recordedAt: _readDate(json['recordedAt']),
-      createdAt: createdAt,
-      updatedAt: _readDate(json['updatedAt']) ?? createdAt,
-    );
-  }
 }
 
 @immutable
@@ -108,7 +108,24 @@ class TranscriptChunk {
     required this.endTime,
     required this.speakerLabel,
     required this.confidence,
+    required this.transcriptionError,
   });
+
+  factory TranscriptChunk.fromJson(Map<String, Object?> json) {
+    return TranscriptChunk(
+      id: _readString(json['id']) ?? '',
+      transcriptId: _readString(json['transcriptId']) ?? '',
+      chunkIndex: _readInt(json['chunkIndex']),
+      text: _readString(json['text']) ?? '',
+      audioPath: _readString(json['audioPath']),
+      recordedAt: _readDate(json['recordedAt']),
+      startTime: _readDouble(json['startTime']),
+      endTime: _readDouble(json['endTime']),
+      speakerLabel: _readString(json['speakerLabel']),
+      confidence: _readNullableDouble(json['confidence']),
+      transcriptionError: _readString(json['transcriptionError']),
+    );
+  }
 
   final String id;
   final String transcriptId;
@@ -120,6 +137,7 @@ class TranscriptChunk {
   final double endTime;
   final String? speakerLabel;
   final double? confidence;
+  final String? transcriptionError;
 
   TranscriptChunk copyWith({
     String? id,
@@ -136,6 +154,8 @@ class TranscriptChunk {
     bool clearSpeakerLabel = false,
     double? confidence,
     bool clearConfidence = false,
+    String? transcriptionError,
+    bool clearTranscriptionError = false,
   }) {
     return TranscriptChunk(
       id: id ?? this.id,
@@ -150,6 +170,9 @@ class TranscriptChunk {
           ? null
           : speakerLabel ?? this.speakerLabel,
       confidence: clearConfidence ? null : confidence ?? this.confidence,
+      transcriptionError: clearTranscriptionError
+          ? null
+          : transcriptionError ?? this.transcriptionError,
     );
   }
 
@@ -165,22 +188,8 @@ class TranscriptChunk {
       'endTime': endTime,
       'speakerLabel': speakerLabel,
       'confidence': confidence,
+      'transcriptionError': transcriptionError,
     };
-  }
-
-  factory TranscriptChunk.fromJson(Map<String, Object?> json) {
-    return TranscriptChunk(
-      id: _readString(json['id']) ?? '',
-      transcriptId: _readString(json['transcriptId']) ?? '',
-      chunkIndex: _readInt(json['chunkIndex']),
-      text: _readString(json['text']) ?? '',
-      audioPath: _readString(json['audioPath']),
-      recordedAt: _readDate(json['recordedAt']),
-      startTime: _readDouble(json['startTime']),
-      endTime: _readDouble(json['endTime']),
-      speakerLabel: _readString(json['speakerLabel']),
-      confidence: _readNullableDouble(json['confidence']),
-    );
   }
 }
 
@@ -197,6 +206,22 @@ class Summary {
     required this.createdAt,
   });
 
+  factory Summary.fromJson(Map<String, Object?> json) {
+    final createdAt = _readDate(json['createdAt']) ?? DateTime.now();
+    return Summary(
+      id:
+          _readString(json['id']) ??
+          'summary-${createdAt.millisecondsSinceEpoch}',
+      transcriptId: _readString(json['transcriptId']) ?? '',
+      providerKey: _readString(json['providerKey']) ?? 'local',
+      model: _readString(json['model']) ?? 'local-default',
+      summaryText: _readString(json['summaryText']) ?? '',
+      tokenCount: _readNullableInt(json['tokenCount']),
+      processingTimeMs: _readNullableInt(json['processingTimeMs']),
+      createdAt: createdAt,
+    );
+  }
+
   final String id;
   final String transcriptId;
   final String providerKey;
@@ -205,6 +230,45 @@ class Summary {
   final int? tokenCount;
   final int? processingTimeMs;
   final DateTime createdAt;
+
+  Summary copyWith({
+    String? id,
+    String? transcriptId,
+    String? providerKey,
+    String? model,
+    String? summaryText,
+    int? tokenCount,
+    bool clearTokenCount = false,
+    int? processingTimeMs,
+    bool clearProcessingTimeMs = false,
+    DateTime? createdAt,
+  }) {
+    return Summary(
+      id: id ?? this.id,
+      transcriptId: transcriptId ?? this.transcriptId,
+      providerKey: providerKey ?? this.providerKey,
+      model: model ?? this.model,
+      summaryText: summaryText ?? this.summaryText,
+      tokenCount: clearTokenCount ? null : tokenCount ?? this.tokenCount,
+      processingTimeMs: clearProcessingTimeMs
+          ? null
+          : processingTimeMs ?? this.processingTimeMs,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  Map<String, Object?> toJson() {
+    return {
+      'id': id,
+      'transcriptId': transcriptId,
+      'providerKey': providerKey,
+      'model': model,
+      'summaryText': summaryText,
+      'tokenCount': tokenCount,
+      'processingTimeMs': processingTimeMs,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
 }
 
 @immutable
@@ -217,6 +281,23 @@ class SpeakerProfile {
     this.recordings = 0,
     this.hasVoiceSample = false,
   });
+
+  factory SpeakerProfile.fromJson(Map<String, Object?> json) {
+    final createdAt = _readDate(json['createdAt']) ?? DateTime.now();
+    final embedding = json['embedding'] is List<Object?>
+        ? (json['embedding']! as List<Object?>).map(_readDouble).toList()
+        : const <double>[];
+    return SpeakerProfile(
+      id:
+          _readString(json['id']) ??
+          'speaker-${createdAt.millisecondsSinceEpoch}',
+      name: _readString(json['name']) ?? 'Speaker',
+      embedding: embedding,
+      createdAt: createdAt,
+      recordings: _readInt(json['recordings']),
+      hasVoiceSample: _readBool(json['hasVoiceSample']),
+    );
+  }
 
   final String id;
   final String name;
@@ -242,6 +323,17 @@ class SpeakerProfile {
       hasVoiceSample: hasVoiceSample ?? this.hasVoiceSample,
     );
   }
+
+  Map<String, Object?> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'embedding': embedding,
+      'createdAt': createdAt.toIso8601String(),
+      'recordings': recordings,
+      'hasVoiceSample': hasVoiceSample,
+    };
+  }
 }
 
 @immutable
@@ -251,36 +343,18 @@ class PersistedTranscriptState {
     required this.currentTranscript,
     required this.currentChunks,
     required this.allChunks,
+    required this.speakers,
+    required this.summaries,
+    required this.summaryProvider,
+    required this.summaryLength,
+    required this.speakerRecognitionEnabled,
   });
-
-  factory PersistedTranscriptState.empty() {
-    return const PersistedTranscriptState(
-      transcripts: [],
-      currentTranscript: null,
-      currentChunks: [],
-      allChunks: [],
-    );
-  }
-
-  final List<Transcript> transcripts;
-  final Transcript? currentTranscript;
-  final List<TranscriptChunk> currentChunks;
-  final List<TranscriptChunk> allChunks;
-
-  Map<String, Object?> toJson() {
-    return {
-      'transcripts': transcripts.map((item) => item.toJson()).toList(),
-      'currentTranscript': currentTranscript?.toJson(),
-      'currentChunks': currentChunks.map((item) => item.toJson()).toList(),
-      'allChunks': allChunks.map((item) => item.toJson()).toList(),
-    };
-  }
 
   factory PersistedTranscriptState.fromJson(Map<String, Object?> json) {
     return PersistedTranscriptState(
       transcripts: _readList(
         json['transcripts'],
-      ).map((item) => Transcript.fromJson(item)).toList(),
+      ).map(Transcript.fromJson).toList(),
       currentTranscript: json['currentTranscript'] is Map<String, Object?>
           ? Transcript.fromJson(
               json['currentTranscript']! as Map<String, Object?>,
@@ -288,11 +362,59 @@ class PersistedTranscriptState {
           : null,
       currentChunks: _readList(
         json['currentChunks'],
-      ).map((item) => TranscriptChunk.fromJson(item)).toList(),
+      ).map(TranscriptChunk.fromJson).toList(),
       allChunks: _readList(
         json['allChunks'],
-      ).map((item) => TranscriptChunk.fromJson(item)).toList(),
+      ).map(TranscriptChunk.fromJson).toList(),
+      speakers: _readList(
+        json['speakers'],
+      ).map(SpeakerProfile.fromJson).toList(),
+      summaries: _readList(json['summaries']).map(Summary.fromJson).toList(),
+      summaryProvider: _readString(json['summaryProvider']) ?? 'local',
+      summaryLength: _readString(json['summaryLength']) ?? 'medium',
+      speakerRecognitionEnabled: _readBool(
+        json['speakerRecognitionEnabled'],
+        defaultValue: true,
+      ),
     );
+  }
+
+  factory PersistedTranscriptState.empty() {
+    return const PersistedTranscriptState(
+      transcripts: [],
+      currentTranscript: null,
+      currentChunks: [],
+      allChunks: [],
+      speakers: [],
+      summaries: [],
+      summaryProvider: 'local',
+      summaryLength: 'medium',
+      speakerRecognitionEnabled: true,
+    );
+  }
+
+  final List<Transcript> transcripts;
+  final Transcript? currentTranscript;
+  final List<TranscriptChunk> currentChunks;
+  final List<TranscriptChunk> allChunks;
+  final List<SpeakerProfile> speakers;
+  final List<Summary> summaries;
+  final String summaryProvider;
+  final String summaryLength;
+  final bool speakerRecognitionEnabled;
+
+  Map<String, Object?> toJson() {
+    return {
+      'transcripts': transcripts.map((item) => item.toJson()).toList(),
+      'currentTranscript': currentTranscript?.toJson(),
+      'currentChunks': currentChunks.map((item) => item.toJson()).toList(),
+      'allChunks': allChunks.map((item) => item.toJson()).toList(),
+      'speakers': speakers.map((item) => item.toJson()).toList(),
+      'summaries': summaries.map((item) => item.toJson()).toList(),
+      'summaryProvider': summaryProvider,
+      'summaryLength': summaryLength,
+      'speakerRecognitionEnabled': speakerRecognitionEnabled,
+    };
   }
 }
 
@@ -312,6 +434,19 @@ int _readInt(Object? value) {
     return value.toInt();
   }
   return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+int? _readNullableInt(Object? value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return int.tryParse(value.toString());
 }
 
 double _readDouble(Object? value) {
@@ -336,12 +471,33 @@ DateTime? _readDate(Object? value) {
   return DateTime.tryParse(text);
 }
 
+bool _readBool(Object? value, {bool defaultValue = false}) {
+  if (value is bool) {
+    return value;
+  }
+  final text = value?.toString().toLowerCase();
+  if (text == null) {
+    return defaultValue;
+  }
+  if (text == 'true' || text == '1') {
+    return true;
+  }
+  if (text == 'false' || text == '0') {
+    return false;
+  }
+  return defaultValue;
+}
+
 List<Map<String, Object?>> _readList(Object? value) {
   if (value is! List) {
     return const [];
   }
   return value
-      .whereType<Map>()
-      .map((item) => item.cast<String, Object?>())
+      .whereType<Map<dynamic, dynamic>>()
+      .map(
+        (item) => item.map<String, Object?>(
+          (key, value) => MapEntry(key.toString(), value),
+        ),
+      )
       .toList();
 }

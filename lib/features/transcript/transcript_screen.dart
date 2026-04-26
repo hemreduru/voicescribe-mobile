@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../shared/i18n/app_strings.dart';
-import '../../shared/models/domain.dart';
-import '../../shared/state/app_controller.dart';
-import '../../shared/theme/app_theme.dart';
-import '../../shared/utils/text_utils.dart';
-import '../../shared/widgets/app_card.dart';
-import '../../shared/widgets/premium_widgets.dart';
+import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
+import 'package:voicescribe_mobile/shared/models/domain.dart';
+import 'package:voicescribe_mobile/shared/state/app_controller.dart';
+import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
+import 'package:voicescribe_mobile/shared/utils/text_utils.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
+import 'package:voicescribe_mobile/shared/widgets/premium_widgets.dart';
 
 class TranscriptScreen extends ConsumerStatefulWidget {
   const TranscriptScreen({super.key});
@@ -18,11 +18,11 @@ class TranscriptScreen extends ConsumerStatefulWidget {
 }
 
 class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
-  static const _strings = AppStrings();
   String _query = '';
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final app = ref.watch(appControllerProvider);
     final filtered = app.transcripts.where((transcript) {
       final text = app.transcriptText(transcript.id).toLowerCase();
@@ -32,7 +32,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: Text(_strings.transcript)),
+      appBar: AppBar(title: Text(l10n.transcript)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -40,7 +40,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
             children: [
               TextField(
                 decoration: InputDecoration(
-                  hintText: _strings.searchRecordings,
+                  hintText: l10n.searchRecordings,
                   prefixIcon: const Icon(Icons.search),
                 ),
                 onChanged: (value) => setState(() => _query = value),
@@ -50,10 +50,10 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                 child: filtered.isEmpty
                     ? EmptyState(
                         icon: Icons.description_outlined,
-                        title: _strings.transcript,
+                        title: l10n.transcript,
                         description: _query.isEmpty
-                            ? _strings.noTranscriptAvailable
-                            : _strings.noMatchingText,
+                            ? l10n.noTranscriptAvailable
+                            : l10n.noMatchingText,
                       )
                     : ListView.separated(
                         itemBuilder: (context, index) {
@@ -85,6 +85,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
   ) {
     final chunks = app.chunksFor(transcript.id);
     final mergedText = mergeTranscriptChunks(chunks);
+    final l10n = context.l10n;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -102,7 +103,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
               children: [
                 Text(
-                  transcript.title ?? _strings.unnamed,
+                  transcript.title ?? l10n.unnamed,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -115,25 +116,25 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                     StatusPill(
                       compact: true,
                       icon: _statusIcon(transcript.status),
-                      label: _strings.statusLabel(transcript.status.key),
+                      label: localizedStatusLabel(l10n, transcript.status.key),
                       color: _statusColor(context, transcript.status),
                     ),
                     MetricPill(
                       icon: Icons.timer_outlined,
                       value: formatCompactDuration(transcript.durationSeconds),
-                      label: _strings.duration,
+                      label: l10n.duration,
                     ),
                     MetricPill(
                       icon: Icons.graphic_eq,
                       value: '${chunks.length}',
-                      label: _strings.chunks,
+                      label: l10n.chunks,
                     ),
                   ],
                 ),
                 const PremiumDivider(),
                 if (mergedText.isEmpty)
                   Text(
-                    _strings.noTranscriptAvailable,
+                    l10n.noTranscriptAvailable,
                     style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                   )
                 else
@@ -144,7 +145,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                 if (chunks.isNotEmpty) ...[
                   const SizedBox(height: 20),
                   SectionHeader(
-                    title: _strings.chunks,
+                    title: l10n.chunks,
                     subtitle: '${chunks.length} parça',
                   ),
                   const SizedBox(height: 8),
@@ -156,7 +157,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                         accentColor: theme.colorScheme.secondary,
                         child: Text(
                           chunk.text.isEmpty
-                              ? _strings.noTranscriptAvailable
+                              ? l10n.noTranscriptAvailable
                               : chunk.text,
                           style: theme.textTheme.bodyMedium,
                         ),
@@ -185,10 +186,10 @@ class _TranscriptCard extends StatelessWidget {
   final String mergedText;
   final List<TranscriptChunk> chunks;
   final VoidCallback onTap;
-  static const _strings = AppStrings();
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final recordedAt = transcript.recordedAt ?? transcript.createdAt;
     return AppCard(
@@ -202,7 +203,7 @@ class _TranscriptCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  transcript.title ?? const AppStrings().unnamed,
+                  transcript.title ?? l10n.unnamed,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -213,7 +214,7 @@ class _TranscriptCard extends StatelessWidget {
               StatusPill(
                 compact: true,
                 icon: _statusIcon(transcript.status),
-                label: const AppStrings().statusLabel(transcript.status.key),
+                label: localizedStatusLabel(l10n, transcript.status.key),
                 color: _statusColor(context, transcript.status),
               ),
             ],
@@ -231,12 +232,12 @@ class _TranscriptCard extends StatelessWidget {
               MetricPill(
                 icon: Icons.timer_outlined,
                 value: formatCompactDuration(transcript.durationSeconds),
-                label: _strings.duration,
+                label: l10n.duration,
               ),
               MetricPill(
                 icon: Icons.graphic_eq,
                 value: '${chunks.length}',
-                label: _strings.chunks,
+                label: l10n.chunks,
               ),
             ],
           ),
