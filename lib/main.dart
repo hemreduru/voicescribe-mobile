@@ -156,31 +156,42 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.mic),
-            label: _strings.recording,
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
+          child: NavigationBar(
+            selectedIndex: _index,
+            onDestinationSelected: (value) => setState(() => _index = value),
+            destinations: [
+              NavigationDestination(
+                icon: const Icon(Icons.mic_none),
+                selectedIcon: const Icon(Icons.mic),
+                label: _strings.recording,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.description_outlined),
+                selectedIcon: const Icon(Icons.description),
+                label: _strings.transcript,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.auto_awesome_outlined),
+                selectedIcon: const Icon(Icons.auto_awesome),
+                label: _strings.summary,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.history_outlined),
+                selectedIcon: const Icon(Icons.history),
+                label: _strings.history,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.group_outlined),
+                selectedIcon: const Icon(Icons.group),
+                label: _strings.speaker,
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.description),
-            label: _strings.transcript,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.auto_awesome),
-            label: _strings.summary,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.history),
-            label: _strings.history,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.group),
-            label: _strings.speaker,
-          ),
-        ],
+        ),
       ),
     );
   }

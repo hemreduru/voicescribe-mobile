@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 import '../../shared/i18n/app_strings.dart';
 import '../../shared/models/domain.dart';
 import '../../shared/state/app_controller.dart';
+import '../../shared/theme/app_theme.dart';
 import '../../shared/utils/text_utils.dart';
 import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/premium_widgets.dart';
 
 class TranscriptScreen extends ConsumerStatefulWidget {
   const TranscriptScreen({super.key});
@@ -105,23 +107,30 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    Chip(
-                      label: Text(_strings.statusLabel(transcript.status.key)),
+                    StatusPill(
+                      compact: true,
+                      icon: _statusIcon(transcript.status),
+                      label: _strings.statusLabel(transcript.status.key),
+                      color: _statusColor(context, transcript.status),
                     ),
-                    Chip(
-                      label: Text(
-                        formatCompactDuration(transcript.durationSeconds),
-                      ),
+                    MetricPill(
+                      icon: Icons.timer_outlined,
+                      value: formatCompactDuration(transcript.durationSeconds),
+                      label: _strings.duration,
                     ),
-                    Chip(label: Text('${chunks.length} chunk')),
+                    MetricPill(
+                      icon: Icons.graphic_eq,
+                      value: '${chunks.length}',
+                      label: _strings.chunks,
+                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const PremiumDivider(),
                 if (mergedText.isEmpty)
                   Text(
                     _strings.noTranscriptAvailable,
@@ -134,17 +143,17 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                   ),
                 if (chunks.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  Text(
-                    'Chunks',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                  SectionHeader(
+                    title: _strings.chunks,
+                    subtitle: '${chunks.length} parça',
                   ),
                   const SizedBox(height: 8),
                   ...chunks.map(
                     (chunk) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: AppCard(
+                        showAccent: true,
+                        accentColor: theme.colorScheme.secondary,
                         child: Text(
                           chunk.text.isEmpty
                               ? _strings.noTranscriptAvailable
@@ -176,6 +185,7 @@ class _TranscriptCard extends StatelessWidget {
   final String mergedText;
   final List<TranscriptChunk> chunks;
   final VoidCallback onTap;
+  static const _strings = AppStrings();
 
   @override
   Widget build(BuildContext context) {
@@ -183,6 +193,8 @@ class _TranscriptCard extends StatelessWidget {
     final recordedAt = transcript.recordedAt ?? transcript.createdAt;
     return AppCard(
       onTap: onTap,
+      showAccent: true,
+      accentColor: _statusColor(context, transcript.status),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -198,15 +210,35 @@ class _TranscriptCard extends StatelessWidget {
                   ),
                 ),
               ),
-              _StatusBadge(status: transcript.status),
+              StatusPill(
+                compact: true,
+                icon: _statusIcon(transcript.status),
+                label: const AppStrings().statusLabel(transcript.status.key),
+                color: _statusColor(context, transcript.status),
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            '${DateFormat('MMM d, HH:mm').format(recordedAt)} • ${formatCompactDuration(transcript.durationSeconds)} • ${chunks.length} chunk',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              MetricPill(
+                icon: Icons.calendar_today_outlined,
+                value: DateFormat('MMM d, HH:mm').format(recordedAt),
+                label: '',
+              ),
+              MetricPill(
+                icon: Icons.timer_outlined,
+                value: formatCompactDuration(transcript.durationSeconds),
+                label: _strings.duration,
+              ),
+              MetricPill(
+                icon: Icons.graphic_eq,
+                value: '${chunks.length}',
+                label: _strings.chunks,
+              ),
+            ],
           ),
           if (mergedText.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -223,34 +255,23 @@ class _TranscriptCard extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
+Color _statusColor(BuildContext context, TranscriptStatus status) {
+  final theme = Theme.of(context);
+  return switch (status) {
+    TranscriptStatus.completed => AppTheme.teal,
+    TranscriptStatus.transcriptionError => theme.colorScheme.error,
+    TranscriptStatus.recording ||
+    TranscriptStatus.transcribing => AppTheme.amber,
+    TranscriptStatus.empty => theme.colorScheme.outline,
+  };
+}
 
-  final TranscriptStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = switch (status) {
-      TranscriptStatus.completed => Colors.green,
-      TranscriptStatus.transcriptionError => theme.colorScheme.error,
-      TranscriptStatus.recording ||
-      TranscriptStatus.transcribing => Colors.orange,
-      TranscriptStatus.empty => theme.colorScheme.outline,
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        const AppStrings().statusLabel(status.key),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
+IconData _statusIcon(TranscriptStatus status) {
+  return switch (status) {
+    TranscriptStatus.completed => Icons.check_circle,
+    TranscriptStatus.transcriptionError => Icons.error,
+    TranscriptStatus.recording => Icons.mic,
+    TranscriptStatus.transcribing => Icons.sync,
+    TranscriptStatus.empty => Icons.radio_button_unchecked,
+  };
 }

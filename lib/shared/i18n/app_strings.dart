@@ -17,6 +17,8 @@ class AppStrings {
   String get tapToRecord => 'Kayıt başlatmak için butona dokunun';
   String get isRecording => 'Kaydediliyor';
   String get recordingPaused => 'Kayıt duraklatıldı';
+  String get liveTranscript => 'Canlı Transkript';
+  String get recordingStatus => 'Oturum Durumu';
   String get sessionNamePlaceholder => 'Oturum adı girin...';
   String get pause => 'Duraklat';
   String get resume => 'Devam Et';
@@ -35,9 +37,18 @@ class AppStrings {
   String get short => 'Kısa';
   String get medium => 'Orta';
   String get long => 'Uzun';
+  String get settings => 'Ayarlar';
+  String get summarySettings => 'Özet Ayarları';
+  String get latestTranscript => 'Son Transkript';
+  String get readyToSummarize => 'Özet için hazır';
   String get generateSummary => 'Özet Oluştur';
   String get summaryPlaceholder =>
       'Özetleme motoru Flutter iskeletinde hazır. Yerel LLM veya bulut sağlayıcı bağlandığında burada sonuç üretilecek.';
+  String get noSummaryYet => 'Üretilmiş özet henüz yok.';
+  String get chunks => 'Parçalar';
+  String get duration => 'Süre';
+  String get selected => 'Seçildi';
+  String get select => 'Seç';
   String get speakerRecognition => 'Konuşmacı Tanıma';
   String get speakerRecognitionDesc =>
       'Kayıtlardaki konuşmacıları otomatik olarak tanımla ve etiketle.';

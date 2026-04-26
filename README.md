@@ -12,7 +12,7 @@ Flutter migration of the offline-first VoiceScribe mobile app.
 
 ## App Shape
 
-The app keeps the React Native product flow while using Flutter-native structure:
+The app keeps the VoiceScribe product flow while using Flutter-native structure:
 
 - Recording: model bootstrap, recording controls, chunking, live transcript preview
 - Transcript: searchable transcript sessions and chunk detail

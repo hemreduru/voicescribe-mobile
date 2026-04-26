@@ -9,6 +9,7 @@ import '../../shared/theme/app_theme.dart';
 import '../../shared/utils/text_utils.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/audio_visualizer.dart';
+import '../../shared/widgets/premium_widgets.dart';
 
 class RecordingScreen extends ConsumerStatefulWidget {
   const RecordingScreen({super.key});
@@ -39,15 +40,63 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            if (!app.isRecording)
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  hintText: _strings.sessionNamePlaceholder,
-                  prefixIcon: const Icon(Icons.edit_note),
-                ),
+            AppCard(
+              showAccent: true,
+              accentColor: _statusColor(context, app),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SectionHeader(
+                    title: _strings.recordingStatus,
+                    subtitle: app.isRecording
+                        ? app.isPaused
+                              ? _strings.recordingPaused
+                              : _strings.isRecording
+                        : _strings.tapToRecord,
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      StatusPill(
+                        icon: app.modelState == ModelBootstrapState.ready
+                            ? Icons.check_circle
+                            : Icons.sync,
+                        label: app.modelState == ModelBootstrapState.ready
+                            ? _strings.modelReady
+                            : _strings.modelLoading,
+                        color: app.modelState == ModelBootstrapState.ready
+                            ? AppTheme.teal
+                            : theme.colorScheme.secondary,
+                      ),
+                      MetricPill(
+                        icon: Icons.timer_outlined,
+                        value: formatCompactDuration(app.durationSeconds),
+                        label: _strings.duration,
+                      ),
+                      MetricPill(
+                        icon: Icons.graphic_eq,
+                        value: '${app.chunkCount}',
+                        label: _strings.chunks,
+                        color: AppTheme.amber,
+                      ),
+                    ],
+                  ),
+                  if (!app.isRecording) ...[
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _titleController,
+                      decoration: InputDecoration(
+                        hintText: _strings.sessionNamePlaceholder,
+                        prefixIcon: const Icon(Icons.edit_note),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            const SizedBox(height: 28),
+            ),
+            const SizedBox(height: 26),
             Center(
               child: _RecordButton(
                 isRecording: app.isRecording,
@@ -71,18 +120,6 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              app.isRecording
-                  ? app.isPaused
-                        ? _strings.recordingPaused
-                        : _strings.isRecording
-                  : _strings.tapToRecord,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
             ),
             if (app.isRecording) ...[
               const SizedBox(height: 18),
@@ -112,30 +149,26 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
             if (app.liveTranscriptPreview.isNotEmpty) ...[
               const SizedBox(height: 20),
               AppCard(
-                child: Text(
-                  app.liveTranscriptPreview,
-                  maxLines: 5,
-                  overflow: TextOverflow.fade,
-                  style: theme.textTheme.bodyLarge,
+                showAccent: true,
+                accentColor: theme.colorScheme.secondary,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SectionHeader(
+                      title: _strings.liveTranscript,
+                      subtitle: '${app.chunkCount} ${_strings.chunks}',
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      app.liveTranscriptPreview,
+                      maxLines: 5,
+                      overflow: TextOverflow.fade,
+                      style: theme.textTheme.bodyLarge?.copyWith(height: 1.45),
+                    ),
+                  ],
                 ),
               ),
             ],
-            const SizedBox(height: 14),
-            Center(
-              child: Chip(
-                avatar: Icon(
-                  app.modelState == ModelBootstrapState.ready
-                      ? Icons.check_circle
-                      : Icons.sync,
-                  size: 18,
-                ),
-                label: Text(
-                  app.modelState == ModelBootstrapState.ready
-                      ? _strings.modelReady
-                      : _strings.modelLoading,
-                ),
-              ),
-            ),
             if (app.lastError != null) ...[
               const SizedBox(height: 12),
               Text(
@@ -145,20 +178,9 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
               ),
             ],
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _strings.recentRecordings,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  _strings.viewAll,
-                  style: TextStyle(color: theme.colorScheme.primary),
-                ),
-              ],
+            SectionHeader(
+              title: _strings.recentRecordings,
+              subtitle: recent.isEmpty ? null : '${recent.length} kayıt',
             ),
             const SizedBox(height: 12),
             if (recent.isEmpty)
@@ -198,6 +220,16 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
       ).showSnackBar(SnackBar(content: Text(error.toString())));
     }
   }
+
+  Color _statusColor(BuildContext context, AppController app) {
+    if (app.isPaused) {
+      return AppTheme.amber;
+    }
+    if (app.isRecording) {
+      return Theme.of(context).colorScheme.error;
+    }
+    return AppTheme.teal;
+  }
 }
 
 class _RecordButton extends StatelessWidget {
@@ -215,6 +247,10 @@ class _RecordButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           shape: const CircleBorder(),
           backgroundColor: isRecording ? scheme.error : scheme.primary,
+          shadowColor: (isRecording ? scheme.error : scheme.primary).withValues(
+            alpha: 0.32,
+          ),
+          elevation: 4,
         ),
         onPressed: onPressed,
         child: Icon(
@@ -237,6 +273,8 @@ class _RecentTranscriptCard extends StatelessWidget {
     final theme = Theme.of(context);
     final recordedAt = transcript.recordedAt ?? transcript.createdAt;
     return AppCard(
+      showAccent: true,
+      accentColor: theme.colorScheme.secondary,
       child: Row(
         children: [
           CircleAvatar(

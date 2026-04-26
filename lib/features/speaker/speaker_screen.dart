@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/i18n/app_strings.dart';
 import '../../shared/models/domain.dart';
 import '../../shared/state/app_controller.dart';
+import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/app_card.dart';
+import '../../shared/widgets/premium_widgets.dart';
 
 class SpeakerScreen extends ConsumerStatefulWidget {
   const SpeakerScreen({super.key});
@@ -34,19 +36,29 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
           children: [
             AppCard(
-              backgroundColor: theme.colorScheme.primaryContainer.withValues(
-                alpha: 0.42,
-              ),
+              onTap: () => setState(() => _enabled = !_enabled),
+              selected: _enabled,
+              showAccent: true,
+              accentColor: _enabled ? AppTheme.teal : AppTheme.amber,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.record_voice_over,
-                        color: theme.colorScheme.primary,
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: (_enabled ? AppTheme.teal : AppTheme.amber)
+                              .withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.record_voice_over,
+                          color: _enabled ? AppTheme.teal : AppTheme.amber,
+                        ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _strings.speakerRecognition,
@@ -55,6 +67,13 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
                           ),
                         ),
                       ),
+                      StatusPill(
+                        compact: true,
+                        icon: _enabled ? Icons.check_circle : Icons.pause,
+                        label: _enabled ? 'Aktif' : 'Kapalı',
+                        color: _enabled ? AppTheme.teal : AppTheme.amber,
+                      ),
+                      const SizedBox(width: 8),
                       Switch(
                         value: _enabled,
                         onChanged: (value) => setState(() => _enabled = value),
@@ -72,11 +91,9 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
               ),
             ),
             const SizedBox(height: 18),
-            Text(
-              '${_strings.registeredSpeakers} (${app.speakers.length})',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+            SectionHeader(
+              title: _strings.registeredSpeakers,
+              subtitle: '${app.speakers.length} profil',
             ),
             const SizedBox(height: 12),
             if (app.speakers.isEmpty)
@@ -159,6 +176,8 @@ class _SpeakerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AppCard(
+      showAccent: true,
+      accentColor: _colorFor(speaker.id),
       child: Column(
         children: [
           Row(
@@ -174,6 +193,8 @@ class _SpeakerCard extends StatelessWidget {
                   children: [
                     Text(
                       speaker.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -187,31 +208,34 @@ class _SpeakerCard extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(onPressed: onEdit, icon: const Icon(Icons.edit)),
-              IconButton(
+              IconButton.filledTonal(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit),
+                tooltip: const AppStrings().edit,
+              ),
+              const SizedBox(width: 6),
+              IconButton.filledTonal(
                 onPressed: onDelete,
                 icon: const Icon(Icons.delete_outline),
+                tooltip: const AppStrings().delete,
               ),
             ],
           ),
-          const Divider(height: 24),
-          Row(
-            children: [
-              Icon(
-                speaker.hasVoiceSample ? Icons.mic : Icons.mic_none,
-                size: 18,
-                color: speaker.hasVoiceSample
-                    ? Colors.green
-                    : theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                speaker.hasVoiceSample
-                    ? const AppStrings().voiceSampleAvailable
-                    : const AppStrings().recordVoiceSample,
-                style: TextStyle(color: theme.colorScheme.primary),
-              ),
-            ],
+          const PremiumDivider(),
+          ActionRow(
+            icon: speaker.hasVoiceSample ? Icons.mic : Icons.mic_none,
+            title: speaker.hasVoiceSample
+                ? const AppStrings().voiceSampleAvailable
+                : const AppStrings().recordVoiceSample,
+            subtitle: speaker.hasVoiceSample
+                ? 'Profil tanıma için hazır'
+                : 'Daha sonra örnek kayıt eklenebilir',
+            trailing: StatusPill(
+              compact: true,
+              icon: speaker.hasVoiceSample ? Icons.check_circle : Icons.add,
+              label: speaker.hasVoiceSample ? 'Hazır' : 'Bekliyor',
+              color: speaker.hasVoiceSample ? AppTheme.teal : AppTheme.amber,
+            ),
           ),
         ],
       ),
