@@ -30,8 +30,26 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
+/flutter_*.png
 /build/
+**/build/
 /coverage/
+
+# Flutter generated (platform)
+.flutter-plugins
+.packages
+
+# iOS generated files
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Flutter.podspec
+ios/Pods/
+
+# Android generated files
+android/.gradle/
+android/captures/
+android/local.properties
 
 # Symbolication related
 app.*.symbols
@@ -43,3 +61,4 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+node_modules
