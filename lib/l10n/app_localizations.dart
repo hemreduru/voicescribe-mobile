@@ -440,6 +440,30 @@ abstract class AppLocalizations {
   /// **'Transcribing'**
   String get statusTranscribing;
 
+  /// No description provided for @statusTranscriptionCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription done'**
+  String get statusTranscriptionCompleted;
+
+  /// No description provided for @statusSpeakerAnalysisPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaker analysis pending'**
+  String get statusSpeakerAnalysisPending;
+
+  /// No description provided for @statusSpeakerAnalysisRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaker analysis running'**
+  String get statusSpeakerAnalysisRunning;
+
+  /// No description provided for @statusSpeakerAnalysisCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusSpeakerAnalysisCompleted;
+
   /// No description provided for @statusCompleted.
   ///
   /// In en, this message translates to:
@@ -535,6 +559,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generated {time}'**
   String summaryGeneratedAt(Object time);
+
+  /// No description provided for @authTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication'**
+  String get authTitle;
+
+  /// No description provided for @login.
+  ///
+  /// In en, this message translates to:
+  /// **'Login'**
+  String get login;
+
+  /// No description provided for @register.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get register;
+
+  /// No description provided for @logout.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get logout;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'E-mail'**
+  String get email;
+
+  /// No description provided for @password.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get password;
+
+  /// No description provided for @authenticatedUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Authenticated User'**
+  String get authenticatedUser;
+
+  /// No description provided for @authVerifyEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration completed. Verify your email address, then log in.'**
+  String get authVerifyEmail;
+
+  /// No description provided for @modelSetupRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Model setup required'**
+  String get modelSetupRequired;
+
+  /// No description provided for @modelSetupContinueMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Model must be downloaded before continuing.'**
+  String get modelSetupContinueMessage;
+
+  /// No description provided for @modelDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Model download failed. Please try again.'**
+  String get modelDownloadFailed;
+
+  /// No description provided for @modelDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading model...'**
+  String get modelDownloading;
+
+  /// No description provided for @modelDownloadingPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading model {percent}%'**
+  String modelDownloadingPercent(Object percent);
+
+  /// No description provided for @calibrate.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibrate'**
+  String get calibrate;
+
+  /// No description provided for @speakerThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Threshold: {value}'**
+  String speakerThreshold(Object value);
+
+  /// No description provided for @profilesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} profiles'**
+  String profilesCount(Object count);
+
+  /// No description provided for @recordingsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} recordings'**
+  String recordingsCount(Object count);
+
+  /// No description provided for @chunksCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} chunks'**
+  String chunksCount(Object count);
+
+  /// No description provided for @calibrationSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibration skipped: not enough labeled audio chunks.'**
+  String get calibrationSkipped;
+
+  /// No description provided for @calibrationCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibration completed: {threshold}'**
+  String calibrationCompleted(Object threshold);
+
+  /// No description provided for @calibrationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Calibration failed: {error}'**
+  String calibrationFailed(Object error);
+
+  /// No description provided for @speakerFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaker'**
+  String get speakerFallback;
 }
 
 class _AppLocalizationsDelegate

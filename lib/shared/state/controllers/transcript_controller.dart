@@ -19,7 +19,7 @@ class TranscriptController {
     _rebuildStats();
   }
 
-  Transcript startSession(String? title) {
+  Transcript startSession(String? title, {String? userId}) {
     final now = DateTime.now();
     final id = 'local-${now.millisecondsSinceEpoch}';
     final transcript = Transcript(
@@ -31,6 +31,7 @@ class TranscriptController {
       recordedAt: now,
       createdAt: now,
       updatedAt: now,
+      userId: userId,
     );
 
     transcripts = [transcript, ...transcripts];
@@ -117,7 +118,12 @@ class TranscriptController {
     _updateTranscript(transcript.id, durationSeconds: durationSeconds);
   }
 
-  void applyTranscriptionSuccess(TranscriptChunk chunk, String rawText) {
+  void applyTranscriptionSuccess(
+    TranscriptChunk chunk,
+    String rawText, {
+    double? absoluteStartTime,
+    double? absoluteEndTime,
+  }) {
     final normalized = normalizeWhitespace(rawText);
     final previousChunk = chunksFor(
       chunk.transcriptId,
@@ -127,7 +133,13 @@ class TranscriptController {
         ? normalized
         : removeOverlap(previousChunk.text, normalized);
 
-    _updateChunk(chunk.id, text: deduped, clearError: true);
+    _updateChunk(
+      chunk.id,
+      text: deduped,
+      clearError: true,
+      startTime: absoluteStartTime,
+      endTime: absoluteEndTime,
+    );
 
     final stats = _stats.putIfAbsent(
       chunk.transcriptId,
@@ -173,12 +185,34 @@ class TranscriptController {
     return mergeTranscriptChunks(chunksFor(transcriptId));
   }
 
+  void replaceChunk(TranscriptChunk updatedChunk) {
+    currentChunks = currentChunks
+        .map((item) => item.id == updatedChunk.id ? updatedChunk : item)
+        .toList();
+    allChunks = allChunks
+        .map((item) => item.id == updatedChunk.id ? updatedChunk : item)
+        .toList();
+  }
+
+  void replaceTranscript(Transcript updatedTranscript) {
+    transcripts = transcripts
+        .map(
+          (item) => item.id == updatedTranscript.id ? updatedTranscript : item,
+        )
+        .toList();
+    if (currentTranscript?.id == updatedTranscript.id) {
+      currentTranscript = updatedTranscript;
+    }
+  }
+
   PersistedTranscriptState toPersistedState({
     required List<SpeakerProfile> speakers,
     required List<Summary> summaries,
+    required List<ProcessingJob> processingJobs,
     required String summaryProvider,
     required String summaryLength,
     required bool speakerRecognitionEnabled,
+    required double speakerSimilarityThreshold,
   }) {
     return PersistedTranscriptState(
       transcripts: transcripts,
@@ -187,9 +221,11 @@ class TranscriptController {
       allChunks: allChunks,
       speakers: speakers,
       summaries: summaries,
+      processingJobs: processingJobs,
       summaryProvider: summaryProvider,
       summaryLength: summaryLength,
       speakerRecognitionEnabled: speakerRecognitionEnabled,
+      speakerSimilarityThreshold: speakerSimilarityThreshold,
     );
   }
 
@@ -197,6 +233,8 @@ class TranscriptController {
     String chunkId, {
     String? text,
     String? transcriptionError,
+    double? startTime,
+    double? endTime,
     bool clearError = false,
   }) {
     currentChunks = currentChunks
@@ -205,7 +243,11 @@ class TranscriptController {
               ? chunk.copyWith(
                   text: text,
                   transcriptionError: transcriptionError,
+                  startTime: startTime,
+                  endTime: endTime,
                   clearTranscriptionError: clearError,
+                  syncStatus: SyncStatus.pending,
+                  clearSyncError: true,
                 )
               : chunk,
         )
@@ -217,7 +259,11 @@ class TranscriptController {
               ? chunk.copyWith(
                   text: text,
                   transcriptionError: transcriptionError,
+                  startTime: startTime,
+                  endTime: endTime,
                   clearTranscriptionError: clearError,
+                  syncStatus: SyncStatus.pending,
+                  clearSyncError: true,
                 )
               : chunk,
         )
@@ -238,6 +284,8 @@ class TranscriptController {
                   status: status,
                   durationSeconds: durationSeconds,
                   updatedAt: nextUpdatedAt,
+                  syncStatus: SyncStatus.pending,
+                  clearSyncError: true,
                 )
               : transcript,
         )
@@ -248,6 +296,8 @@ class TranscriptController {
         status: status,
         durationSeconds: durationSeconds,
         updatedAt: nextUpdatedAt,
+        syncStatus: SyncStatus.pending,
+        clearSyncError: true,
       );
     }
   }
@@ -266,7 +316,7 @@ class TranscriptController {
       return TranscriptStatus.transcriptionError;
     }
     if (stats.success > 0) {
-      return TranscriptStatus.completed;
+      return TranscriptStatus.transcriptionCompleted;
     }
     return TranscriptStatus.empty;
   }

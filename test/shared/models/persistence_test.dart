@@ -54,9 +54,11 @@ void main() {
           createdAt: now,
         ),
       ],
+      processingJobs: const [],
       summaryProvider: 'local',
       summaryLength: 'medium',
       speakerRecognitionEnabled: true,
+      speakerSimilarityThreshold: 0.78,
     );
 
     final decoded = PersistedTranscriptState.fromJson(state.toJson());

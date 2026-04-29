@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:talker_riverpod_logger/talker_riverpod_logger.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
 import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
@@ -13,6 +14,14 @@ import 'package:voicescribe_mobile/shared/utils/logger.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EnvConfig.initialize();
+  final supabaseUrl = EnvConfig.supabaseUrl.trim();
+  final supabaseAnonKey = EnvConfig.supabaseAnonKey.trim();
+  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+    throw StateError(
+      'Missing Supabase configuration. Provide SUPABASE_URL and SUPABASE_ANON_KEY.',
+    );
+  }
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
   // Handle uncaught framework errors
   FlutterError.onError = (details) {
@@ -28,7 +37,9 @@ void main() async {
 
   runApp(
     ProviderScope(
-      observers: [TalkerRiverpodObserver(talker: talker)],
+      observers: kDebugMode && EnvConfig.isDebugMode
+          ? [TalkerRiverpodObserver(talker: talker)]
+          : const [],
       child: const VoiceScribeApp(),
     ),
   );

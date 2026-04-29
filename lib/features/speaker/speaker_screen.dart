@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
@@ -16,6 +17,8 @@ class SpeakerScreen extends ConsumerStatefulWidget {
 }
 
 class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
+  bool _calibrating = false;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -23,7 +26,22 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.speaker)),
+      appBar: AppBar(
+        title: Text(l10n.speaker),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await app.logout();
+              if (!context.mounted) {
+                return;
+              }
+              context.go('/auth');
+            },
+            icon: const Icon(Icons.logout),
+            tooltip: app.currentUserEmail ?? l10n.logout,
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showSpeakerDialog(context, app),
         icon: const Icon(Icons.person_add),
@@ -34,14 +52,8 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
           children: [
             AppCard(
-              onTap: () => app.setSpeakerRecognitionEnabled(
-                value: !app.speakerRecognitionEnabled,
-              ),
-              selected: app.speakerRecognitionEnabled,
               showAccent: true,
-              accentColor: app.speakerRecognitionEnabled
-                  ? AppTheme.teal
-                  : AppTheme.amber,
+              accentColor: AppTheme.teal,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -51,18 +63,12 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color:
-                              (app.speakerRecognitionEnabled
-                                      ? AppTheme.teal
-                                      : AppTheme.amber)
-                                  .withValues(alpha: 0.12),
+                          color: AppTheme.teal.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.record_voice_over,
-                          color: app.speakerRecognitionEnabled
-                              ? AppTheme.teal
-                              : AppTheme.amber,
+                          color: AppTheme.teal,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -76,21 +82,9 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
                       ),
                       StatusPill(
                         compact: true,
-                        icon: app.speakerRecognitionEnabled
-                            ? Icons.check_circle
-                            : Icons.pause,
-                        label: app.speakerRecognitionEnabled
-                            ? l10n.active
-                            : l10n.disabled,
-                        color: app.speakerRecognitionEnabled
-                            ? AppTheme.teal
-                            : AppTheme.amber,
-                      ),
-                      const SizedBox(width: 8),
-                      Switch(
-                        value: app.speakerRecognitionEnabled,
-                        onChanged: (value) =>
-                            app.setSpeakerRecognitionEnabled(value: value),
+                        icon: Icons.check_circle,
+                        label: l10n.active,
+                        color: AppTheme.teal,
                       ),
                     ],
                   ),
@@ -101,13 +95,42 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.speakerThreshold(
+                            app.speakerSimilarityThreshold.toStringAsFixed(3),
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      FilledButton.tonalIcon(
+                        onPressed: _calibrating
+                            ? null
+                            : () => _calibrateThreshold(app),
+                        icon: _calibrating
+                            ? const SizedBox.square(
+                                dimension: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.tune),
+                        label: Text(l10n.calibrate),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 18),
             SectionHeader(
               title: l10n.registeredSpeakers,
-              subtitle: '${app.speakers.length} profil',
+              subtitle: l10n.profilesCount(app.speakers.length),
             ),
             const SizedBox(height: 12),
             if (app.speakers.isEmpty)
@@ -132,6 +155,35 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _calibrateThreshold(AppController app) async {
+    setState(() => _calibrating = true);
+    try {
+      final threshold = await app.calibrateSpeakerThreshold();
+      if (!mounted) {
+        return;
+      }
+      final l10n = context.l10n;
+      final message = threshold == null
+          ? l10n.calibrationSkipped
+          : l10n.calibrationCompleted(threshold.toStringAsFixed(3));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      final l10n = context.l10n;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.calibrationFailed(error.toString()))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _calibrating = false);
+      }
+    }
   }
 
   void _showSpeakerDialog(

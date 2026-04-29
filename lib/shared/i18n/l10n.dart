@@ -11,6 +11,14 @@ String localizedStatusLabel(AppLocalizations l10n, String key) {
       return l10n.statusRecording;
     case 'transcribing':
       return l10n.statusTranscribing;
+    case 'transcription_completed':
+      return l10n.statusTranscriptionCompleted;
+    case 'speaker_analysis_pending':
+      return l10n.statusSpeakerAnalysisPending;
+    case 'speaker_analysis_running':
+      return l10n.statusSpeakerAnalysisRunning;
+    case 'speaker_analysis_completed':
+      return l10n.statusSpeakerAnalysisCompleted;
     case 'completed':
       return l10n.statusCompleted;
     case 'transcription_error':

@@ -57,6 +57,10 @@
   "permissionDenied": "Mikrofon izni gerekli.",
   "statusRecording": "Kaydediliyor",
   "statusTranscribing": "Çevriliyor",
+  "statusTranscriptionCompleted": "Transkripsiyon tamamlandı",
+  "statusSpeakerAnalysisPending": "Konuşmacı analizi bekleniyor",
+  "statusSpeakerAnalysisRunning": "Konuşmacı analizi sürüyor",
+  "statusSpeakerAnalysisCompleted": "Tamamlandı",
   "statusCompleted": "Tamamlandı",
   "statusTranscriptionError": "Hata",
   "statusEmpty": "Boş Kayıt",
@@ -77,5 +81,62 @@
     "placeholders": {
       "time": {}
     }
-  }
+  },
+  "authTitle": "Kimlik Doğrulama",
+  "login": "Giriş Yap",
+  "register": "Kayıt Ol",
+  "logout": "Çıkış Yap",
+  "email": "E-posta",
+  "password": "Şifre",
+  "authenticatedUser": "Giriş Yapan Kullanıcı",
+  "authVerifyEmail": "Kayıt tamamlandı. E-posta adresinizi doğrulayıp giriş yapın.",
+  "modelSetupRequired": "Model kurulumu gerekli",
+  "modelSetupContinueMessage": "Devam etmek için model önce indirilmelidir.",
+  "modelDownloadFailed": "Model indirilemedi. Lütfen tekrar deneyin.",
+  "modelDownloading": "Model indiriliyor...",
+  "modelDownloadingPercent": "Model indiriliyor %{percent}",
+  "@modelDownloadingPercent": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "calibrate": "Kalibre Et",
+  "speakerThreshold": "Eşik: {value}",
+  "@speakerThreshold": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "profilesCount": "{count} profil",
+  "@profilesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "recordingsCount": "{count} kayıt",
+  "@recordingsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chunksCount": "{count} parça",
+  "@chunksCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "calibrationSkipped": "Kalibrasyon atlandı: etiketli ses parçası yetersiz.",
+  "calibrationCompleted": "Kalibrasyon tamamlandı: {threshold}",
+  "@calibrationCompleted": {
+    "placeholders": {
+      "threshold": {}
+    }
+  },
+  "calibrationFailed": "Kalibrasyon başarısız: {error}",
+  "@calibrationFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "speakerFallback": "Konuşmacı"
 }

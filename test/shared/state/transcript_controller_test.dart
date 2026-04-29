@@ -39,25 +39,31 @@ void main() {
     );
   });
 
-  test('marks transcript as completed when all chunks succeed', () {
-    final controller = TranscriptController();
-    controller.startSession('Demo');
+  test(
+    'marks transcript as transcriptionCompleted when all chunks succeed',
+    () {
+      final controller = TranscriptController();
+      controller.startSession('Demo');
 
-    final chunk = controller.addRecordedChunk(
-      const RecordedAudioChunk(
-        path: '/tmp/1.wav',
-        durationSeconds: 2,
-        index: 1,
-      ),
-    );
+      final chunk = controller.addRecordedChunk(
+        const RecordedAudioChunk(
+          path: '/tmp/1.wav',
+          durationSeconds: 2,
+          index: 1,
+        ),
+      );
 
-    controller.applyTranscriptionSuccess(chunk, 'Merhaba dunya');
-    controller.markRecordingStopped(durationSeconds: 2);
+      controller.applyTranscriptionSuccess(chunk, 'Merhaba dunya');
+      controller.markRecordingStopped(durationSeconds: 2);
 
-    expect(controller.currentTranscript?.status, TranscriptStatus.completed);
-    expect(
-      controller.transcriptText(controller.currentTranscript!.id),
-      'Merhaba dunya',
-    );
-  });
+      expect(
+        controller.currentTranscript?.status,
+        TranscriptStatus.transcriptionCompleted,
+      );
+      expect(
+        controller.transcriptText(controller.currentTranscript!.id),
+        'Merhaba dunya',
+      );
+    },
+  );
 }

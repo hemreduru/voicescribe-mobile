@@ -182,6 +182,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusTranscribing => 'Transcribing';
 
   @override
+  String get statusTranscriptionCompleted => 'Transcription done';
+
+  @override
+  String get statusSpeakerAnalysisPending => 'Speaker analysis pending';
+
+  @override
+  String get statusSpeakerAnalysisRunning => 'Speaker analysis running';
+
+  @override
+  String get statusSpeakerAnalysisCompleted => 'Completed';
+
+  @override
   String get statusCompleted => 'Completed';
 
   @override
@@ -230,4 +242,87 @@ class AppLocalizationsEn extends AppLocalizations {
   String summaryGeneratedAt(Object time) {
     return 'Generated $time';
   }
+
+  @override
+  String get authTitle => 'Authentication';
+
+  @override
+  String get login => 'Login';
+
+  @override
+  String get register => 'Register';
+
+  @override
+  String get logout => 'Logout';
+
+  @override
+  String get email => 'E-mail';
+
+  @override
+  String get password => 'Password';
+
+  @override
+  String get authenticatedUser => 'Authenticated User';
+
+  @override
+  String get authVerifyEmail =>
+      'Registration completed. Verify your email address, then log in.';
+
+  @override
+  String get modelSetupRequired => 'Model setup required';
+
+  @override
+  String get modelSetupContinueMessage =>
+      'Model must be downloaded before continuing.';
+
+  @override
+  String get modelDownloadFailed => 'Model download failed. Please try again.';
+
+  @override
+  String get modelDownloading => 'Downloading model...';
+
+  @override
+  String modelDownloadingPercent(Object percent) {
+    return 'Downloading model $percent%';
+  }
+
+  @override
+  String get calibrate => 'Calibrate';
+
+  @override
+  String speakerThreshold(Object value) {
+    return 'Threshold: $value';
+  }
+
+  @override
+  String profilesCount(Object count) {
+    return '$count profiles';
+  }
+
+  @override
+  String recordingsCount(Object count) {
+    return '$count recordings';
+  }
+
+  @override
+  String chunksCount(Object count) {
+    return '$count chunks';
+  }
+
+  @override
+  String get calibrationSkipped =>
+      'Calibration skipped: not enough labeled audio chunks.';
+
+  @override
+  String calibrationCompleted(Object threshold) {
+    return 'Calibration completed: $threshold';
+  }
+
+  @override
+  String calibrationFailed(Object error) {
+    return 'Calibration failed: $error';
+  }
+
+  @override
+  String get speakerFallback => 'Speaker';
 }

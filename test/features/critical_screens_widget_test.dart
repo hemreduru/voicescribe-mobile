@@ -122,6 +122,15 @@ class _FakeRepository implements TranscriptRepository {
   Future<void> saveSummary(Summary summary) async {}
 
   @override
+  Future<void> saveProcessingJob(ProcessingJob job) async {}
+
+  @override
+  Future<void> deleteProcessingJob(String id) async {}
+
+  @override
+  Future<List<ProcessingJob>> pendingSpeakerAnalysisJobs() async => const [];
+
+  @override
   Future<void> saveSetting(String key, String value) async {}
 }
 
@@ -175,5 +184,6 @@ class _FakeTranscriptionService implements TranscriptionService {
   }
 
   @override
-  Future<String> transcribeChunk(String audioPath) async => '';
+  Future<TranscriptionResult> transcribeChunk(String audioPath) async =>
+      const TranscriptionResult(text: '', segments: []);
 }

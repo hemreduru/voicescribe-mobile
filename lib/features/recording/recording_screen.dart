@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
+import 'package:voicescribe_mobile/shared/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
 import 'package:voicescribe_mobile/shared/utils/text_utils.dart';
@@ -178,7 +179,9 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
             const SizedBox(height: 24),
             SectionHeader(
               title: l10n.recentRecordings,
-              subtitle: recent.isEmpty ? null : '${recent.length} kayıt',
+              subtitle: recent.isEmpty
+                  ? null
+                  : l10n.recordingsCount(recent.length),
             ),
             const SizedBox(height: 12),
             if (recent.isEmpty)
@@ -213,9 +216,13 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
       if (!mounted) {
         return;
       }
+      final l10n = context.l10n;
+      final message = error is RecordingPermissionException
+          ? l10n.permissionDenied
+          : error.toString();
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 

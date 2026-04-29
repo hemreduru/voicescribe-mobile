@@ -57,6 +57,10 @@
   "permissionDenied": "Microphone permission is required.",
   "statusRecording": "Recording",
   "statusTranscribing": "Transcribing",
+  "statusTranscriptionCompleted": "Transcription done",
+  "statusSpeakerAnalysisPending": "Speaker analysis pending",
+  "statusSpeakerAnalysisRunning": "Speaker analysis running",
+  "statusSpeakerAnalysisCompleted": "Completed",
   "statusCompleted": "Completed",
   "statusTranscriptionError": "Error",
   "statusEmpty": "Empty",
@@ -77,5 +81,62 @@
     "placeholders": {
       "time": {}
     }
-  }
+  },
+  "authTitle": "Authentication",
+  "login": "Login",
+  "register": "Register",
+  "logout": "Logout",
+  "email": "E-mail",
+  "password": "Password",
+  "authenticatedUser": "Authenticated User",
+  "authVerifyEmail": "Registration completed. Verify your email address, then log in.",
+  "modelSetupRequired": "Model setup required",
+  "modelSetupContinueMessage": "Model must be downloaded before continuing.",
+  "modelDownloadFailed": "Model download failed. Please try again.",
+  "modelDownloading": "Downloading model...",
+  "modelDownloadingPercent": "Downloading model {percent}%",
+  "@modelDownloadingPercent": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "calibrate": "Calibrate",
+  "speakerThreshold": "Threshold: {value}",
+  "@speakerThreshold": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "profilesCount": "{count} profiles",
+  "@profilesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "recordingsCount": "{count} recordings",
+  "@recordingsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "chunksCount": "{count} chunks",
+  "@chunksCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "calibrationSkipped": "Calibration skipped: not enough labeled audio chunks.",
+  "calibrationCompleted": "Calibration completed: {threshold}",
+  "@calibrationCompleted": {
+    "placeholders": {
+      "threshold": {}
+    }
+  },
+  "calibrationFailed": "Calibration failed: {error}",
+  "@calibrationFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "speakerFallback": "Speaker"
 }

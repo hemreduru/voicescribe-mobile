@@ -1,15 +1,17 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show ChangeNotifier;
 import 'package:flutter_riverpod/legacy.dart';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-
 import 'package:voicescribe_mobile/shared/models/domain.dart';
 import 'package:voicescribe_mobile/shared/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/shared/services/auth/auth_service.dart';
 import 'package:voicescribe_mobile/shared/services/database/sqflite_transcript_repository.dart';
+import 'package:voicescribe_mobile/shared/services/speaker/speaker_analysis_service.dart';
 import 'package:voicescribe_mobile/shared/services/summary_service.dart';
+import 'package:voicescribe_mobile/shared/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/shared/services/transcript_repository.dart';
 import 'package:voicescribe_mobile/shared/services/whisper_service.dart';
 import 'package:voicescribe_mobile/shared/state/controllers/recording_controller.dart';
@@ -18,6 +20,11 @@ import 'package:voicescribe_mobile/shared/state/controllers/summary_controller.d
 import 'package:voicescribe_mobile/shared/state/controllers/transcript_controller.dart';
 
 part 'app_controller.g.dart';
+part 'flows/auth_flow.dart';
+part 'flows/recording_flow.dart';
+part 'flows/transcription_flow.dart';
+part 'flows/speaker_analysis_flow.dart';
+part 'flows/sync_flow.dart';
 
 @Riverpod(keepAlive: true)
 TranscriptRepository transcriptRepository(Ref ref) {
@@ -67,15 +74,30 @@ class AppController extends ChangeNotifier {
     required TranscriptionService transcriptionService,
     required RecordingService audioService,
     required SummaryService summaryService,
+    VoiceScribeAuthService? authService,
+    SyncQueueService? syncQueueService,
+    SpeakerAnalysisService? speakerAnalysisService,
+    AuthFlow? authFlow,
+    RecordingFlow? recordingFlow,
+    TranscriptionFlow? transcriptionFlow,
+    SpeakerAnalysisFlow? speakerAnalysisFlow,
+    SyncFlow? syncFlow,
   }) : _repository = repository,
        _transcriptionService = transcriptionService,
        _audioService = audioService,
-       _summaryService = summaryService {
+       _summaryService = summaryService,
+       _authService = authService ?? VoiceScribeAuthService(),
+       _syncQueueService = syncQueueService ?? SyncQueueService(),
+       _speakerAnalysisService =
+           speakerAnalysisService ?? SpeakerAnalysisService(),
+       _authFlow = authFlow ?? const AuthFlow(),
+       _recordingFlow = recordingFlow ?? const RecordingFlow(),
+       _transcriptionFlow = transcriptionFlow ?? const TranscriptionFlow(),
+       _speakerAnalysisFlow =
+           speakerAnalysisFlow ?? const SpeakerAnalysisFlow(),
+       _syncFlow = syncFlow ?? const SyncFlow() {
     _chunkSubscription = _audioService.chunks.listen(_handleAudioChunk);
-    _levelSubscription = _audioService.levels.listen((value) {
-      recordingController.applyAudioLevel(value);
-      _notify();
-    });
+    _levelSubscription = _audioService.levels.listen(_handleAudioLevel);
     _modelProgressSubscription = _transcriptionService.downloadProgress.listen((
       progress,
     ) {
@@ -88,6 +110,14 @@ class AppController extends ChangeNotifier {
   final TranscriptionService _transcriptionService;
   final RecordingService _audioService;
   final SummaryService _summaryService;
+  final VoiceScribeAuthService _authService;
+  final SyncQueueService _syncQueueService;
+  final SpeakerAnalysisService _speakerAnalysisService;
+  final AuthFlow _authFlow;
+  final RecordingFlow _recordingFlow;
+  final TranscriptionFlow _transcriptionFlow;
+  final SpeakerAnalysisFlow _speakerAnalysisFlow;
+  final SyncFlow _syncFlow;
 
   final RecordingController recordingController = RecordingController();
   final TranscriptController transcriptController = TranscriptController();
@@ -97,12 +127,22 @@ class AppController extends ChangeNotifier {
   StreamSubscription<RecordedAudioChunk>? _chunkSubscription;
   StreamSubscription<double>? _levelSubscription;
   StreamSubscription<ModelDownloadProgress>? _modelProgressSubscription;
+  // ignore: use_late_for_private_fields_and_variables
   Timer? _durationTimer;
   bool _disposed = false;
+  bool _speakerAnalysisInProgress = false;
+  bool _syncStarted = false;
+  bool _authResolved = false;
+  DateTime? _lastAudioLevelNotifyAt;
+  double _lastNotifiedAudioLevel = 0;
+
+  static const Duration _audioLevelNotifyInterval = Duration(milliseconds: 120);
 
   ModelBootstrapState modelState = ModelBootstrapState.bootstrapping;
   ModelDownloadProgress? downloadProgress;
   String? bootstrapError;
+  AuthSessionState? _authSession;
+  List<ProcessingJob> processingJobs = [];
 
   List<Transcript> get transcripts => transcriptController.transcripts;
   Transcript? get currentTranscript => transcriptController.currentTranscript;
@@ -111,7 +151,6 @@ class AppController extends ChangeNotifier {
   String? get lastError => transcriptController.lastError;
 
   List<SpeakerProfile> get speakers => speakerController.speakers;
-  bool get speakerRecognitionEnabled => speakerController.recognitionEnabled;
 
   bool get isRecording => recordingController.isRecording;
   bool get isPaused => recordingController.isPaused;
@@ -125,6 +164,15 @@ class AppController extends ChangeNotifier {
   String get summaryLength => summaryController.length;
   bool get summaryGenerating => summaryController.generating;
 
+  AuthSessionState? get authSession => _authSession;
+  bool get isAuthResolved => _authResolved;
+  bool get isAuthenticated => _authSession?.isAuthenticated ?? false;
+  bool get isModelReady => modelState == ModelBootstrapState.ready;
+  String? get currentUserId => _authSession?.userId;
+  String? get currentUserEmail => _authSession?.email;
+  double get speakerSimilarityThreshold =>
+      _speakerAnalysisService.similarityThreshold;
+
   Future<void> bootstrap() async {
     modelState = ModelBootstrapState.bootstrapping;
     bootstrapError = null;
@@ -132,124 +180,96 @@ class AppController extends ChangeNotifier {
 
     final saved = await _repository.load();
     transcriptController.hydrate(saved);
-    speakerController.hydrate(
-      saved.speakers,
-      recognitionEnabled: saved.speakerRecognitionEnabled,
-    );
+    speakerController.hydrate(saved.speakers);
     summaryController.hydrate(
       summaries: saved.summaries,
       provider: saved.summaryProvider,
       length: saved.summaryLength,
     );
+    _speakerAnalysisService.setSimilarityThreshold(
+      saved.speakerSimilarityThreshold,
+    );
+    processingJobs = saved.processingJobs;
+    await _archiveDuplicateSpeakerAnalysisJobs();
     _notify();
 
     try {
+      _authSession = await _authService.restoreSession();
+      _authResolved = true;
+      if (_authSession != null) {
+        await _ensureSyncStarted();
+      }
+      await _recoverPendingProcessingJobs();
       await _transcriptionService.ensureModel();
       modelState = ModelBootstrapState.ready;
     } catch (error) {
+      _authResolved = true;
       bootstrapError = error.toString();
       modelState = ModelBootstrapState.failed;
     }
     _notify();
   }
 
-  Future<void> startRecording(String? title) async {
-    if (isRecording) {
-      return;
-    }
+  Future<void> register({required String email, required String password}) =>
+      _authFlow.register(this, email: email, password: password);
 
-    final transcript = transcriptController.startSession(title);
-    recordingController.start();
-    _notify();
+  Future<void> login({required String email, required String password}) =>
+      _authFlow.login(this, email: email, password: password);
 
-    try {
-      await _audioService.start();
-      _startTimer();
-      await _repository.saveTranscript(transcript);
-    } catch (error) {
-      transcriptController.removeTranscript(transcript.id);
-      recordingController.stop();
-      transcriptController.lastError = error.toString();
-      _notify();
-      rethrow;
-    }
-  }
+  Future<void> logout() => _authFlow.logout(this);
 
-  Future<void> stopRecording() async {
-    if (!isRecording) {
-      return;
-    }
-    _stopTimer();
-    await _audioService.stop();
+  Future<void> restoreSession() => _authFlow.restoreSession(this);
 
-    recordingController.stop();
-    transcriptController.markRecordingStopped(
-      durationSeconds: recordingController.durationSeconds,
-    );
-    if (currentTranscript != null) {
-      await _repository.saveTranscript(currentTranscript!);
-    }
-    _notify();
-  }
+  Future<void> startRecording(String? title) =>
+      _recordingFlow.startRecording(this, title);
 
-  Future<void> togglePause() async {
-    if (!isRecording) {
-      return;
-    }
-    if (isPaused) {
-      await _audioService.resume();
-      recordingController.resume();
-      _startTimer();
-    } else {
-      await _audioService.pause();
-      recordingController.pause();
-      _stopTimer();
-    }
-    _notify();
-  }
+  Future<void> stopRecording() => _recordingFlow.stopRecording(this);
+
+  Future<void> togglePause() => _recordingFlow.togglePause(this);
 
   void removeTranscript(String id) {
+    _ensureAuthenticated();
     transcriptController.removeTranscript(id);
-    unawaited(_repository.deleteTranscript(id));
-    _notify();
-  }
-
-  void setSpeakerRecognitionEnabled({required bool value}) {
-    speakerController.applyRecognitionEnabled(value: value);
-    unawaited(
-      _repository.saveSetting('speakerRecognitionEnabled', value.toString()),
-    );
+    processingJobs = processingJobs
+        .where((item) => item.transcriptId != id)
+        .toList();
+    _persistLater(_repository.deleteTranscript(id));
     _notify();
   }
 
   void addSpeaker(String name) {
-    speakerController.addSpeaker(name);
-    unawaited(_repository.saveSpeaker(speakers.last));
+    _ensureAuthenticated();
+    speakerController.addSpeaker(name, userId: currentUserId);
+    _persistLater(_repository.saveSpeaker(speakers.last));
     _notify();
   }
 
   void updateSpeaker(String id, String name) {
+    _ensureAuthenticated();
     speakerController.updateSpeaker(id, name);
     final speaker = speakers.firstWhere((s) => s.id == id);
-    unawaited(_repository.saveSpeaker(speaker));
+    _persistLater(_repository.saveSpeaker(speaker));
     _notify();
   }
 
   void deleteSpeaker(String id) {
+    _ensureAuthenticated();
     speakerController.deleteSpeaker(id);
-    unawaited(_repository.deleteSpeaker(id));
+    _persistLater(_repository.deleteSpeaker(id));
     _notify();
   }
 
   void setSummaryProvider(String value) {
+    _ensureAuthenticated();
     summaryController.applyProvider(value);
-    unawaited(_repository.saveSetting('summaryProvider', value));
+    _persistLater(_repository.saveSetting('summaryProvider', value));
     _notify();
   }
 
   void setSummaryLength(String value) {
+    _ensureAuthenticated();
     summaryController.applyLength(value);
-    unawaited(_repository.saveSetting('summaryLength', value));
+    _persistLater(_repository.saveSetting('summaryLength', value));
     _notify();
   }
 
@@ -258,6 +278,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<Summary?> generateSummaryForLatest() async {
+    _ensureAuthenticated();
     if (transcripts.isEmpty) {
       return null;
     }
@@ -269,7 +290,11 @@ class AppController extends ChangeNotifier {
       summaryService: _summaryService,
     );
     if (summary != null) {
-      await _repository.saveSummary(summary);
+      await _persist(
+        _repository.saveSummary(
+          summary.copyWith(syncStatus: SyncStatus.pending),
+        ),
+      );
     }
     _notify();
     return summary;
@@ -283,6 +308,36 @@ class AppController extends ChangeNotifier {
     return transcriptController.transcriptText(transcriptId);
   }
 
+  Future<double?> calibrateSpeakerThreshold() async {
+    _ensureAuthenticated();
+    final threshold = await _speakerAnalysisFlow.calibrateThreshold(this);
+    if (threshold != null) {
+      _notify();
+    }
+    return threshold;
+  }
+
+  Future<void> ensureModelReady() async {
+    if (isModelReady) {
+      return;
+    }
+    modelState = ModelBootstrapState.bootstrapping;
+    bootstrapError = null;
+    _notify();
+
+    try {
+      await _transcriptionService.ensureModel();
+      modelState = ModelBootstrapState.ready;
+      bootstrapError = null;
+    } catch (error) {
+      modelState = ModelBootstrapState.failed;
+      bootstrapError = error.toString();
+      rethrow;
+    } finally {
+      _notify();
+    }
+  }
+
   @override
   void dispose() {
     _disposed = true;
@@ -290,72 +345,50 @@ class AppController extends ChangeNotifier {
     unawaited(_chunkSubscription?.cancel());
     unawaited(_levelSubscription?.cancel());
     unawaited(_modelProgressSubscription?.cancel());
+    unawaited(_syncQueueService.dispose());
     super.dispose();
   }
 
   void _handleAudioChunk(RecordedAudioChunk audioChunk) {
-    final transcript = currentTranscript;
-    if (transcript == null) {
+    _recordingFlow.handleAudioChunk(this, audioChunk);
+  }
+
+  void _handleAudioLevel(double value) {
+    recordingController.applyAudioLevel(value);
+    final now = DateTime.now();
+    final previousAt = _lastAudioLevelNotifyAt;
+    final previousLevel = _lastNotifiedAudioLevel;
+    final isResetEvent = value <= 0.01 && previousLevel > 0.01;
+    final changedEnough = (value - previousLevel).abs() >= 0.06;
+    final elapsedEnough =
+        previousAt == null ||
+        now.difference(previousAt) >= _audioLevelNotifyInterval;
+    if (!(isResetEvent || changedEnough || elapsedEnough)) {
       return;
     }
-
-    final chunk = transcriptController.addRecordedChunk(audioChunk);
-    recordingController.incrementChunkCount();
+    _lastAudioLevelNotifyAt = now;
+    _lastNotifiedAudioLevel = value;
     _notify();
-    unawaited(_repository.saveChunk(chunk));
-    unawaited(_transcribe(chunk));
   }
 
-  Future<void> _transcribe(TranscriptChunk chunk) async {
-    try {
-      final rawText = await _transcriptionService.transcribeChunk(
-        chunk.audioPath ?? '',
-      );
-      transcriptController.applyTranscriptionSuccess(chunk, rawText);
-      final updatedChunk = transcriptController.allChunks.firstWhere(
-        (c) => c.id == chunk.id,
-      );
-      unawaited(_repository.saveChunk(updatedChunk));
-      final matches = currentChunks.where((item) => item.id == chunk.id);
-      final current = matches.isEmpty ? null : matches.first;
-      if (current != null && current.text.trim().isNotEmpty) {
-        recordingController.appendPreview(current.text);
-      }
-    } catch (error) {
-      transcriptController.applyTranscriptionError(chunk, error);
-      final updatedChunk = transcriptController.allChunks.firstWhere(
-        (c) => c.id == chunk.id,
-      );
-      unawaited(_repository.saveChunk(updatedChunk));
-    } finally {
-      final path = chunk.audioPath;
-      if (path != null) {
-        unawaited(File(path).delete().catchError((_) => File(path)));
-      }
-      if (currentTranscript != null) {
-        unawaited(_repository.saveTranscript(currentTranscript!));
-      }
-      _notify();
-    }
-  }
+  Future<void> _transcribe(TranscriptChunk chunk) =>
+      _transcriptionFlow.transcribe(this, chunk);
+
+  Future<void> _recoverPendingProcessingJobs() =>
+      _speakerAnalysisFlow.recoverPendingProcessingJobs(this);
+
+  Future<void> _enqueueSpeakerAnalysisIfReady(String transcriptId) =>
+      _speakerAnalysisFlow.enqueueSpeakerAnalysisIfReady(this, transcriptId);
+
+  Future<void> _archiveDuplicateSpeakerAnalysisJobs() =>
+      _speakerAnalysisFlow.archiveDuplicateSpeakerAnalysisJobs(this);
 
   void _startTimer() {
-    _durationTimer?.cancel();
-    _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      recordingController.tick();
-      transcriptController.updateCurrentDuration(
-        recordingController.durationSeconds,
-      );
-      if (currentTranscript != null) {
-        unawaited(_repository.saveTranscript(currentTranscript!));
-      }
-      _notify();
-    });
+    _recordingFlow.startTimer(this);
   }
 
   void _stopTimer() {
-    _durationTimer?.cancel();
-    _durationTimer = null;
+    _recordingFlow.stopTimer(this);
   }
 
   void _notify() {
@@ -363,4 +396,19 @@ class AppController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  void _ensureAuthenticated() {
+    _authFlow.ensureAuthenticated(this);
+  }
+
+  Future<void> _persist(Future<void> operation) =>
+      _syncFlow.persist(this, operation);
+
+  void _persistLater(Future<void> operation) {
+    _syncFlow.persistLater(this, operation);
+  }
+
+  Future<void> _safeTriggerSync() => _syncFlow.safeTriggerSync(this);
+
+  Future<void> _ensureSyncStarted() => _syncFlow.ensureSyncStarted(this);
 }

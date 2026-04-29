@@ -182,6 +182,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get statusTranscribing => 'Çevriliyor';
 
   @override
+  String get statusTranscriptionCompleted => 'Transkripsiyon tamamlandı';
+
+  @override
+  String get statusSpeakerAnalysisPending => 'Konuşmacı analizi bekleniyor';
+
+  @override
+  String get statusSpeakerAnalysisRunning => 'Konuşmacı analizi sürüyor';
+
+  @override
+  String get statusSpeakerAnalysisCompleted => 'Tamamlandı';
+
+  @override
   String get statusCompleted => 'Tamamlandı';
 
   @override
@@ -230,4 +242,88 @@ class AppLocalizationsTr extends AppLocalizations {
   String summaryGeneratedAt(Object time) {
     return 'Oluşturulma: $time';
   }
+
+  @override
+  String get authTitle => 'Kimlik Doğrulama';
+
+  @override
+  String get login => 'Giriş Yap';
+
+  @override
+  String get register => 'Kayıt Ol';
+
+  @override
+  String get logout => 'Çıkış Yap';
+
+  @override
+  String get email => 'E-posta';
+
+  @override
+  String get password => 'Şifre';
+
+  @override
+  String get authenticatedUser => 'Giriş Yapan Kullanıcı';
+
+  @override
+  String get authVerifyEmail =>
+      'Kayıt tamamlandı. E-posta adresinizi doğrulayıp giriş yapın.';
+
+  @override
+  String get modelSetupRequired => 'Model kurulumu gerekli';
+
+  @override
+  String get modelSetupContinueMessage =>
+      'Devam etmek için model önce indirilmelidir.';
+
+  @override
+  String get modelDownloadFailed =>
+      'Model indirilemedi. Lütfen tekrar deneyin.';
+
+  @override
+  String get modelDownloading => 'Model indiriliyor...';
+
+  @override
+  String modelDownloadingPercent(Object percent) {
+    return 'Model indiriliyor %$percent';
+  }
+
+  @override
+  String get calibrate => 'Kalibre Et';
+
+  @override
+  String speakerThreshold(Object value) {
+    return 'Eşik: $value';
+  }
+
+  @override
+  String profilesCount(Object count) {
+    return '$count profil';
+  }
+
+  @override
+  String recordingsCount(Object count) {
+    return '$count kayıt';
+  }
+
+  @override
+  String chunksCount(Object count) {
+    return '$count parça';
+  }
+
+  @override
+  String get calibrationSkipped =>
+      'Kalibrasyon atlandı: etiketli ses parçası yetersiz.';
+
+  @override
+  String calibrationCompleted(Object threshold) {
+    return 'Kalibrasyon tamamlandı: $threshold';
+  }
+
+  @override
+  String calibrationFailed(Object error) {
+    return 'Kalibrasyon başarısız: $error';
+  }
+
+  @override
+  String get speakerFallback => 'Konuşmacı';
 }

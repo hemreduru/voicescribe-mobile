@@ -10,12 +10,7 @@ class BootstrapGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.watch(appControllerProvider);
-    if (controller.modelState == ModelBootstrapState.ready) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (GoRouterState.of(context).uri.path == '/') {
-          context.go('/recording');
-        }
-      });
+    if (controller.isAuthResolved) {
       return const SizedBox.shrink();
     }
     return BootstrapScreen(controller: controller);

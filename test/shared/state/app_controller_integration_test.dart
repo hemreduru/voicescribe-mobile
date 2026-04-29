@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
 import 'package:voicescribe_mobile/shared/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/shared/services/auth/auth_service.dart';
 import 'package:voicescribe_mobile/shared/services/summary_service.dart';
 import 'package:voicescribe_mobile/shared/services/transcript_repository.dart';
 import 'package:voicescribe_mobile/shared/services/whisper_service.dart';
@@ -26,6 +27,7 @@ void main() {
         transcriptionService: whisper,
         audioService: audio,
         summaryService: const LocalSummaryService(),
+        authService: _FakeAuthService(),
       );
 
       await controller.bootstrap();
@@ -61,6 +63,39 @@ void main() {
   );
 }
 
+class _FakeAuthService extends VoiceScribeAuthService {
+  _FakeAuthService();
+
+  static const AuthSessionState _session = AuthSessionState(
+    userId: 'user-1',
+    email: 'user@test.dev',
+    accessToken: 'token',
+    refreshToken: 'refresh',
+    expiresAt: null,
+  );
+
+  @override
+  Future<AuthSessionState?> restoreSession() async => _session;
+
+  @override
+  AuthSessionState? currentUser() => _session;
+
+  @override
+  Future<AuthSessionState> login({
+    required String email,
+    required String password,
+  }) async => _session;
+
+  @override
+  Future<AuthSessionState> register({
+    required String email,
+    required String password,
+  }) async => _session;
+
+  @override
+  Future<void> logout() async {}
+}
+
 class _FakeRepository implements TranscriptRepository {
   PersistedTranscriptState state = PersistedTranscriptState.empty();
   final List<PersistedTranscriptState> savedStates = [];
@@ -87,6 +122,15 @@ class _FakeRepository implements TranscriptRepository {
 
   @override
   Future<void> saveSummary(Summary summary) async {}
+
+  @override
+  Future<void> saveProcessingJob(ProcessingJob job) async {}
+
+  @override
+  Future<void> deleteProcessingJob(String id) async {}
+
+  @override
+  Future<List<ProcessingJob>> pendingSpeakerAnalysisJobs() async => const [];
 
   @override
   Future<void> saveSetting(String key, String value) async {}
@@ -151,11 +195,11 @@ class _FakeTranscriptionService implements TranscriptionService {
   }
 
   @override
-  Future<String> transcribeChunk(String audioPath) async {
+  Future<TranscriptionResult> transcribeChunk(String audioPath) async {
     final response = responses[audioPath];
     if (response is Exception) {
       throw response;
     }
-    return response?.toString() ?? '';
+    return TranscriptionResult(text: response?.toString() ?? '', segments: const []);
   }
 }

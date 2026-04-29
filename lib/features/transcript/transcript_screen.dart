@@ -84,6 +84,9 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
     Transcript transcript,
   ) {
     final chunks = app.chunksFor(transcript.id);
+    final speakersById = {
+      for (final speaker in app.speakers) speaker.id: speaker.name,
+    };
     final mergedText = mergeTranscriptChunks(chunks);
     final l10n = context.l10n;
     showModalBottomSheet<void>(
@@ -146,7 +149,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                   const SizedBox(height: 20),
                   SectionHeader(
                     title: l10n.chunks,
-                    subtitle: '${chunks.length} parça',
+                    subtitle: l10n.chunksCount(chunks.length),
                   ),
                   const SizedBox(height: 8),
                   ...chunks.map(
@@ -155,11 +158,45 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                       child: AppCard(
                         showAccent: true,
                         accentColor: theme.colorScheme.secondary,
-                        child: Text(
-                          chunk.text.isEmpty
-                              ? l10n.noTranscriptAvailable
-                              : chunk.text,
-                          style: theme.textTheme.bodyMedium,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  _formatChunkTimeRange(chunk),
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _speakerNameForChunk(
+                                      chunk: chunk,
+                                      speakersById: speakersById,
+                                      fallbackLabel: l10n.speakerFallback,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: theme.colorScheme.secondary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              chunk.text.isEmpty
+                                  ? l10n.noTranscriptAvailable
+                                  : chunk.text,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -172,6 +209,35 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
       },
     );
   }
+}
+
+String _speakerNameForChunk({
+  required TranscriptChunk chunk,
+  required Map<String, String> speakersById,
+  required String fallbackLabel,
+}) {
+  final byId = speakersById[chunk.speakerId];
+  if (byId != null && byId.trim().isNotEmpty) {
+    return byId;
+  }
+  final label = chunk.speakerLabel;
+  if (label != null && label.trim().isNotEmpty) {
+    return label;
+  }
+  return fallbackLabel;
+}
+
+String _formatChunkTimeRange(TranscriptChunk chunk) {
+  final start = _formatSeconds(chunk.startTime);
+  final end = _formatSeconds(chunk.endTime);
+  return '$start - $end';
+}
+
+String _formatSeconds(double value) {
+  final total = value.isNaN || value.isInfinite ? 0 : value.floor();
+  final minutes = (total ~/ 60).toString().padLeft(2, '0');
+  final seconds = (total % 60).toString().padLeft(2, '0');
+  return '$minutes:$seconds';
 }
 
 class _TranscriptCard extends StatelessWidget {
@@ -259,20 +325,28 @@ class _TranscriptCard extends StatelessWidget {
 Color _statusColor(BuildContext context, TranscriptStatus status) {
   final theme = Theme.of(context);
   return switch (status) {
-    TranscriptStatus.completed => AppTheme.teal,
+    TranscriptStatus.completed ||
+    TranscriptStatus.speakerAnalysisCompleted => AppTheme.teal,
     TranscriptStatus.transcriptionError => theme.colorScheme.error,
     TranscriptStatus.recording ||
-    TranscriptStatus.transcribing => AppTheme.amber,
+    TranscriptStatus.transcribing ||
+    TranscriptStatus.transcriptionCompleted ||
+    TranscriptStatus.speakerAnalysisPending ||
+    TranscriptStatus.speakerAnalysisRunning => AppTheme.amber,
     TranscriptStatus.empty => theme.colorScheme.outline,
   };
 }
 
 IconData _statusIcon(TranscriptStatus status) {
   return switch (status) {
-    TranscriptStatus.completed => Icons.check_circle,
+    TranscriptStatus.completed ||
+    TranscriptStatus.speakerAnalysisCompleted => Icons.check_circle,
     TranscriptStatus.transcriptionError => Icons.error,
     TranscriptStatus.recording => Icons.mic,
     TranscriptStatus.transcribing => Icons.sync,
+    TranscriptStatus.transcriptionCompleted => Icons.subtitles,
+    TranscriptStatus.speakerAnalysisPending => Icons.pending,
+    TranscriptStatus.speakerAnalysisRunning => Icons.psychology_alt,
     TranscriptStatus.empty => Icons.radio_button_unchecked,
   };
 }

@@ -37,11 +37,30 @@ class WhisperBootstrapResult {
   final bool loaded;
 }
 
+class TranscriptionSegment {
+  const TranscriptionSegment({
+    required this.startSeconds,
+    required this.endSeconds,
+    required this.text,
+  });
+
+  final double startSeconds;
+  final double endSeconds;
+  final String text;
+}
+
+class TranscriptionResult {
+  const TranscriptionResult({required this.text, required this.segments});
+
+  final String text;
+  final List<TranscriptionSegment> segments;
+}
+
 abstract class TranscriptionService {
   Stream<ModelDownloadProgress> get downloadProgress;
 
   Future<WhisperBootstrapResult> ensureModel();
-  Future<String> transcribeChunk(String audioPath);
+  Future<TranscriptionResult> transcribeChunk(String audioPath);
   Future<void> dispose();
 }
 
@@ -80,16 +99,33 @@ class WhisperTranscriptionService implements TranscriptionService {
   }
 
   @override
-  Future<String> transcribeChunk(String audioPath) async {
+  Future<TranscriptionResult> transcribeChunk(String audioPath) async {
     final result = await _controller.transcribe(
       model: model,
       audioPath: audioPath,
       lang: 'auto',
-      withTimestamps: false,
       convert: false,
       threads: 4,
     );
-    return result?.transcription.text.trim() ?? '';
+    final transcription = result?.transcription;
+    final segments = (transcription?.segments ?? const [])
+        .map(
+          (segment) => TranscriptionSegment(
+            startSeconds: segment.fromTs.inMicroseconds / 1000000,
+            endSeconds: segment.toTs.inMicroseconds / 1000000,
+            text: segment.text.trim(),
+          ),
+        )
+        .where(
+          (segment) =>
+              segment.endSeconds >= segment.startSeconds &&
+              segment.text.isNotEmpty,
+        )
+        .toList();
+    return TranscriptionResult(
+      text: transcription?.text.trim() ?? '',
+      segments: segments,
+    );
   }
 
   @override
