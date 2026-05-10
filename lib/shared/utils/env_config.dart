@@ -3,20 +3,25 @@ import 'dart:io';
 class EnvConfig {
   static bool _initialized = false;
   static final Map<String, String> _values = <String, String>{};
+  static const String _defaultApiBaseUrl = 'http://192.168.8.20';
+  static const String _androidHostLoopback = '10.0.2.2';
+  static const String _localBackendLanHost = '192.168.8.20';
+  static const Set<String> _androidEmulatorLoopbackAliases = <String>{
+    'localhost',
+    '127.0.0.1',
+  };
+  static const Set<String> _androidLocalDnsAliases = <String>{'vsbackend.test'};
 
   static Future<void> initialize() async {
     if (_initialized) {
       return;
     }
 
-    _values['API_BASE_URL'] = 'http://vsbackend.test';
+    _values['API_BASE_URL'] = _defaultApiBaseUrl;
     _values['MODEL_DOWNLOAD_URL'] =
         'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin';
     _values['APP_ENV'] = 'production';
     _values['DEBUG_MODE'] = 'false';
-    _values['SUPABASE_URL'] = 'https://njkhmtjghtfbajslbhbp.supabase.co';
-    _values['SUPABASE_ANON_KEY'] =
-        'sb_publishable_Ib4JZcs0zf5mHel8j3kK3A_O0XFQiAi';
     _values['SPEAKER_MODEL_PATH'] =
         'asset:assets/models/conformer_tisid_small.tflite';
     _values['SPEAKER_MODEL_INPUT_LENGTH'] = '16000';
@@ -28,8 +33,13 @@ class EnvConfig {
     _initialized = true;
   }
 
-  static String get apiBaseUrl =>
-      _values['API_BASE_URL'] ?? 'http://vsbackend.test';
+  static String get apiBaseUrl {
+    final raw = (_values['API_BASE_URL'] ?? _defaultApiBaseUrl).trim();
+    if (raw.isEmpty) {
+      return _defaultApiBaseUrl;
+    }
+    return _normalizeApiBaseUrl(raw);
+  }
 
   static String get modelDownloadUrl =>
       _values['MODEL_DOWNLOAD_URL'] ??
@@ -38,10 +48,6 @@ class EnvConfig {
   static String get appEnv => _values['APP_ENV'] ?? 'production';
 
   static bool get isDebugMode => _toBool(_values['DEBUG_MODE']);
-
-  static String get supabaseUrl => _values['SUPABASE_URL'] ?? '';
-
-  static String get supabaseAnonKey => _values['SUPABASE_ANON_KEY'] ?? '';
 
   static String get speakerModelPath => _values['SPEAKER_MODEL_PATH'] ?? '';
 
@@ -93,14 +99,6 @@ class EnvConfig {
       const String.fromEnvironment('DEBUG_MODE'),
     );
     _applyDefinedValue(
-      'SUPABASE_URL',
-      const String.fromEnvironment('SUPABASE_URL'),
-    );
-    _applyDefinedValue(
-      'SUPABASE_ANON_KEY',
-      const String.fromEnvironment('SUPABASE_ANON_KEY'),
-    );
-    _applyDefinedValue(
       'SPEAKER_MODEL_PATH',
       const String.fromEnvironment('SPEAKER_MODEL_PATH'),
     );
@@ -118,6 +116,24 @@ class EnvConfig {
     if (value.isNotEmpty) {
       _values[key] = value;
     }
+  }
+
+  static String _normalizeApiBaseUrl(String raw) {
+    if (!Platform.isAndroid) {
+      return raw;
+    }
+    final uri = Uri.tryParse(raw);
+    if (uri == null || uri.host.trim().isEmpty) {
+      return raw;
+    }
+    final host = uri.host.toLowerCase();
+    if (_androidEmulatorLoopbackAliases.contains(host)) {
+      return uri.replace(host: _androidHostLoopback).toString();
+    }
+    if (_androidLocalDnsAliases.contains(host)) {
+      return uri.replace(host: _localBackendLanHost).toString();
+    }
+    return raw;
   }
 
   static bool _toBool(String? value) {
