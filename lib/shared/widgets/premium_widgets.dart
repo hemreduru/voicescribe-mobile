@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_button.dart';
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
@@ -21,8 +22,8 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
           child: Column(
@@ -31,11 +32,11 @@ class SectionHeader extends StatelessWidget {
               Text(
                 title,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               if (subtitle != null) ...[
-                const SizedBox(height: 3),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   subtitle!,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -47,10 +48,11 @@ class SectionHeader extends StatelessWidget {
           ),
         ),
         if (actionLabel != null && onAction != null)
-          TextButton.icon(
+          AppButton(
+            label: actionLabel!,
+            icon: actionIcon ?? Icons.arrow_forward,
             onPressed: onAction,
-            icon: Icon(actionIcon ?? Icons.arrow_forward, size: 18),
-            label: Text(actionLabel!),
+            variant: AppButtonVariant.text,
           ),
       ],
     );
@@ -75,26 +77,27 @@ class StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = color ?? theme.colorScheme.primary;
+
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 9 : 11,
-        vertical: compact ? 5 : 7,
+        horizontal: compact ? AppSpacing.sm + 1 : AppSpacing.md,
+        vertical: compact ? AppSpacing.xs + 1 : AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.10),
-        border: Border.all(color: accent.withValues(alpha: 0.20)),
-        borderRadius: BorderRadius.circular(999),
+        color: accent.withValues(alpha: 0.12),
+        border: Border.all(color: accent.withValues(alpha: 0.24)),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: compact ? 14 : 16, color: accent),
-          const SizedBox(width: 6),
+          const SizedBox(width: AppSpacing.sm - 2),
           Text(
             label,
             style: theme.textTheme.labelMedium?.copyWith(
               color: accent,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -121,15 +124,17 @@ class MetricPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = color ?? theme.colorScheme.secondary;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.50,
-        ),
-        borderRadius: BorderRadius.circular(999),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.70),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.92),
         ),
       ),
       child: Row(
@@ -137,16 +142,16 @@ class MetricPill extends StatelessWidget {
         children: [
           if (icon != null) ...[
             Icon(icon, size: 15, color: accent),
-            const SizedBox(width: 6),
+            const SizedBox(width: AppSpacing.sm - 2),
           ],
           Text(
             value,
             style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
           if (label.isNotEmpty) ...[
-            const SizedBox(width: 5),
+            const SizedBox(width: AppSpacing.sm - 3),
             Text(
               label,
               style: theme.textTheme.labelMedium?.copyWith(
@@ -169,7 +174,7 @@ class PremiumDivider extends StatelessWidget {
       height: AppSpacing.xl,
       color: Theme.of(
         context,
-      ).colorScheme.outlineVariant.withValues(alpha: 0.72),
+      ).colorScheme.outlineVariant.withValues(alpha: 0.86),
     );
   }
 }
@@ -193,16 +198,17 @@ class ActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     final content = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm + 2),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: theme.colorScheme.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadii.md),
             ),
             child: Icon(icon, size: 19, color: theme.colorScheme.primary),
           ),
@@ -214,7 +220,7 @@ class ActionRow extends StatelessWidget {
                 Text(
                   title,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 if (subtitle != null)
@@ -227,16 +233,19 @@ class ActionRow extends StatelessWidget {
               ],
             ),
           ),
-          trailing ?? const Icon(Icons.chevron_right),
+          trailing ??
+              Icon(Icons.chevron_right, color: theme.colorScheme.outline),
         ],
       ),
     );
+
     if (onTap == null) {
       return content;
     }
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadii.md),
       child: content,
     );
   }

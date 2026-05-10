@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 
+import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
+
 class AppCard extends StatefulWidget {
   const AppCard({
     required this.child,
     super.key,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(AppSpacing.lg),
     this.onTap,
     this.backgroundColor,
     this.selected = false,
     this.accentColor,
     this.showAccent = false,
+    this.semanticLabel,
   });
 
   final Widget child;
@@ -19,6 +22,7 @@ class AppCard extends StatefulWidget {
   final bool selected;
   final Color? accentColor;
   final bool showAccent;
+  final String? semanticLabel;
 
   @override
   State<AppCard> createState() => _AppCardState();
@@ -33,15 +37,16 @@ class _AppCardState extends State<AppCard> {
     final scheme = theme.colorScheme;
     final accent = widget.accentColor ?? scheme.primary;
     final active = widget.selected || _pressed;
+    final radius = BorderRadius.circular(AppRadii.lg);
+
     final surface =
         widget.backgroundColor ??
-        (widget.selected
-            ? Color.alphaBlend(
-                accent.withValues(alpha: 0.08),
-                scheme.surfaceContainerLow,
-              )
-            : scheme.surfaceContainerLow);
-    final radius = BorderRadius.circular(8);
+        Color.alphaBlend(
+          (active ? accent : scheme.primary).withValues(
+            alpha: active ? 0.08 : 0.02,
+          ),
+          scheme.surface,
+        );
 
     final content = Stack(
       children: [
@@ -50,12 +55,13 @@ class _AppCardState extends State<AppCard> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 140),
-                width: active ? 5 : 3,
-                margin: const EdgeInsets.symmetric(vertical: 12),
+                duration: AppMotion.fast,
+                curve: AppMotion.standardCurve,
+                width: active ? 4 : 3,
+                margin: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   color: accent,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AppRadii.pill),
                 ),
               ),
             ),
@@ -65,29 +71,24 @@ class _AppCardState extends State<AppCard> {
     );
 
     final card = AnimatedScale(
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOutCubic,
-      scale: _pressed ? 0.985 : 1,
+      duration: AppMotion.fast,
+      curve: AppMotion.standardCurve,
+      scale: _pressed ? 0.992 : 1,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        curve: Curves.easeOutCubic,
+        duration: AppMotion.normal,
+        curve: AppMotion.standardCurve,
         decoration: BoxDecoration(
           color: surface,
           borderRadius: radius,
           border: Border.all(
             color: active
-                ? accent
-                : scheme.outlineVariant.withValues(alpha: 0.72),
+                ? accent.withValues(alpha: 0.78)
+                : scheme.outlineVariant.withValues(alpha: 0.95),
             width: active ? 1.35 : 1,
           ),
-          boxShadow: [
-            if (_pressed || widget.selected)
-              BoxShadow(
-                color: accent.withValues(alpha: _pressed ? 0.14 : 0.08),
-                blurRadius: _pressed ? 18 : 14,
-                offset: const Offset(0, 8),
-              ),
-          ],
+          boxShadow: active
+              ? AppElevation.soft(accent)
+              : AppElevation.soft(scheme.shadow),
         ),
         clipBehavior: Clip.antiAlias,
         child: Material(
@@ -102,15 +103,22 @@ class _AppCardState extends State<AppCard> {
                     }
                   },
                   borderRadius: radius,
-                  splashColor: accent.withValues(alpha: 0.08),
-                  highlightColor: accent.withValues(alpha: 0.05),
+                  splashColor: accent.withValues(alpha: 0.10),
+                  highlightColor: accent.withValues(alpha: 0.06),
                   child: content,
                 ),
         ),
       ),
     );
 
-    return card;
+    return Semantics(
+      button: widget.onTap != null,
+      enabled: widget.onTap == null ? null : true,
+      selected: widget.selected ? true : null,
+      label: widget.semanticLabel,
+      container: widget.semanticLabel != null || widget.onTap != null,
+      child: card,
+    );
   }
 }
 
@@ -131,16 +139,23 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Center(
       child: AppCard(
         showAccent: true,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: theme.colorScheme.primary),
-            const SizedBox(height: 16),
-            Text(title, style: theme.textTheme.titleLarge),
-            const SizedBox(height: 8),
+            Icon(icon, size: 48, color: theme.colorScheme.primary),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               description,
               textAlign: TextAlign.center,
@@ -148,7 +163,10 @@ class EmptyState extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            if (action != null) ...[const SizedBox(height: 20), action!],
+            if (action != null) ...[
+              const SizedBox(height: AppSpacing.xl),
+              action!,
+            ],
           ],
         ),
       ),
