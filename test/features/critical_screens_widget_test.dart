@@ -9,6 +9,7 @@ import 'package:voicescribe_mobile/features/summary/summary_screen.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
 import 'package:voicescribe_mobile/shared/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/shared/services/auth/auth_service.dart';
 import 'package:voicescribe_mobile/shared/services/summary_service.dart';
 import 'package:voicescribe_mobile/shared/services/transcript_repository.dart';
 import 'package:voicescribe_mobile/shared/services/whisper_service.dart';
@@ -23,7 +24,7 @@ void main() {
       _wrapWithApp(controller: controller, child: const RecordingScreen()),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Recording'), findsOneWidget);
   });
@@ -64,7 +65,7 @@ void main() {
       _wrapWithApp(controller: controller, child: const SummaryScreen()),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Generate Summary'), findsOneWidget);
   });
@@ -95,7 +96,34 @@ AppController _buildController() {
     transcriptionService: _FakeTranscriptionService(),
     audioService: _FakeRecordingService(),
     summaryService: const LocalSummaryService(),
+    authService: _FakeAuthService(),
   );
+}
+
+class _FakeAuthService extends VoiceScribeAuthService {
+  _FakeAuthService();
+
+  @override
+  Future<AuthSessionState?> restoreSession() async => null;
+
+  @override
+  Future<AuthSessionState> register({
+    required String email,
+    required String password,
+  }) async {
+    throw const VoiceScribeAuthException('Not implemented in tests');
+  }
+
+  @override
+  Future<AuthSessionState> login({
+    required String email,
+    required String password,
+  }) async {
+    throw const VoiceScribeAuthException('Not implemented in tests');
+  }
+
+  @override
+  Future<void> logout() async {}
 }
 
 class _FakeRepository implements TranscriptRepository {
