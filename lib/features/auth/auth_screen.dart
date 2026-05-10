@@ -4,6 +4,7 @@ import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
 import 'package:voicescribe_mobile/shared/services/auth/auth_service.dart';
 import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
+import 'package:voicescribe_mobile/shared/utils/env_config.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_button.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_page.dart';
@@ -98,6 +99,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     error: _error,
                     buttonLabel: l10n.login,
                     onSubmit: _login,
+                    showPassword: !EnvConfig.isTestEnvironment,
                   ),
                   _AuthForm(
                     emailController: _registerEmailController,
@@ -106,6 +108,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     error: _error,
                     buttonLabel: l10n.register,
                     onSubmit: _register,
+                    showPassword: !EnvConfig.isTestEnvironment,
                   ),
                 ],
               ),
@@ -119,7 +122,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           .read(appControllerProvider)
           .login(
             email: _loginEmailController.text.trim(),
-            password: _loginPasswordController.text,
+            password: EnvConfig.isTestEnvironment
+                ? 'debug'
+                : _loginPasswordController.text,
           );
     });
   }
@@ -130,7 +135,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           .read(appControllerProvider)
           .register(
             email: _registerEmailController.text.trim(),
-            password: _registerPasswordController.text,
+            password: EnvConfig.isTestEnvironment
+                ? 'debug'
+                : _registerPasswordController.text,
           );
     });
   }
@@ -183,6 +190,7 @@ class _AuthForm extends StatelessWidget {
     required this.error,
     required this.buttonLabel,
     required this.onSubmit,
+    this.showPassword = true,
   });
 
   final TextEditingController emailController;
@@ -191,6 +199,7 @@ class _AuthForm extends StatelessWidget {
   final String? error;
   final String buttonLabel;
   final Future<void> Function() onSubmit;
+  final bool showPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -216,19 +225,23 @@ class _AuthForm extends StatelessWidget {
                 prefixIcon: Icons.alternate_email,
               ),
               const SizedBox(height: AppSpacing.md),
-              AppTextField(
-                controller: passwordController,
-                obscureText: true,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) async {
-                  if (!submitting) {
-                    await onSubmit();
-                  }
-                },
-                labelText: l10n.password,
-                prefixIcon: Icons.lock_outline,
-              ),
-              const SizedBox(height: AppSpacing.xl),
+              if (showPassword) ...[
+                AppTextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) async {
+                    if (!submitting) {
+                      await onSubmit();
+                    }
+                  },
+                  labelText: l10n.password,
+                  prefixIcon: Icons.lock_outline,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+              ],
+              if (!showPassword)
+                const SizedBox(height: AppSpacing.xl),
               AppButton(
                 label: buttonLabel,
                 icon: Icons.login,

@@ -3,7 +3,7 @@ import 'dart:io';
 class EnvConfig {
   static bool _initialized = false;
   static final Map<String, String> _values = <String, String>{};
-  static const String _defaultApiBaseUrl = 'http://192.168.8.20';
+  static const String _defaultApiBaseUrl = 'http://vsbackend.test';
   static const String _androidHostLoopback = '10.0.2.2';
   static const String _localBackendLanHost = '192.168.8.20';
   static const Set<String> _androidEmulatorLoopbackAliases = <String>{
@@ -48,6 +48,13 @@ class EnvConfig {
   static String get appEnv => _values['APP_ENV'] ?? 'production';
 
   static bool get isDebugMode => _toBool(_values['DEBUG_MODE']);
+
+  /// Returns true when running in a development/testing/local environment.
+  /// Used to enable debug auth bypass (password-free login).
+  static bool get isTestEnvironment {
+    final env = appEnv.toLowerCase();
+    return env == 'development' || env == 'testing' || env == 'local';
+  }
 
   static String get speakerModelPath => _values['SPEAKER_MODEL_PATH'] ?? '';
 
