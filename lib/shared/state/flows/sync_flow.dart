@@ -31,6 +31,7 @@ class SyncFlow {
       await app._syncQueueService.start(
         accessTokenProvider: () async =>
             app._authService.currentUser()?.accessToken,
+        onSyncComplete: () => app._refreshFromDb(),
       );
       app._syncStarted = true;
     } catch (_) {

@@ -8,8 +8,10 @@ import 'package:sqflite/sqflite.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
 import 'package:voicescribe_mobile/shared/services/database/database_provider.dart';
 import 'package:voicescribe_mobile/shared/utils/env_config.dart';
+import 'package:voicescribe_mobile/shared/utils/logger.dart';
 
 typedef AccessTokenProvider = Future<String?> Function();
+typedef SyncCompletionCallback = Future<void> Function();
 
 class SyncQueueService {
   SyncQueueService({
@@ -23,21 +25,32 @@ class SyncQueueService {
 
   StreamSubscription<dynamic>? _connectivitySubscription;
   AccessTokenProvider? _accessTokenProvider;
+  SyncCompletionCallback? _onSyncComplete;
   bool _syncInProgress = false;
   Timer? _syncDebounceTimer;
+  Timer? _periodicSyncTimer;
   int _consecutiveFailureCount = 0;
 
   static const Duration _defaultSyncDebounce = Duration(seconds: 2);
   static const Duration _maxRetryDelay = Duration(minutes: 2);
+  static const Duration _periodicSyncInterval = Duration(minutes: 5);
+  static const int _circuitBreakerThreshold = 3;
   static const String _lastPullAtSettingKey = 'sync.lastPullAt';
 
-  Future<void> start({required AccessTokenProvider accessTokenProvider}) async {
+  Future<void> start({
+    required AccessTokenProvider accessTokenProvider,
+    SyncCompletionCallback? onSyncComplete,
+  }) async {
     _accessTokenProvider = accessTokenProvider;
+    _onSyncComplete = onSyncComplete;
     await triggerSyncIfOnline();
+    _startPeriodicSync();
     _connectivitySubscription ??= _connectivity.onConnectivityChanged.listen((
       event,
     ) async {
       if (_isOnline(event)) {
+        // Reset circuit breaker when connectivity changes — give sync a fresh chance
+        _consecutiveFailureCount = 0;
         await triggerSyncIfOnline();
       }
     });
@@ -46,6 +59,8 @@ class SyncQueueService {
   Future<void> dispose() async {
     _syncDebounceTimer?.cancel();
     _syncDebounceTimer = null;
+    _periodicSyncTimer?.cancel();
+    _periodicSyncTimer = null;
     await _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
   }
@@ -62,8 +77,22 @@ class SyncQueueService {
 
   Future<void> triggerSyncIfOnline() async {
     if (_syncInProgress) return;
+    if (_consecutiveFailureCount >= _circuitBreakerThreshold) {
+      AppLogger.debug(
+        'Sync circuit breaker open ($_consecutiveFailureCount consecutive failures). '
+        'Waiting for connectivity change to retry.',
+      );
+      return;
+    }
     if (!await _hasInternet()) return;
     await _syncCycle();
+  }
+
+  void _startPeriodicSync() {
+    _periodicSyncTimer?.cancel();
+    _periodicSyncTimer = Timer.periodic(_periodicSyncInterval, (_) {
+      unawaited(triggerSyncIfOnline());
+    });
   }
 
   Future<void> _syncCycle() async {
@@ -110,6 +139,17 @@ class SyncQueueService {
 
       await _pullAndMerge(db: db, token: token);
       _consecutiveFailureCount = 0;
+
+      // Notify the app to refresh UI from DB after sync
+      if (hasPushChanges || true) {
+        // Always refresh after sync to pick up pulled data
+        try {
+          await _onSyncComplete?.call();
+        } catch (e) {
+          AppLogger.warning('Sync completion callback error', e);
+        }
+      }
+      AppLogger.debug('Sync cycle completed successfully.');
     } catch (error) {
       _consecutiveFailureCount += 1;
       await _markAnySyncingAsFailed(db: db, error: error.toString());
@@ -364,16 +404,114 @@ class SyncQueueService {
       throw const FormatException('Missing data in sync pull response.');
     }
 
+    var appliedCount = 0;
+    var skippedCount = 0;
+
     for (final config in _syncConfigs) {
       final rows = _rowsFromDynamicList(data[config.table]);
       for (final row in rows) {
-        await config.applyServerRow(db, row);
+        final decision = await _decideMergeForRow(
+          db: db,
+          table: config.table,
+          serverRow: row,
+        );
+        switch (decision) {
+          case _MergeDecision.insertNew:
+          case _MergeDecision.updateFromServer:
+            await config.applyServerRow(db, row);
+            appliedCount++;
+          case _MergeDecision.keepLocal:
+            skippedCount++;
+        }
       }
     }
+
+    AppLogger.debug(
+      'Pull merge: applied=$appliedCount, skipped=$skippedCount (local wins)',
+    );
 
     final serverTime =
         _toText(data['serverTime']) ?? DateTime.now().toIso8601String();
     await _writeSetting(db, _lastPullAtSettingKey, serverTime);
+  }
+
+  /// Determines whether a server row should overwrite the local row,
+  /// be inserted as new, or be skipped (local wins).
+  Future<_MergeDecision> _decideMergeForRow({
+    required Database db,
+    required String table,
+    required Map<String, Object?> serverRow,
+  }) async {
+    // Find the local row by remoteId or clientLocalId
+    final remoteId = _toText(serverRow['remote_id'] ?? serverRow['id']);
+    final clientLocalId = _toText(
+      serverRow['client_local_id'] ?? serverRow['local_id'],
+    );
+
+    Map<String, Object?>? localRow;
+
+    if (remoteId != null) {
+      final rows = await db.query(
+        table,
+        where: 'remoteId = ?',
+        whereArgs: [remoteId],
+        limit: 1,
+      );
+      if (rows.isNotEmpty) {
+        localRow = rows.first;
+      }
+    }
+
+    if (localRow == null && clientLocalId != null) {
+      final idColumn = table == 'transcripts' ? 'localId' : 'id';
+      final rows = await db.query(
+        table,
+        where: '$idColumn = ? OR id = ?',
+        whereArgs: [clientLocalId, clientLocalId],
+        limit: 1,
+      );
+      if (rows.isNotEmpty) {
+        localRow = rows.first;
+      }
+    }
+
+    // No local row found — insert as new
+    if (localRow == null) {
+      return _MergeDecision.insertNew;
+    }
+
+    final localSyncStatus = SyncStatus.fromKey(
+      localRow['syncStatus']?.toString(),
+    );
+
+    // Actively syncing — don't touch
+    if (localSyncStatus == SyncStatus.syncing) {
+      return _MergeDecision.keepLocal;
+    }
+
+    // Already synced — server row is the newer truth
+    if (localSyncStatus == SyncStatus.synced) {
+      return _MergeDecision.updateFromServer;
+    }
+
+    // pending or failed — compare timestamps (last-write-wins)
+    final localUpdatedAt = DateTime.tryParse(
+      (localRow['updatedAt'] ?? localRow['createdAt'] ?? '').toString(),
+    );
+    final serverUpdatedAt = DateTime.tryParse(
+      _toText(serverRow['updated_at']) ?? '',
+    );
+
+    if (serverUpdatedAt == null) {
+      return _MergeDecision.keepLocal;
+    }
+    if (localUpdatedAt == null) {
+      return _MergeDecision.updateFromServer;
+    }
+
+    return serverUpdatedAt.isAfter(localUpdatedAt)
+        ? _MergeDecision.updateFromServer
+        : _MergeDecision.keepLocal;
   }
 
   Future<void> _updateRowById({
@@ -1087,4 +1225,16 @@ class _HttpResult {
 
   final int statusCode;
   final String body;
+}
+
+/// Merge decision for a server row during pull.
+enum _MergeDecision {
+  /// No local row exists — insert as new.
+  insertNew,
+
+  /// Server row should overwrite local (local is synced, or server is newer).
+  updateFromServer,
+
+  /// Local row should be kept (local has pending/failed changes that are newer).
+  keepLocal,
 }

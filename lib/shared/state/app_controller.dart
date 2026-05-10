@@ -411,4 +411,23 @@ class AppController extends ChangeNotifier {
   Future<void> _safeTriggerSync() => _syncFlow.safeTriggerSync(this);
 
   Future<void> _ensureSyncStarted() => _syncFlow.ensureSyncStarted(this);
+
+  /// Called by SyncQueueService after a successful sync cycle.
+  /// Reloads all data from SQLite to reflect server-pulled changes in the UI.
+  Future<void> _refreshFromDb() async {
+    try {
+      final saved = await _repository.load();
+      transcriptController.hydrate(saved);
+      speakerController.hydrate(saved.speakers);
+      summaryController.hydrate(
+        summaries: saved.summaries,
+        provider: saved.summaryProvider,
+        length: saved.summaryLength,
+      );
+      processingJobs = saved.processingJobs;
+      _notify();
+    } catch (_) {
+      // Ignore refresh errors — UI will be stale until next sync
+    }
+  }
 }
