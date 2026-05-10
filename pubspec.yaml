@@ -69,6 +69,7 @@ dev_dependencies:
   riverpod_generator: ^4.0.3
   build_runner: ^2.14.1
   mocktail: ^1.0.5
+  sqflite_common_ffi: ^2.4.0+3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
