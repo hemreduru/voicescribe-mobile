@@ -8,6 +8,8 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
 import 'package:voicescribe_mobile/shared/utils/env_config.dart';
 
+const _kMinSpeakerChunkDurationSeconds = 0.8;
+
 class SpeakerEmbeddingSample {
   const SpeakerEmbeddingSample({
     required this.speakerId,
@@ -47,7 +49,9 @@ class SpeakerAnalysisService {
 
   bool shouldSkipChunk(TranscriptChunk chunk) {
     final duration = chunk.endTime - chunk.startTime;
-    return duration < 2 || chunk.text.trim().isEmpty;
+    final hasAudioPath =
+        chunk.audioPath != null && chunk.audioPath!.trim().isNotEmpty;
+    return duration < _kMinSpeakerChunkDurationSeconds || !hasAudioPath;
   }
 
   Future<List<double>> embeddingForChunk(TranscriptChunk chunk) async {

@@ -144,47 +144,63 @@ class SpeakerAnalysisFlow {
             app.transcriptController.replaceChunk(runningChunk);
             await app._persist(app._repository.saveChunk(runningChunk));
             TranscriptChunk nextChunk;
-            if (app._speakerAnalysisService.shouldSkipChunk(runningChunk)) {
-              nextChunk = runningChunk.copyWith(
-                speakerAnalysisStatus: SpeakerAnalysisStatus.skipped,
-                syncStatus: SyncStatus.pending,
-              );
-            } else {
-              final embedding = await app._speakerAnalysisService
-                  .embeddingForChunk(runningChunk);
-              final match = app._speakerAnalysisService.matchSpeaker(
-                chunkEmbedding: embedding,
-                speakers: app.speakers,
-              );
-              final matchedSpeaker = match.speakerId == null
-                  ? await createAutoSpeaker(app, embedding)
-                  : app.speakers.firstWhere(
-                      (item) => item.id == match.speakerId,
-                    );
-              calibrationSamples.add(
-                SpeakerEmbeddingSample(
-                  speakerId: matchedSpeaker.id,
+            Object? chunkError;
+            try {
+              if (app._speakerAnalysisService.shouldSkipChunk(runningChunk)) {
+                nextChunk = runningChunk.copyWith(
+                  speakerAnalysisStatus: SpeakerAnalysisStatus.skipped,
+                  syncStatus: SyncStatus.pending,
+                );
+              } else {
+                final embedding = await app._speakerAnalysisService
+                    .embeddingForChunk(runningChunk);
+                final match = app._speakerAnalysisService.matchSpeaker(
+                  chunkEmbedding: embedding,
+                  speakers: app.speakers,
+                );
+                final matchedSpeaker = await _resolveMatchedSpeaker(
+                  app,
+                  matchSpeakerId: match.speakerId,
                   embedding: embedding,
-                ),
-              );
+                );
+                calibrationSamples.add(
+                  SpeakerEmbeddingSample(
+                    speakerId: matchedSpeaker.id,
+                    embedding: embedding,
+                  ),
+                );
+                nextChunk = runningChunk.copyWith(
+                  speakerId: matchedSpeaker.id,
+                  speakerLabel: matchedSpeaker.name,
+                  speakerConfidence: match.confidence,
+                  speakerAnalysisStatus: SpeakerAnalysisStatus.completed,
+                  syncStatus: SyncStatus.pending,
+                );
+              }
+            } catch (error) {
+              chunkError = error;
               nextChunk = runningChunk.copyWith(
-                speakerId: matchedSpeaker.id,
-                speakerLabel: matchedSpeaker.name,
-                speakerConfidence: match.confidence,
-                speakerAnalysisStatus: SpeakerAnalysisStatus.completed,
+                speakerAnalysisStatus: SpeakerAnalysisStatus.failed,
                 syncStatus: SyncStatus.pending,
               );
             }
 
             app.transcriptController.replaceChunk(nextChunk);
             await app._persist(app._repository.saveChunk(nextChunk));
-            await cleanupChunkAudio(app, nextChunk);
+            if (chunkError == null) {
+              await cleanupChunkAudio(app, nextChunk);
+            }
 
             workingJob = workingJob.copyWith(
               status: ProcessingJobStatus.running,
               lastProcessedChunkIndex: index + 1,
+              retryCount: chunkError == null
+                  ? workingJob.retryCount
+                  : workingJob.retryCount + 1,
+              error: chunkError?.toString(),
               updatedAt: DateTime.now(),
               syncStatus: SyncStatus.pending,
+              clearError: chunkError == null,
             );
             replaceJob(app, workingJob);
             await app._persist(app._repository.saveProcessingJob(workingJob));
@@ -272,6 +288,57 @@ class SpeakerAnalysisFlow {
     app.speakerController.speakers = [...app.speakers, speaker];
     await app._persist(app._repository.saveSpeaker(speaker));
     return speaker;
+  }
+
+  Future<SpeakerProfile> _resolveMatchedSpeaker(
+    AppController app, {
+    required String? matchSpeakerId,
+    required List<double> embedding,
+  }) async {
+    final matched = matchSpeakerId == null
+        ? null
+        : app.speakers.where((item) => item.id == matchSpeakerId).firstOrNull;
+    if (matched == null) {
+      return createAutoSpeaker(app, embedding);
+    }
+    final updatedSpeaker = matched.copyWith(
+      embedding: _blendEmbeddings(
+        base: matched.embedding,
+        incoming: embedding,
+        baseRecordings: matched.recordings,
+      ),
+      recordings: matched.recordings + 1,
+      hasVoiceSample: true,
+      syncStatus: SyncStatus.pending,
+      clearSyncError: true,
+    );
+    app.speakerController.speakers = app.speakers
+        .map((item) => item.id == updatedSpeaker.id ? updatedSpeaker : item)
+        .toList();
+    await app._persist(app._repository.saveSpeaker(updatedSpeaker));
+    return updatedSpeaker;
+  }
+
+  List<double> _blendEmbeddings({
+    required List<double> base,
+    required List<double> incoming,
+    required int baseRecordings,
+  }) {
+    if (base.isEmpty) {
+      return incoming;
+    }
+    if (incoming.isEmpty) {
+      return base;
+    }
+
+    final length = math.min(base.length, incoming.length);
+    final weight = baseRecordings <= 0 ? 1.0 : baseRecordings.toDouble();
+
+    return List<double>.generate(length, (index) {
+      final previous = base[index];
+      final next = incoming[index];
+      return (previous * weight + next) / (weight + 1);
+    }, growable: false);
   }
 
   Future<void> archiveDuplicateSpeakerAnalysisJobs(AppController app) async {
