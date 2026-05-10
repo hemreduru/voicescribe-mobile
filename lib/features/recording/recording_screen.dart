@@ -8,7 +8,10 @@ import 'package:voicescribe_mobile/shared/services/audio_recording_service.dart'
 import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
 import 'package:voicescribe_mobile/shared/utils/text_utils.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_button.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_page.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_text_field.dart';
 import 'package:voicescribe_mobile/shared/widgets/audio_visualizer.dart';
 import 'package:voicescribe_mobile/shared/widgets/premium_widgets.dart';
 
@@ -38,8 +41,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.recording)),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        child: AppPageListView(
           children: [
             AppCard(
               showAccent: true,
@@ -55,10 +57,10 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                               : l10n.isRecording
                         : l10n.tapToRecord,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.md),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
                     children: [
                       StatusPill(
                         icon: app.modelState == ModelBootstrapState.ready
@@ -85,26 +87,34 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                     ],
                   ),
                   if (!app.isRecording) ...[
-                    const SizedBox(height: 16),
-                    TextField(
+                    const SizedBox(height: AppSpacing.lg),
+                    AppTextField(
                       controller: _titleController,
-                      decoration: InputDecoration(
-                        hintText: l10n.sessionNamePlaceholder,
-                        prefixIcon: const Icon(Icons.edit_note),
-                      ),
+                      hintText: l10n.sessionNamePlaceholder,
+                      prefixIcon: Icons.edit_note,
+                      textInputAction: TextInputAction.done,
                     ),
                   ],
                 ],
               ),
             ),
-            const SizedBox(height: 26),
+            const SizedBox(height: AppSpacing.xl),
             Center(
-              child: _RecordButton(
-                isRecording: app.isRecording,
-                onPressed: () => _toggleRecording(app),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < AppLayout.compactWidth;
+                  return _RecordButton(
+                    isRecording: app.isRecording,
+                    dimension: compact ? 154 : 172,
+                    semanticLabel: app.isRecording
+                        ? l10n.stop
+                        : l10n.tapToRecord,
+                    onPressed: () => _toggleRecording(app),
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: AppSpacing.lg),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -112,41 +122,40 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                   Icons.timer_outlined,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   formatDuration(app.durationSeconds),
                   style: theme.textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0,
                   ),
                 ),
               ],
             ),
             if (app.isRecording) ...[
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(height: AppSpacing.lg),
+              AppButtonGroup(
                 children: [
-                  FilledButton.icon(
+                  AppButton(
+                    label: app.isPaused ? l10n.resume : l10n.pause,
+                    icon: app.isPaused ? Icons.play_arrow : Icons.pause,
                     onPressed: app.togglePause,
-                    icon: Icon(app.isPaused ? Icons.play_arrow : Icons.pause),
-                    label: Text(app.isPaused ? l10n.resume : l10n.pause),
                   ),
-                  const SizedBox(width: 12),
-                  OutlinedButton.icon(
+                  AppButton(
+                    label: l10n.stop,
+                    icon: Icons.stop,
                     onPressed: app.stopRecording,
-                    icon: const Icon(Icons.stop),
-                    label: Text(l10n.stop),
+                    variant: AppButtonVariant.outline,
                   ),
                 ],
               ),
               if (!app.isPaused) ...[
-                const SizedBox(height: 22),
+                const SizedBox(height: AppSpacing.xl),
                 AudioVisualizer(level: app.audioLevel),
               ],
             ],
             if (app.liveTranscriptPreview.isNotEmpty) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg),
               AppCard(
                 showAccent: true,
                 accentColor: theme.colorScheme.secondary,
@@ -157,33 +166,33 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                       title: l10n.liveTranscript,
                       subtitle: '${app.chunkCount} ${l10n.chunks}',
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       app.liveTranscriptPreview,
                       maxLines: 5,
                       overflow: TextOverflow.fade,
-                      style: theme.textTheme.bodyLarge?.copyWith(height: 1.45),
+                      style: theme.textTheme.bodyLarge,
                     ),
                   ],
                 ),
               ),
             ],
             if (app.lastError != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 app.lastError!,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: theme.colorScheme.error),
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
             SectionHeader(
               title: l10n.recentRecordings,
               subtitle: recent.isEmpty
                   ? null
                   : l10n.recordingsCount(recent.length),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             if (recent.isEmpty)
               AppCard(
                 child: Text(
@@ -194,7 +203,7 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
             else
               ...recent.map(
                 (transcript) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
                   child: _RecentTranscriptCard(transcript: transcript),
                 ),
               ),
@@ -238,30 +247,41 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
 }
 
 class _RecordButton extends StatelessWidget {
-  const _RecordButton({required this.isRecording, required this.onPressed});
+  const _RecordButton({
+    required this.isRecording,
+    required this.onPressed,
+    required this.dimension,
+    required this.semanticLabel,
+  });
 
   final bool isRecording;
+  final double dimension;
   final VoidCallback onPressed;
+  final String semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return SizedBox.square(
-      dimension: 158,
-      child: FilledButton(
-        style: FilledButton.styleFrom(
-          shape: const CircleBorder(),
-          backgroundColor: isRecording ? scheme.error : scheme.primary,
-          shadowColor: (isRecording ? scheme.error : scheme.primary).withValues(
-            alpha: 0.32,
+
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: SizedBox.square(
+        dimension: dimension,
+        child: FilledButton(
+          style: FilledButton.styleFrom(
+            shape: const CircleBorder(),
+            backgroundColor: isRecording ? scheme.error : scheme.primary,
+            shadowColor: (isRecording ? scheme.error : scheme.primary)
+                .withValues(alpha: 0.34),
+            elevation: 5,
           ),
-          elevation: 4,
-        ),
-        onPressed: onPressed,
-        child: Icon(
-          isRecording ? Icons.stop : Icons.mic,
-          color: scheme.onPrimary,
-          size: 52,
+          onPressed: onPressed,
+          child: Icon(
+            isRecording ? Icons.stop : Icons.mic,
+            color: scheme.onPrimary,
+            size: dimension * 0.32,
+          ),
         ),
       ),
     );
@@ -278,6 +298,7 @@ class _RecentTranscriptCard extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final recordedAt = transcript.recordedAt ?? transcript.createdAt;
+
     return AppCard(
       showAccent: true,
       accentColor: theme.colorScheme.secondary,
@@ -299,10 +320,10 @@ class _RecentTranscriptCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   DateFormat('d MMMM HH:mm').format(recordedAt),
                   style: theme.textTheme.bodySmall?.copyWith(

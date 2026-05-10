@@ -6,7 +6,10 @@ import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
 import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_button.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_page.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_text_field.dart';
 import 'package:voicescribe_mobile/shared/widgets/premium_widgets.dart';
 
 class SpeakerScreen extends ConsumerStatefulWidget {
@@ -48,8 +51,8 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
         label: Text(l10n.addNewSpeaker),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+        child: AppPageListView(
+          padding: const EdgeInsets.only(bottom: 84),
           children: [
             AppCard(
               showAccent: true,
@@ -60,23 +63,23 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
                   Row(
                     children: [
                       Container(
-                        width: 42,
-                        height: 42,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
                           color: AppTheme.teal.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadii.md),
                         ),
                         child: const Icon(
                           Icons.record_voice_over,
                           color: AppTheme.teal,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Text(
                           l10n.speakerRecognition,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -88,14 +91,14 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     l10n.speakerRecognitionDesc,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Row(
                     children: [
                       Expanded(
@@ -108,31 +111,26 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
                           ),
                         ),
                       ),
-                      FilledButton.tonalIcon(
+                      AppButton(
+                        label: l10n.calibrate,
+                        icon: Icons.tune,
                         onPressed: _calibrating
                             ? null
                             : () => _calibrateThreshold(app),
-                        icon: _calibrating
-                            ? const SizedBox.square(
-                                dimension: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.tune),
-                        label: Text(l10n.calibrate),
+                        isLoading: _calibrating,
+                        variant: AppButtonVariant.tonal,
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: AppSpacing.lg),
             SectionHeader(
               title: l10n.registeredSpeakers,
               subtitle: l10n.profilesCount(app.speakers.length),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             if (app.speakers.isEmpty)
               EmptyState(
                 icon: Icons.group_outlined,
@@ -142,7 +140,7 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
             else
               ...app.speakers.map(
                 (speaker) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
                   child: _SpeakerCard(
                     speaker: speaker,
                     onEdit: () =>
@@ -199,19 +197,23 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
           title: Text(
             speaker == null ? context.l10n.addNewSpeaker : context.l10n.edit,
           ),
-          content: TextField(
+          content: AppTextField(
             controller: controller,
             autofocus: true,
-            decoration: InputDecoration(
-              labelText: context.l10n.speakerNameLabel,
-            ),
+            labelText: context.l10n.speakerNameLabel,
+            prefixIcon: Icons.person_outline,
+            textInputAction: TextInputAction.done,
           ),
           actions: [
-            TextButton(
+            AppButton(
+              label: context.l10n.cancel,
               onPressed: () => Navigator.pop(context),
-              child: Text(context.l10n.cancel),
+              variant: AppButtonVariant.text,
             ),
-            FilledButton(
+            AppButton(
+              label: speaker == null
+                  ? context.l10n.addNewSpeaker
+                  : context.l10n.edit,
               onPressed: () {
                 if (speaker == null) {
                   app.addSpeaker(controller.text);
@@ -220,11 +222,6 @@ class _SpeakerScreenState extends ConsumerState<SpeakerScreen> {
                 }
                 Navigator.pop(context);
               },
-              child: Text(
-                speaker == null
-                    ? context.l10n.addNewSpeaker
-                    : context.l10n.edit,
-              ),
             ),
           ],
         );
@@ -248,6 +245,7 @@ class _SpeakerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+
     return AppCard(
       showAccent: true,
       accentColor: _colorFor(speaker.id),
@@ -259,7 +257,7 @@ class _SpeakerCard extends StatelessWidget {
                 backgroundColor: _colorFor(speaker.id),
                 child: const Icon(Icons.person, color: Colors.white),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +267,7 @@ class _SpeakerCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
@@ -286,7 +284,7 @@ class _SpeakerCard extends StatelessWidget {
                 icon: const Icon(Icons.edit),
                 tooltip: l10n.edit,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: AppSpacing.sm - 2),
               IconButton.filledTonal(
                 onPressed: onDelete,
                 icon: const Icon(Icons.delete_outline),
@@ -316,14 +314,7 @@ class _SpeakerCard extends StatelessWidget {
   }
 
   Color _colorFor(String id) {
-    final colors = [
-      Colors.blue,
-      Colors.pink,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-    ];
     final hash = id.codeUnits.fold<int>(0, (value, code) => value + code);
-    return colors[hash % colors.length];
+    return AppColors.speakerPalette[hash % AppColors.speakerPalette.length];
   }
 }

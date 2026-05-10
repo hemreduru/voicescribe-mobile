@@ -8,6 +8,8 @@ import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
 import 'package:voicescribe_mobile/shared/utils/text_utils.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_page.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_text_field.dart';
 import 'package:voicescribe_mobile/shared/widgets/premium_widgets.dart';
 
 class TranscriptScreen extends ConsumerStatefulWidget {
@@ -34,18 +36,17 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.transcript)),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        child: AppConstrainedBody(
+          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
           child: Column(
             children: [
-              TextField(
-                decoration: InputDecoration(
+              AppCard(
+                child: AppSearchField(
                   hintText: l10n.searchRecordings,
-                  prefixIcon: const Icon(Icons.search),
+                  onChanged: (value) => setState(() => _query = value),
                 ),
-                onChanged: (value) => setState(() => _query = value),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Expanded(
                 child: filtered.isEmpty
                     ? EmptyState(
@@ -67,7 +68,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                           );
                         },
                         separatorBuilder: (context, index) =>
-                            const SizedBox(height: 10),
+                            const SizedBox(height: AppSpacing.sm + 2),
                         itemCount: filtered.length,
                       ),
               ),
@@ -89,6 +90,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
     };
     final mergedText = mergeTranscriptChunks(chunks);
     final l10n = context.l10n;
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -101,20 +103,19 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
           minChildSize: 0.45,
           maxChildSize: 0.95,
           builder: (context, scrollController) {
-            return ListView(
+            return AppModalListView(
               controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
               children: [
                 Text(
                   transcript.title ?? l10n.unnamed,
                   style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
                   children: [
                     StatusPill(
                       compact: true,
@@ -141,20 +142,17 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                     style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                   )
                 else
-                  SelectableText(
-                    mergedText,
-                    style: theme.textTheme.bodyLarge?.copyWith(height: 1.5),
-                  ),
+                  SelectableText(mergedText, style: theme.textTheme.bodyLarge),
                 if (chunks.isNotEmpty) ...[
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.lg),
                   SectionHeader(
                     title: l10n.chunks,
                     subtitle: l10n.chunksCount(chunks.length),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   ...chunks.map(
                     (chunk) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: AppCard(
                         showAccent: true,
                         accentColor: theme.colorScheme.secondary,
@@ -170,7 +168,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Text(
                                     _speakerNameForChunk(
@@ -189,7 +187,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: AppSpacing.xs + 2),
                             Text(
                               chunk.text.isEmpty
                                   ? l10n.noTranscriptAvailable
@@ -258,10 +256,12 @@ class _TranscriptCard extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final recordedAt = transcript.recordedAt ?? transcript.createdAt;
+
     return AppCard(
       onTap: onTap,
       showAccent: true,
       accentColor: _statusColor(context, transcript.status),
+      semanticLabel: transcript.title ?? l10n.unnamed,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -273,7 +273,7 @@ class _TranscriptCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -285,10 +285,10 @@ class _TranscriptCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               MetricPill(
                 icon: Icons.calendar_today_outlined,
@@ -308,7 +308,7 @@ class _TranscriptCard extends StatelessWidget {
             ],
           ),
           if (mergedText.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.sm + 2),
             Text(
               mergedText,
               maxLines: 2,

@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
 import 'package:voicescribe_mobile/shared/state/app_controller.dart';
+import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_button.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_page.dart';
 
 class BootstrapGate extends ConsumerWidget {
   const BootstrapGate({super.key});
@@ -31,75 +35,74 @@ class BootstrapScreen extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.graphic_eq,
-                        size: 56,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        l10n.bootstrapTitle,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        controller.modelState == ModelBootstrapState.failed
-                            ? l10n.bootstrapFailed
-                            : l10n.bootstrapMessage,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      if (progress != null) ...[
-                        const SizedBox(height: 20),
-                        LinearProgressIndicator(
-                          value: percent == null ? null : percent / 100,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          percent == null
-                              ? _formatBytes(progress.bytesDownloaded)
-                              : '${l10n.downloadingModel} ${percent.floor()}%',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      if (controller.modelState == ModelBootstrapState.failed)
-                        FilledButton.icon(
-                          onPressed: controller.bootstrap,
-                          icon: const Icon(Icons.refresh),
-                          label: Text(l10n.retrySetup),
-                        )
-                      else
-                        const CircularProgressIndicator(),
-                      if (controller.bootstrapError != null) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          controller.bootstrapError!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: theme.colorScheme.error),
-                        ),
-                      ],
-                    ],
+        child: AppConstrainedBody(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+          child: Center(
+            child: AppCard(
+              showAccent: true,
+              accentColor: controller.modelState == ModelBootstrapState.failed
+                  ? theme.colorScheme.error
+                  : theme.colorScheme.primary,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.graphic_eq_rounded,
+                    size: 60,
+                    color: theme.colorScheme.primary,
                   ),
-                ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    l10n.bootstrapTitle,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    controller.modelState == ModelBootstrapState.failed
+                        ? l10n.bootstrapFailed
+                        : l10n.bootstrapMessage,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (progress != null) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    LinearProgressIndicator(
+                      value: percent == null ? null : percent / 100,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      percent == null
+                          ? _formatBytes(progress.bytesDownloaded)
+                          : '${l10n.downloadingModel} ${percent.floor()}%',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.xl),
+                  if (controller.modelState == ModelBootstrapState.failed)
+                    AppButton(
+                      label: l10n.retrySetup,
+                      icon: Icons.refresh,
+                      onPressed: controller.bootstrap,
+                    )
+                  else
+                    const CircularProgressIndicator(),
+                  if (controller.bootstrapError != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      controller.bootstrapError!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  ],
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );
@@ -122,48 +125,114 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
-          child: NavigationBar(
-            selectedIndex: navigationShell.currentIndex,
-            onDestinationSelected: (value) => navigationShell.goBranch(
-              value,
-              initialLocation: value == navigationShell.currentIndex,
-            ),
-            destinations: [
-              NavigationDestination(
-                icon: const Icon(Icons.mic_none),
-                selectedIcon: const Icon(Icons.mic),
-                label: l10n.recording,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.description_outlined),
-                selectedIcon: const Icon(Icons.description),
-                label: l10n.transcript,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.auto_awesome_outlined),
-                selectedIcon: const Icon(Icons.auto_awesome),
-                label: l10n.summary,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.history_outlined),
-                selectedIcon: const Icon(Icons.history),
-                label: l10n.history,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.group_outlined),
-                selectedIcon: const Icon(Icons.group),
-                label: l10n.speaker,
-              ),
-            ],
-          ),
-        ),
+    final theme = Theme.of(context);
+    final destinations = [
+      NavigationDestination(
+        icon: const Icon(Icons.mic_none),
+        selectedIcon: const Icon(Icons.mic),
+        label: l10n.recording,
       ),
+      NavigationDestination(
+        icon: const Icon(Icons.description_outlined),
+        selectedIcon: const Icon(Icons.description),
+        label: l10n.transcript,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.auto_awesome_outlined),
+        selectedIcon: const Icon(Icons.auto_awesome),
+        label: l10n.summary,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.history_outlined),
+        selectedIcon: const Icon(Icons.history),
+        label: l10n.history,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.group_outlined),
+        selectedIcon: const Icon(Icons.group),
+        label: l10n.speaker,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= AppLayout.mediumWidth) {
+          return Scaffold(
+            body: Row(
+              children: [
+                SafeArea(
+                  right: false,
+                  child: NavigationRail(
+                    extended: constraints.maxWidth >= AppLayout.expandedWidth,
+                    selectedIndex: navigationShell.currentIndex,
+                    groupAlignment: -0.86,
+                    labelType: constraints.maxWidth >= AppLayout.expandedWidth
+                        ? NavigationRailLabelType.none
+                        : NavigationRailLabelType.selected,
+                    onDestinationSelected: _goBranch,
+                    destinations: destinations
+                        .map(
+                          (destination) => NavigationRailDestination(
+                            icon: destination.icon,
+                            selectedIcon: destination.selectedIcon,
+                            label: Text(destination.label),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+                VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: theme.colorScheme.outlineVariant,
+                ),
+                Expanded(child: navigationShell),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          body: navigationShell,
+          bottomNavigationBar: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadii.xl),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.95,
+                    ),
+                  ),
+                  boxShadow: AppElevation.soft(theme.colorScheme.shadow),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadii.xl),
+                  child: NavigationBar(
+                    selectedIndex: navigationShell.currentIndex,
+                    onDestinationSelected: _goBranch,
+                    destinations: destinations,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _goBranch(int value) {
+    navigationShell.goBranch(
+      value,
+      initialLocation: value == navigationShell.currentIndex,
     );
   }
 }

@@ -6,7 +6,9 @@ import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
 import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
 import 'package:voicescribe_mobile/shared/utils/text_utils.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_button.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_page.dart';
 import 'package:voicescribe_mobile/shared/widgets/premium_widgets.dart';
 
 class SummaryScreen extends ConsumerStatefulWidget {
@@ -47,8 +49,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        child: AppPageListView(
           children: [
             AppCard(
               showAccent: true,
@@ -65,10 +66,10 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                                 latestTranscript.createdAt,
                           ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.md),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
                     children: [
                       ActionChip(
                         avatar: Icon(_providerIcon(), size: 17),
@@ -104,33 +105,28 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     latestText.isEmpty ? l10n.summaryPlaceholder : latestText,
                     maxLines: 5,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyLarge?.copyWith(height: 1.45),
+                    style: theme.textTheme.bodyLarge,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: latestText.isEmpty || app.summaryGenerating
-                  ? null
-                  : _simulateSummary,
-              icon: app.summaryGenerating
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.auto_awesome),
-              label: Text(l10n.generateSummary),
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              label: l10n.generateSummary,
+              icon: Icons.auto_awesome,
+              onPressed: latestText.isEmpty ? null : _simulateSummary,
+              isLoading: app.summaryGenerating,
+              expanded: true,
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: AppSpacing.lg),
             AppCard(
               showAccent: true,
               accentColor: theme.colorScheme.secondary,
@@ -148,12 +144,11 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                           ),
                     color: theme.colorScheme.secondary,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: AppSpacing.md),
                   Text(
                     latestSummary?.summaryText ?? l10n.summaryPlaceholder,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      height: 1.45,
                     ),
                   ),
                 ],
@@ -181,8 +176,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
         return StatefulBuilder(
           builder: (context, modalSetState) {
             return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: AppModalBody(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,17 +184,17 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                     Text(
                       l10n.summarySettings,
                       style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: AppSpacing.lg),
                     Text(
                       l10n.settings,
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     SegmentedButton<String>(
                       segments: [
                         ButtonSegment(
@@ -220,14 +214,14 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                         modalSetState(() {});
                       },
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: AppSpacing.lg),
                     Text(
                       l10n.duration,
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     SegmentedButton<String>(
                       segments: [
                         ButtonSegment(value: 'short', label: Text(l10n.short)),
