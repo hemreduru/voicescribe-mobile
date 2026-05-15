@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:meta/meta.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
 import 'package:voicescribe_mobile/shared/services/database/database_provider.dart';
@@ -410,17 +411,17 @@ class SyncQueueService {
     for (final config in _syncConfigs) {
       final rows = _rowsFromDynamicList(data[config.table]);
       for (final row in rows) {
-        final decision = await _decideMergeForRow(
+        final decision = await decideMergeForRow(
           db: db,
           table: config.table,
           serverRow: row,
         );
         switch (decision) {
-          case _MergeDecision.insertNew:
-          case _MergeDecision.updateFromServer:
+          case MergeDecision.insertNew:
+          case MergeDecision.updateFromServer:
             await config.applyServerRow(db, row);
             appliedCount++;
-          case _MergeDecision.keepLocal:
+          case MergeDecision.keepLocal:
             skippedCount++;
         }
       }
@@ -437,7 +438,8 @@ class SyncQueueService {
 
   /// Determines whether a server row should overwrite the local row,
   /// be inserted as new, or be skipped (local wins).
-  Future<_MergeDecision> _decideMergeForRow({
+  @visibleForTesting
+  Future<MergeDecision> decideMergeForRow({
     required Database db,
     required String table,
     required Map<String, Object?> serverRow,
@@ -477,7 +479,7 @@ class SyncQueueService {
 
     // No local row found — insert as new
     if (localRow == null) {
-      return _MergeDecision.insertNew;
+      return MergeDecision.insertNew;
     }
 
     final localSyncStatus = SyncStatus.fromKey(
@@ -486,12 +488,12 @@ class SyncQueueService {
 
     // Actively syncing — don't touch
     if (localSyncStatus == SyncStatus.syncing) {
-      return _MergeDecision.keepLocal;
+      return MergeDecision.keepLocal;
     }
 
     // Already synced — server row is the newer truth
     if (localSyncStatus == SyncStatus.synced) {
-      return _MergeDecision.updateFromServer;
+      return MergeDecision.updateFromServer;
     }
 
     // pending or failed — compare timestamps (last-write-wins)
@@ -503,15 +505,15 @@ class SyncQueueService {
     );
 
     if (serverUpdatedAt == null) {
-      return _MergeDecision.keepLocal;
+      return MergeDecision.keepLocal;
     }
     if (localUpdatedAt == null) {
-      return _MergeDecision.updateFromServer;
+      return MergeDecision.updateFromServer;
     }
 
     return serverUpdatedAt.isAfter(localUpdatedAt)
-        ? _MergeDecision.updateFromServer
-        : _MergeDecision.keepLocal;
+        ? MergeDecision.updateFromServer
+        : MergeDecision.keepLocal;
   }
 
   Future<void> _updateRowById({
@@ -1228,7 +1230,7 @@ class _HttpResult {
 }
 
 /// Merge decision for a server row during pull.
-enum _MergeDecision {
+enum MergeDecision {
   /// No local row exists — insert as new.
   insertNew,
 
