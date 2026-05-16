@@ -49,6 +49,7 @@ void main() {
       summaryProvider: 'local',
       summaryLength: 'medium',
       themeMode: 'dark',
+      localePreference: 'tr',
     );
 
     final decoded = PersistedTranscriptState.fromJson(state.toJson());
@@ -58,6 +59,7 @@ void main() {
     expect(decoded.allChunks.single.text, 'Merhaba');
     expect(decoded.summaries.single.summaryText, 'Kisa ozet');
     expect(decoded.themeMode, 'dark');
+    expect(decoded.localePreference, 'tr');
   });
 
   test('legacy speaker analysis statuses are not restored as empty', () {
@@ -83,6 +85,7 @@ void main() {
     expect(decoded.allChunks, isEmpty);
     expect(decoded.summaries, isEmpty);
     expect(decoded.themeMode, 'system');
+    expect(decoded.localePreference, 'system');
   });
 
   test('PersistedTranscriptState falls back to system theme mode', () {
@@ -91,5 +94,13 @@ void main() {
     });
 
     expect(decoded.themeMode, 'system');
+  });
+
+  test('PersistedTranscriptState falls back to system locale preference', () {
+    final decoded = PersistedTranscriptState.fromJson(const {
+      'localePreference': 'de',
+    });
+
+    expect(decoded.localePreference, 'system');
   });
 }

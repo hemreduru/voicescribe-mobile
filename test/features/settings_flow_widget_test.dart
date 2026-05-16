@@ -16,6 +16,7 @@ import 'package:voicescribe_mobile/shared/services/transcript_repository.dart';
 import 'package:voicescribe_mobile/shared/services/whisper_service.dart';
 import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_navigation.dart';
 
 void main() {
   testWidgets('settings screen renders account, controls, and logout', (
@@ -36,6 +37,11 @@ void main() {
     await tester.scrollUntilVisible(find.text('Appearance'), 240);
     await tester.pump();
     expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('Language'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('System Status'), 240);
+    await tester.pump();
+    expect(find.text('System Status'), findsOneWidget);
 
     await tester.scrollUntilVisible(find.text('Billing & Plans'), 240);
     await tester.pump();
@@ -59,7 +65,7 @@ void main() {
     final labels = tester
         .widgetList<Text>(
           find.descendant(
-            of: find.byType(NavigationBar),
+            of: find.byType(AppBottomNavigation),
             matching: find.byType(Text),
           ),
         )
@@ -68,6 +74,7 @@ void main() {
         .toList();
 
     expect(labels, isNotEmpty);
+    expect(labels, ['Recording', 'Transcript', 'Settings']);
     expect(labels.last, 'Settings');
 
     await tester.tap(find.text('Settings').last);
@@ -76,22 +83,22 @@ void main() {
     expect(find.byType(SettingsScreen), findsOneWidget);
   });
 
-  testWidgets('summary settings action navigates to settings screen', (
-    tester,
-  ) async {
-    final controller = _buildController();
-    await controller.bootstrap();
+  testWidgets(
+    'shell navigation opens transcript screen as middle destination',
+    (tester) async {
+      final controller = _buildController();
+      await controller.bootstrap();
 
-    await tester.pumpWidget(_wrapWithRouterApp(controller: controller));
-    await _pumpRouter(tester);
+      await tester.pumpWidget(_wrapWithRouterApp(controller: controller));
+      await _pumpRouter(tester);
 
-    await tester.tap(find.text('Summary').last);
-    await _pumpRouter(tester);
-    await tester.tap(find.byTooltip('Summary Settings'));
-    await _pumpRouter(tester);
+      await tester.tap(find.text('Transcript').last);
+      await _pumpRouter(tester);
 
-    expect(find.byType(SettingsScreen), findsOneWidget);
-  });
+      expect(find.text('Transcript'), findsWidgets);
+      expect(find.byType(SettingsScreen), findsNothing);
+    },
+  );
 }
 
 Widget _wrapWithApp({

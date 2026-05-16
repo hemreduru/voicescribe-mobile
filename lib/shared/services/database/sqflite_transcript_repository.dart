@@ -54,6 +54,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
       summaryProvider: settingsMap['summaryProvider'] ?? 'local',
       summaryLength: settingsMap['summaryLength'] ?? 'medium',
       themeMode: settingsMap['themeMode'] ?? 'system',
+      localePreference: settingsMap['localePreference'] ?? 'system',
     );
   }
 

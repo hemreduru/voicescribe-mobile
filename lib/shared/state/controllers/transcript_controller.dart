@@ -10,12 +10,16 @@ class TranscriptController {
   String? lastError;
 
   final Map<String, _TranscriptProcessingStats> _stats = {};
+  final Map<String, List<TranscriptChunk>> _chunksByTranscript = {};
+  final Map<String, String> _transcriptTextById = {};
+  List<TranscriptChunk>? _indexedAllChunks;
 
   void hydrate(PersistedTranscriptState state) {
     transcripts = state.transcripts;
     currentTranscript = state.currentTranscript;
     currentChunks = state.currentChunks;
     allChunks = state.allChunks;
+    _rebuildChunkIndex();
     _rebuildStats();
   }
 
@@ -25,7 +29,7 @@ class TranscriptController {
     final transcript = Transcript(
       id: id,
       localId: id,
-      title: title?.trim().isNotEmpty ?? false ? title!.trim() : now.toString(),
+      title: title?.trim().isNotEmpty ?? false ? title!.trim() : null,
       durationSeconds: 0,
       status: TranscriptStatus.recording,
       recordedAt: now,
@@ -38,6 +42,8 @@ class TranscriptController {
     currentTranscript = transcript;
     currentChunks = [];
     _stats[id] = _TranscriptProcessingStats();
+    _chunksByTranscript[id] = const [];
+    _transcriptTextById.remove(id);
     lastError = null;
     return transcript;
   }
@@ -46,10 +52,36 @@ class TranscriptController {
     transcripts = transcripts.where((item) => item.id != id).toList();
     allChunks = allChunks.where((item) => item.transcriptId != id).toList();
     _stats.remove(id);
+    _chunksByTranscript.remove(id);
+    _transcriptTextById.remove(id);
+    _indexedAllChunks = allChunks;
     if (currentTranscript?.id == id) {
       currentTranscript = null;
       currentChunks = [];
     }
+  }
+
+  Transcript? updateTranscriptTitle(String id, String title) {
+    final normalized = title.trim();
+    Transcript? updated;
+    transcripts = transcripts.map((transcript) {
+      if (transcript.id != id) {
+        return transcript;
+      }
+      updated = transcript.copyWith(
+        title: normalized.isEmpty ? null : normalized,
+        clearTitle: normalized.isEmpty,
+        updatedAt: DateTime.now(),
+        syncStatus: SyncStatus.pending,
+        clearSyncError: true,
+      );
+      return updated!;
+    }).toList();
+
+    if (currentTranscript?.id == id) {
+      currentTranscript = updated;
+    }
+    return updated;
   }
 
   TranscriptChunk addRecordedChunk(RecordedAudioChunk audioChunk) {
@@ -77,6 +109,7 @@ class TranscriptController {
 
     currentChunks = [...currentChunks, chunk];
     allChunks = [...allChunks, chunk];
+    _setChunksFor(transcript.id, currentChunks);
     final stats = _stats.putIfAbsent(
       transcript.id,
       _TranscriptProcessingStats.new,
@@ -163,14 +196,16 @@ class TranscriptController {
   }
 
   List<TranscriptChunk> chunksFor(String transcriptId) {
-    final chunks =
-        allChunks.where((chunk) => chunk.transcriptId == transcriptId).toList()
-          ..sort((a, b) => a.chunkIndex.compareTo(b.chunkIndex));
-    return chunks;
+    _ensureChunkIndexCurrent();
+    return _chunksByTranscript[transcriptId] ?? const [];
   }
 
   String transcriptText(String transcriptId) {
-    return mergeTranscriptChunks(chunksFor(transcriptId));
+    _ensureChunkIndexCurrent();
+    return _transcriptTextById.putIfAbsent(
+      transcriptId,
+      () => mergeTranscriptChunks(chunksFor(transcriptId)),
+    );
   }
 
   void replaceChunk(TranscriptChunk updatedChunk) {
@@ -180,6 +215,7 @@ class TranscriptController {
     allChunks = allChunks
         .map((item) => item.id == updatedChunk.id ? updatedChunk : item)
         .toList();
+    _refreshChunksFor(updatedChunk.transcriptId);
   }
 
   void replaceTranscript(Transcript updatedTranscript) {
@@ -219,33 +255,38 @@ class TranscriptController {
     String? transcriptionError,
     bool clearError = false,
   }) {
-    currentChunks = currentChunks
-        .map(
-          (chunk) => chunk.id == chunkId
-              ? chunk.copyWith(
-                  text: text,
-                  transcriptionError: transcriptionError,
-                  clearTranscriptionError: clearError,
-                  syncStatus: SyncStatus.pending,
-                  clearSyncError: true,
-                )
-              : chunk,
-        )
-        .toList();
+    String? affectedTranscriptId;
+    currentChunks = currentChunks.map((chunk) {
+      if (chunk.id != chunkId) {
+        return chunk;
+      }
+      affectedTranscriptId = chunk.transcriptId;
+      return chunk.copyWith(
+        text: text,
+        transcriptionError: transcriptionError,
+        clearTranscriptionError: clearError,
+        syncStatus: SyncStatus.pending,
+        clearSyncError: true,
+      );
+    }).toList();
 
-    allChunks = allChunks
-        .map(
-          (chunk) => chunk.id == chunkId
-              ? chunk.copyWith(
-                  text: text,
-                  transcriptionError: transcriptionError,
-                  clearTranscriptionError: clearError,
-                  syncStatus: SyncStatus.pending,
-                  clearSyncError: true,
-                )
-              : chunk,
-        )
-        .toList();
+    allChunks = allChunks.map((chunk) {
+      if (chunk.id != chunkId) {
+        return chunk;
+      }
+      affectedTranscriptId = chunk.transcriptId;
+      return chunk.copyWith(
+        text: text,
+        transcriptionError: transcriptionError,
+        clearTranscriptionError: clearError,
+        syncStatus: SyncStatus.pending,
+        clearSyncError: true,
+      );
+    }).toList();
+
+    if (affectedTranscriptId != null) {
+      _refreshChunksFor(affectedTranscriptId!);
+    }
   }
 
   void _updateTranscript(
@@ -312,6 +353,46 @@ class TranscriptController {
       } else if (chunk.text.trim().isNotEmpty) {
         stats.success++;
       }
+    }
+  }
+
+  void _rebuildChunkIndex() {
+    _chunksByTranscript.clear();
+    _transcriptTextById.clear();
+    for (final chunk in allChunks) {
+      _chunksByTranscript
+          .putIfAbsent(chunk.transcriptId, () => <TranscriptChunk>[])
+          .add(chunk);
+    }
+    for (final entry in _chunksByTranscript.entries) {
+      entry.value.sort((a, b) => a.chunkIndex.compareTo(b.chunkIndex));
+      _chunksByTranscript[entry.key] = List.unmodifiable(entry.value);
+    }
+    _indexedAllChunks = allChunks;
+    if (currentTranscript != null) {
+      currentChunks = _chunksByTranscript[currentTranscript!.id] ?? const [];
+    }
+  }
+
+  void _refreshChunksFor(String transcriptId) {
+    final chunks =
+        allChunks.where((chunk) => chunk.transcriptId == transcriptId).toList()
+          ..sort((a, b) => a.chunkIndex.compareTo(b.chunkIndex));
+    _setChunksFor(transcriptId, chunks);
+    if (currentTranscript?.id == transcriptId) {
+      currentChunks = _chunksByTranscript[transcriptId] ?? const [];
+    }
+  }
+
+  void _setChunksFor(String transcriptId, List<TranscriptChunk> chunks) {
+    _chunksByTranscript[transcriptId] = List.unmodifiable(chunks);
+    _transcriptTextById.remove(transcriptId);
+    _indexedAllChunks = allChunks;
+  }
+
+  void _ensureChunkIndexCurrent() {
+    if (!identical(_indexedAllChunks, allChunks)) {
+      _rebuildChunkIndex();
     }
   }
 }

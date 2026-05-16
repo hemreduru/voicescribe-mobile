@@ -3,10 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:voicescribe_mobile/features/auth/auth_screen.dart';
-import 'package:voicescribe_mobile/features/history/history_screen.dart';
 import 'package:voicescribe_mobile/features/recording/recording_screen.dart';
 import 'package:voicescribe_mobile/features/settings/settings_screen.dart';
-import 'package:voicescribe_mobile/features/summary/summary_screen.dart';
 import 'package:voicescribe_mobile/features/transcript/transcript_screen.dart';
 import 'package:voicescribe_mobile/shared/router/app_shell.dart';
 import 'package:voicescribe_mobile/shared/state/app_controller.dart';
@@ -67,22 +65,6 @@ GoRouter goRouter(Ref ref) {
               GoRoute(
                 path: '/transcript',
                 builder: (context, state) => const TranscriptScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/summary',
-                builder: (context, state) => const SummaryScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/history',
-                builder: (context, state) => const HistoryScreen(),
               ),
             ],
           ),

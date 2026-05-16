@@ -33,12 +33,13 @@ class RecordingFlow {
     if (!app.isRecording) {
       return;
     }
+    final recordedDurationSeconds = app.recordingController.durationSeconds;
     app._stopTimer();
     await app._audioService.stop();
 
     app.recordingController.stop();
     app.transcriptController.markRecordingStopped(
-      durationSeconds: app.recordingController.durationSeconds,
+      durationSeconds: recordedDurationSeconds,
     );
     if (app.currentTranscript != null) {
       await app._saveTranscript(app.currentTranscript!, scheduleSync: true);

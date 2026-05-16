@@ -135,6 +135,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dark => 'Koyu';
 
   @override
+  String get language => 'Dil';
+
+  @override
+  String get english => 'İngilizce';
+
+  @override
+  String get turkish => 'Türkçe';
+
+  @override
+  String get systemStatus => 'Sistem Durumu';
+
+  @override
   String get summaryProvider => 'Özet Sağlayıcısı';
 
   @override
@@ -246,6 +258,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get statusEmpty => 'Boş Kayıt';
 
   @override
+  String get statusReady => 'Hazır';
+
+  @override
+  String get statusProcessing => 'İşleniyor';
+
+  @override
+  String get statusIssue => 'Sorun Var';
+
+  @override
+  String get all => 'Tümü';
+
+  @override
   String get newest => 'Yeni';
 
   @override
@@ -346,6 +370,20 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String recordingsCount(Object count) {
     return '$count kayıt';
+  }
+
+  @override
+  String get deleteRecordingsTitle => 'Kayıtlar silinsin mi?';
+
+  @override
+  String deleteRecordingsMessage(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kayıt güvenli şekilde silinecek.',
+      one: 'Bu kayıt güvenli şekilde silinecek.',
+    );
+    return '$_temp0';
   }
 
   @override

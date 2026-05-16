@@ -592,6 +592,7 @@ class PersistedTranscriptState {
     required this.summaryProvider,
     required this.summaryLength,
     required this.themeMode,
+    this.localePreference = 'system',
   });
 
   factory PersistedTranscriptState.fromJson(Map<String, Object?> json) {
@@ -617,6 +618,7 @@ class PersistedTranscriptState {
       summaryProvider: _readString(json['summaryProvider']) ?? 'local',
       summaryLength: _readString(json['summaryLength']) ?? 'medium',
       themeMode: _readThemeMode(json['themeMode']),
+      localePreference: _readLocalePreference(json['localePreference']),
     );
   }
 
@@ -643,6 +645,7 @@ class PersistedTranscriptState {
   final String summaryProvider;
   final String summaryLength;
   final String themeMode;
+  final String localePreference;
 
   Map<String, Object?> toJson() {
     return {
@@ -655,6 +658,7 @@ class PersistedTranscriptState {
       'summaryProvider': summaryProvider,
       'summaryLength': summaryLength,
       'themeMode': themeMode,
+      'localePreference': localePreference,
     };
   }
 }
@@ -663,6 +667,14 @@ String _readThemeMode(Object? value) {
   return switch (_readString(value)) {
     'light' => 'light',
     'dark' => 'dark',
+    _ => 'system',
+  };
+}
+
+String _readLocalePreference(Object? value) {
+  return switch (_readString(value)) {
+    'en' => 'en',
+    'tr' => 'tr',
     _ => 'system',
   };
 }

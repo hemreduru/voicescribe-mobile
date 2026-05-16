@@ -6,6 +6,7 @@ import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_button.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_navigation.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_page.dart';
 
 class BootstrapGate extends ConsumerWidget {
@@ -39,10 +40,6 @@ class BootstrapScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Center(
             child: AppCard(
-              showAccent: true,
-              accentColor: controller.modelState == ModelBootstrapState.failed
-                  ? theme.colorScheme.error
-                  : theme.colorScheme.primary,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -117,39 +114,42 @@ class BootstrapScreen extends StatelessWidget {
   }
 }
 
-class AppShell extends StatelessWidget {
+class AppShell extends StatefulWidget {
   const AppShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 
   @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  int _lastIndex = 0;
+  int _direction = 1;
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final currentIndex = widget.navigationShell.currentIndex;
+    if (currentIndex != _lastIndex) {
+      _direction = currentIndex > _lastIndex ? 1 : -1;
+      _lastIndex = currentIndex;
+    }
     final destinations = [
-      NavigationDestination(
-        icon: const Icon(Icons.mic_none),
-        selectedIcon: const Icon(Icons.mic),
+      AppNavigationDestination(
+        icon: Icons.mic_none,
+        selectedIcon: Icons.mic,
         label: l10n.recording,
       ),
-      NavigationDestination(
-        icon: const Icon(Icons.description_outlined),
-        selectedIcon: const Icon(Icons.description),
+      AppNavigationDestination(
+        icon: Icons.description_outlined,
+        selectedIcon: Icons.description,
         label: l10n.transcript,
       ),
-      NavigationDestination(
-        icon: const Icon(Icons.auto_awesome_outlined),
-        selectedIcon: const Icon(Icons.auto_awesome),
-        label: l10n.summary,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.history_outlined),
-        selectedIcon: const Icon(Icons.history),
-        label: l10n.history,
-      ),
-      NavigationDestination(
-        icon: const Icon(Icons.settings_outlined),
-        selectedIcon: const Icon(Icons.settings),
+      AppNavigationDestination(
+        icon: Icons.settings_outlined,
+        selectedIcon: Icons.settings,
         label: l10n.settings,
       ),
     ];
@@ -160,40 +160,35 @@ class AppShell extends StatelessWidget {
           return Scaffold(
             body: Row(
               children: [
-                SafeArea(
-                  right: false,
-                  child: NavigationRail(
-                    extended: constraints.maxWidth >= AppLayout.expandedWidth,
-                    selectedIndex: navigationShell.currentIndex,
-                    groupAlignment: -0.86,
-                    labelType: constraints.maxWidth >= AppLayout.expandedWidth
-                        ? NavigationRailLabelType.none
-                        : NavigationRailLabelType.selected,
-                    onDestinationSelected: _goBranch,
-                    destinations: destinations
-                        .map(
-                          (destination) => NavigationRailDestination(
-                            icon: destination.icon,
-                            selectedIcon: destination.selectedIcon,
-                            label: Text(destination.label),
-                          ),
-                        )
-                        .toList(),
-                  ),
+                AppSideNavigationRail(
+                  extended: constraints.maxWidth >= AppLayout.expandedWidth,
+                  selectedIndex: currentIndex,
+                  onDestinationSelected: _goBranch,
+                  destinations: destinations,
                 ),
                 VerticalDivider(
                   width: 1,
                   thickness: 1,
                   color: theme.colorScheme.outlineVariant,
                 ),
-                Expanded(child: navigationShell),
+                Expanded(
+                  child: _BranchTransition(
+                    index: currentIndex,
+                    direction: _direction,
+                    child: widget.navigationShell,
+                  ),
+                ),
               ],
             ),
           );
         }
 
         return Scaffold(
-          body: navigationShell,
+          body: _BranchTransition(
+            index: currentIndex,
+            direction: _direction,
+            child: widget.navigationShell,
+          ),
           bottomNavigationBar: SafeArea(
             top: false,
             child: Padding(
@@ -203,24 +198,10 @@ class AppShell extends StatelessWidget {
                 AppSpacing.lg,
                 AppSpacing.sm,
               ),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadii.xl),
-                  border: Border.all(
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.95,
-                    ),
-                  ),
-                  boxShadow: AppElevation.soft(theme.colorScheme.shadow),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadii.xl),
-                  child: NavigationBar(
-                    selectedIndex: navigationShell.currentIndex,
-                    onDestinationSelected: _goBranch,
-                    destinations: destinations,
-                  ),
-                ),
+              child: AppBottomNavigation(
+                selectedIndex: currentIndex,
+                onDestinationSelected: _goBranch,
+                destinations: destinations,
               ),
             ),
           ),
@@ -230,9 +211,38 @@ class AppShell extends StatelessWidget {
   }
 
   void _goBranch(int value) {
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       value,
-      initialLocation: value == navigationShell.currentIndex,
+      initialLocation: value == widget.navigationShell.currentIndex,
+    );
+  }
+}
+
+class _BranchTransition extends StatelessWidget {
+  const _BranchTransition({
+    required this.index,
+    required this.direction,
+    required this.child,
+  });
+
+  final int index;
+  final int direction;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      key: ValueKey<int>(index),
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: AppMotion.normal,
+      curve: AppMotion.standardCurve,
+      child: RepaintBoundary(child: child),
+      builder: (context, value, child) {
+        return FractionalTranslation(
+          translation: Offset(direction * (1 - value) * 0.025, 0),
+          child: child,
+        );
+      },
     );
   }
 }

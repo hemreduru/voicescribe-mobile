@@ -350,6 +350,30 @@ abstract class AppLocalizations {
   /// **'Dark'**
   String get dark;
 
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @english.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get english;
+
+  /// No description provided for @turkish.
+  ///
+  /// In en, this message translates to:
+  /// **'Turkish'**
+  String get turkish;
+
+  /// No description provided for @systemStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'System Status'**
+  String get systemStatus;
+
   /// No description provided for @summaryProvider.
   ///
   /// In en, this message translates to:
@@ -566,6 +590,30 @@ abstract class AppLocalizations {
   /// **'Empty'**
   String get statusEmpty;
 
+  /// No description provided for @statusReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get statusReady;
+
+  /// No description provided for @statusProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get statusProcessing;
+
+  /// No description provided for @statusIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get statusIssue;
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get all;
+
   /// No description provided for @newest.
   ///
   /// In en, this message translates to:
@@ -745,6 +793,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} recordings'**
   String recordingsCount(Object count);
+
+  /// No description provided for @deleteRecordingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete recordings?'**
+  String get deleteRecordingsTitle;
+
+  /// No description provided for @deleteRecordingsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This recording will be deleted safely.} other{{count} recordings will be deleted safely.}}'**
+  String deleteRecordingsMessage(num count);
 
   /// No description provided for @chunksCount.
   ///

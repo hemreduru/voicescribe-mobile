@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show ChangeNotifier;
-import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter/material.dart' show Locale, ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -68,6 +68,15 @@ final appThemeModeProvider = Provider<ThemeMode>((ref) {
   return ref.watch(appControllerProvider).themeMode;
 });
 
+final appLocaleProvider = Provider<Locale?>((ref) {
+  final preference = ref.watch(appControllerProvider).localePreference;
+  return switch (preference) {
+    'en' => const Locale('en'),
+    'tr' => const Locale('tr'),
+    _ => null,
+  };
+});
+
 enum ModelBootstrapState { bootstrapping, ready, failed }
 
 class AppController extends ChangeNotifier {
@@ -129,6 +138,7 @@ class AppController extends ChangeNotifier {
   DateTime? _lastAudioLevelNotifyAt;
   double _lastNotifiedAudioLevel = 0;
   ThemeMode _themeMode = ThemeMode.system;
+  String _localePreference = 'system';
 
   static const Duration _audioLevelNotifyInterval = Duration(milliseconds: 120);
 
@@ -163,6 +173,7 @@ class AppController extends ChangeNotifier {
   String? get currentUserId => _authSession?.userId;
   String? get currentUserEmail => _authSession?.email;
   ThemeMode get themeMode => _themeMode;
+  String get localePreference => _localePreference;
 
   Future<void> bootstrap() async {
     modelState = ModelBootstrapState.bootstrapping;
@@ -177,6 +188,7 @@ class AppController extends ChangeNotifier {
       length: saved.summaryLength,
     );
     _themeMode = _themeModeFromKey(saved.themeMode);
+    _localePreference = _localePreferenceFromKey(saved.localePreference);
     processingJobs = saved.processingJobs;
     _notify();
 
@@ -223,6 +235,16 @@ class AppController extends ChangeNotifier {
     _notify();
   }
 
+  void updateTranscriptTitle(String id, String title) {
+    _ensureAuthenticated();
+    final updated = transcriptController.updateTranscriptTitle(id, title);
+    if (updated == null) {
+      return;
+    }
+    _persistLater(_repository.saveTranscript(updated));
+    _notify();
+  }
+
   void setSummaryProvider(String value) {
     _ensureAuthenticated();
     summaryController.applyProvider(value);
@@ -246,6 +268,16 @@ class AppController extends ChangeNotifier {
     _notify();
   }
 
+  void setLocalePreference(String value) {
+    final normalized = _localePreferenceFromKey(value);
+    if (_localePreference == normalized) {
+      return;
+    }
+    _localePreference = normalized;
+    _persistLater(_repository.saveSetting('localePreference', normalized));
+    _notify();
+  }
+
   Summary? latestSummaryFor(String transcriptId) {
     return summaryController.latestForTranscript(transcriptId);
   }
@@ -256,6 +288,32 @@ class AppController extends ChangeNotifier {
       return null;
     }
     final transcript = transcripts.first;
+    final text = transcriptText(transcript.id);
+    final summary = await summaryController.generate(
+      transcript: transcript,
+      transcriptText: text,
+      summaryService: _summaryService,
+    );
+    if (summary != null) {
+      await _persist(
+        _repository.saveSummary(
+          summary.copyWith(syncStatus: SyncStatus.pending),
+        ),
+      );
+    }
+    _notify();
+    return summary;
+  }
+
+  Future<Summary?> generateSummaryForTranscript(String transcriptId) async {
+    _ensureAuthenticated();
+    final transcript = _findTranscript(
+      transcriptController.transcripts,
+      transcriptId,
+    );
+    if (transcript == null) {
+      return null;
+    }
     final text = transcriptText(transcript.id);
     final summary = await summaryController.generate(
       transcript: transcript,
@@ -436,6 +494,7 @@ class AppController extends ChangeNotifier {
         length: saved.summaryLength,
       );
       _themeMode = _themeModeFromKey(saved.themeMode);
+      _localePreference = _localePreferenceFromKey(saved.localePreference);
       processingJobs = saved.processingJobs;
       _notify();
     } catch (_) {
@@ -490,6 +549,7 @@ class AppController extends ChangeNotifier {
       summaryProvider: saved.summaryProvider,
       summaryLength: saved.summaryLength,
       themeMode: saved.themeMode,
+      localePreference: saved.localePreference,
     );
   }
 
@@ -571,6 +631,7 @@ class AppController extends ChangeNotifier {
       summaryProvider: saved.summaryProvider,
       summaryLength: saved.summaryLength,
       themeMode: saved.themeMode,
+      localePreference: saved.localePreference,
     );
   }
 
@@ -622,6 +683,14 @@ class AppController extends ChangeNotifier {
       ThemeMode.light => 'light',
       ThemeMode.dark => 'dark',
       ThemeMode.system => 'system',
+    };
+  }
+
+  static String _localePreferenceFromKey(String? value) {
+    return switch (value) {
+      'en' => 'en',
+      'tr' => 'tr',
+      _ => 'system',
     };
   }
 }

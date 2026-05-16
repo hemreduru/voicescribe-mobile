@@ -5,8 +5,9 @@ import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
 import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_button.dart';
-import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_page.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_section.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_segmented_control.dart';
 import 'package:voicescribe_mobile/shared/widgets/premium_widgets.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -32,213 +33,218 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         bottom: false,
         child: AppPageListView(
           children: [
-            AppCard(
-              showAccent: true,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionHeader(
-                    title: l10n.account,
-                    subtitle: l10n.authenticatedUser,
-                  ),
-                  const PremiumDivider(),
+            AppSectionCard(
+              title: l10n.account,
+              subtitle: l10n.authenticatedUser,
+              showHeaderDivider: true,
+              children: [
+                ActionRow(
+                  icon: Icons.alternate_email,
+                  title: app.currentUserEmail ?? '-',
+                  subtitle: l10n.email,
+                  trailing: const SizedBox.shrink(),
+                ),
+                if ((app.currentUserId ?? '').isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.sm),
                   ActionRow(
-                    icon: Icons.alternate_email,
-                    title: app.currentUserEmail ?? '-',
-                    subtitle: l10n.email,
+                    icon: Icons.badge_outlined,
+                    title: app.currentUserId!,
+                    subtitle: l10n.userId,
                     trailing: const SizedBox.shrink(),
                   ),
-                  if ((app.currentUserId ?? '').isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.sm),
-                    ActionRow(
-                      icon: Icons.badge_outlined,
-                      title: app.currentUserId!,
-                      subtitle: l10n.userId,
-                      trailing: const SizedBox.shrink(),
+                ],
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppSectionCard(
+              title: l10n.summarySettings,
+              subtitle: l10n.summaryPreferences,
+              children: [
+                AppSegmentedField<String>(
+                  label: l10n.summaryProvider,
+                  value: app.summaryProvider,
+                  segments: [
+                    AppSegment(
+                      value: 'local',
+                      label: l10n.local,
+                      icon: Icons.storage_outlined,
+                    ),
+                    AppSegment(
+                      value: 'cloud',
+                      label: l10n.cloud,
+                      icon: Icons.cloud_outlined,
                     ),
                   ],
-                ],
-              ),
+                  onChanged: (value) {
+                    ref.read(appControllerProvider).setSummaryProvider(value);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppSegmentedField<String>(
+                  label: l10n.summaryLength,
+                  value: app.summaryLength,
+                  segments: [
+                    AppSegment(value: 'short', label: l10n.short),
+                    AppSegment(value: 'medium', label: l10n.medium),
+                    AppSegment(value: 'long', label: l10n.long),
+                  ],
+                  onChanged: (value) {
+                    ref.read(appControllerProvider).setSummaryLength(value);
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.lg),
-            AppCard(
-              showAccent: true,
-              accentColor: theme.colorScheme.secondary,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionHeader(
-                    title: l10n.summarySettings,
-                    subtitle: l10n.summaryPreferences,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    l10n.summaryProvider,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+            AppSectionCard(
+              title: l10n.appearance,
+              subtitle: l10n.theme,
+              children: [
+                AppSegmentedField<ThemeMode>(
+                  label: l10n.theme,
+                  value: app.themeMode,
+                  minSegmentWidth: 104,
+                  segments: [
+                    AppSegment(
+                      value: ThemeMode.system,
+                      label: l10n.system,
+                      icon: Icons.brightness_auto,
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  SegmentedButton<String>(
-                    segments: [
-                      ButtonSegment(
-                        value: 'local',
-                        label: Text(l10n.local),
-                        icon: const Icon(Icons.storage_outlined),
-                      ),
-                      ButtonSegment(
-                        value: 'cloud',
-                        label: Text(l10n.cloud),
-                        icon: const Icon(Icons.cloud_outlined),
-                      ),
-                    ],
-                    selected: {app.summaryProvider},
-                    onSelectionChanged: (value) {
-                      ref
-                          .read(appControllerProvider)
-                          .setSummaryProvider(value.first);
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    l10n.summaryLength,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    AppSegment(
+                      value: ThemeMode.light,
+                      label: l10n.light,
+                      icon: Icons.light_mode_outlined,
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  SegmentedButton<String>(
-                    segments: [
-                      ButtonSegment(value: 'short', label: Text(l10n.short)),
-                      ButtonSegment(value: 'medium', label: Text(l10n.medium)),
-                      ButtonSegment(value: 'long', label: Text(l10n.long)),
-                    ],
-                    selected: {app.summaryLength},
-                    onSelectionChanged: (value) {
-                      ref
-                          .read(appControllerProvider)
-                          .setSummaryLength(value.first);
-                    },
-                  ),
-                ],
-              ),
+                    AppSegment(
+                      value: ThemeMode.dark,
+                      label: l10n.dark,
+                      icon: Icons.dark_mode_outlined,
+                    ),
+                  ],
+                  onChanged: (value) {
+                    ref.read(appControllerProvider).setThemeMode(value);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppSegmentedField<String>(
+                  label: l10n.language,
+                  value: app.localePreference,
+                  minSegmentWidth: 104,
+                  segments: [
+                    AppSegment(
+                      value: 'system',
+                      label: l10n.system,
+                      icon: Icons.language,
+                    ),
+                    AppSegment(value: 'en', label: l10n.english),
+                    AppSegment(value: 'tr', label: l10n.turkish),
+                  ],
+                  onChanged: (value) {
+                    ref.read(appControllerProvider).setLocalePreference(value);
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.lg),
-            AppCard(
-              showAccent: true,
-              accentColor: AppTheme.teal,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionHeader(title: l10n.appearance, subtitle: l10n.theme),
-                  const SizedBox(height: AppSpacing.lg),
-                  SegmentedButton<ThemeMode>(
-                    segments: [
-                      ButtonSegment(
-                        value: ThemeMode.system,
-                        label: Text(l10n.system),
-                        icon: const Icon(Icons.brightness_auto),
-                      ),
-                      ButtonSegment(
-                        value: ThemeMode.light,
-                        label: Text(l10n.light),
-                        icon: const Icon(Icons.light_mode_outlined),
-                      ),
-                      ButtonSegment(
-                        value: ThemeMode.dark,
-                        label: Text(l10n.dark),
-                        icon: const Icon(Icons.dark_mode_outlined),
-                      ),
-                    ],
-                    selected: {app.themeMode},
-                    onSelectionChanged: (value) {
-                      ref.read(appControllerProvider).setThemeMode(value.first);
-                    },
-                  ),
-                ],
-              ),
+            AppSectionCard(
+              title: l10n.systemStatus,
+              children: [
+                ActionRow(
+                  icon: _modelStatusIcon(app.modelState),
+                  title: _modelStatusLabel(context, app.modelState),
+                  trailing: app.modelState == ModelBootstrapState.failed
+                      ? AppButton(
+                          label: l10n.retrySetup,
+                          icon: Icons.refresh,
+                          onPressed: app.bootstrap,
+                          variant: AppButtonVariant.outline,
+                        )
+                      : StatusPill(
+                          icon: _modelStatusIcon(app.modelState),
+                          label: _modelStatusLabel(context, app.modelState),
+                          compact: true,
+                          color: _modelStatusColor(context, app.modelState),
+                        ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.lg),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionHeader(
-                    title: l10n.preferences,
-                    subtitle: l10n.comingSoon,
+            AppSectionCard(
+              title: l10n.preferences,
+              subtitle: l10n.comingSoon,
+              showHeaderDivider: true,
+              children: [
+                ActionRow(
+                  icon: Icons.credit_card_outlined,
+                  title: l10n.billingPlans,
+                  subtitle: l10n.comingSoon,
+                  trailing: StatusPill(
+                    icon: Icons.schedule_outlined,
+                    label: l10n.comingSoon,
+                    compact: true,
+                    color: AppTheme.amber,
                   ),
-                  const PremiumDivider(),
-                  ActionRow(
-                    icon: Icons.credit_card_outlined,
-                    title: l10n.billingPlans,
-                    subtitle: l10n.comingSoon,
-                    trailing: StatusPill(
-                      icon: Icons.schedule_outlined,
-                      label: l10n.comingSoon,
-                      compact: true,
-                      color: AppTheme.amber,
-                    ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                ActionRow(
+                  icon: Icons.notifications_none,
+                  title: l10n.notifications,
+                  subtitle: l10n.comingSoon,
+                  trailing: StatusPill(
+                    icon: Icons.schedule_outlined,
+                    label: l10n.comingSoon,
+                    compact: true,
+                    color: theme.colorScheme.secondary,
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  ActionRow(
-                    icon: Icons.notifications_none,
-                    title: l10n.notifications,
-                    subtitle: l10n.comingSoon,
-                    trailing: StatusPill(
-                      icon: Icons.schedule_outlined,
-                      label: l10n.comingSoon,
-                      compact: true,
-                      color: theme.colorScheme.secondary,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withValues(alpha: 0.96),
-            border: Border(
-              top: BorderSide(color: theme.colorScheme.outlineVariant),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.md,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_logoutError != null) ...[
-                  Text(
-                    _logoutError!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                ],
-                AppButton(
-                  label: l10n.logout,
-                  icon: Icons.logout,
-                  onPressed: _handleLogout,
-                  isLoading: _loggingOut,
-                  expanded: true,
-                ),
-              ],
-            ),
-          ),
+      bottomNavigationBar: AppBottomActionBar(
+        errorText: _logoutError,
+        child: AppButton(
+          label: l10n.logout,
+          icon: Icons.logout,
+          onPressed: _handleLogout,
+          isLoading: _loggingOut,
+          expanded: true,
         ),
       ),
     );
+  }
+
+  String _modelStatusLabel(
+    BuildContext context,
+    ModelBootstrapState modelState,
+  ) {
+    final l10n = context.l10n;
+    return switch (modelState) {
+      ModelBootstrapState.ready => l10n.modelReady,
+      ModelBootstrapState.failed => l10n.bootstrapFailed,
+      ModelBootstrapState.bootstrapping => l10n.modelLoading,
+    };
+  }
+
+  IconData _modelStatusIcon(ModelBootstrapState modelState) {
+    return switch (modelState) {
+      ModelBootstrapState.ready => Icons.check_circle,
+      ModelBootstrapState.failed => Icons.error_outline,
+      ModelBootstrapState.bootstrapping => Icons.sync,
+    };
+  }
+
+  Color _modelStatusColor(
+    BuildContext context,
+    ModelBootstrapState modelState,
+  ) {
+    return switch (modelState) {
+      ModelBootstrapState.ready => AppTheme.teal,
+      ModelBootstrapState.failed => Theme.of(context).colorScheme.error,
+      ModelBootstrapState.bootstrapping => Theme.of(
+        context,
+      ).colorScheme.secondary,
+    };
   }
 
   Future<void> _handleLogout() async {

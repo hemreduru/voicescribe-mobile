@@ -20,7 +20,10 @@ class RecordingController {
   void stop() {
     isRecording = false;
     isPaused = false;
+    durationSeconds = 0;
+    chunkCount = 0;
     audioLevel = 0;
+    liveTranscriptPreview = '';
   }
 
   void pause() {

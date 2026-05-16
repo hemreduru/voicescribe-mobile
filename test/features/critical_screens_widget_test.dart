@@ -5,7 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:voicescribe_mobile/features/recording/recording_screen.dart';
-import 'package:voicescribe_mobile/features/summary/summary_screen.dart';
+import 'package:voicescribe_mobile/features/transcript/transcript_screen.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
 import 'package:voicescribe_mobile/shared/services/audio_recording_service.dart';
@@ -27,9 +27,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Recording'), findsOneWidget);
+    expect(find.text('Enter session title...'), findsOneWidget);
+    expect(find.text('Session Status'), findsNothing);
+    expect(find.text('Live Transcript'), findsNothing);
   });
 
-  testWidgets('summary screen renders generate button', (tester) async {
+  testWidgets('transcript detail renders transcript and summary tabs', (
+    tester,
+  ) async {
     final controller = _buildController();
     await controller.bootstrap();
 
@@ -61,9 +66,17 @@ void main() {
     ];
 
     await tester.pumpWidget(
-      _wrapWithApp(controller: controller, child: const SummaryScreen()),
+      _wrapWithApp(controller: controller, child: const TranscriptScreen()),
     );
 
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.tap(find.text('Demo'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Transcript'), findsWidgets);
+    expect(find.text('Summary'), findsOneWidget);
+    await tester.tap(find.text('Summary'));
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Generate Summary'), findsOneWidget);

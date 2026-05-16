@@ -42,6 +42,10 @@
   "system": "Sistem",
   "light": "Açık",
   "dark": "Koyu",
+  "language": "Dil",
+  "english": "İngilizce",
+  "turkish": "Türkçe",
+  "systemStatus": "Sistem Durumu",
   "summaryProvider": "Özet Sağlayıcısı",
   "summaryLength": "Özet Uzunluğu",
   "summaryPreferences": "Özetlerin nerede çalışacağını ve ne kadar detay içereceğini yönetin.",
@@ -78,6 +82,10 @@
   "statusCompleted": "Tamamlandı",
   "statusTranscriptionError": "Hata",
   "statusEmpty": "Boş Kayıt",
+  "statusReady": "Hazır",
+  "statusProcessing": "İşleniyor",
+  "statusIssue": "Sorun Var",
+  "all": "Tümü",
   "newest": "Yeni",
   "oldest": "Eski",
   "longest": "Uzun",
@@ -129,6 +137,13 @@
   },
   "recordingsCount": "{count} kayıt",
   "@recordingsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "deleteRecordingsTitle": "Kayıtlar silinsin mi?",
+  "deleteRecordingsMessage": "{count, plural, =1{Bu kayıt güvenli şekilde silinecek.} other{{count} kayıt güvenli şekilde silinecek.}}",
+  "@deleteRecordingsMessage": {
     "placeholders": {
       "count": {}
     }

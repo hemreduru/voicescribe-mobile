@@ -24,6 +24,7 @@ class RecordingScreen extends ConsumerStatefulWidget {
 
 class _RecordingScreenState extends ConsumerState<RecordingScreen> {
   final _titleController = TextEditingController();
+  String? _boundTranscriptId;
 
   @override
   void dispose() {
@@ -34,9 +35,22 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final app = ref.watch(appControllerProvider);
+    final recordingState = ref.watch(
+      appControllerProvider.select(
+        (app) => (
+          transcripts: app.transcripts,
+          currentTranscript: app.currentTranscript,
+          isRecording: app.isRecording,
+          isPaused: app.isPaused,
+          durationSeconds: app.durationSeconds,
+          lastError: app.lastError,
+        ),
+      ),
+    );
+    final app = ref.read(appControllerProvider);
     final theme = Theme.of(context);
-    final recent = app.transcripts.take(3).toList();
+    final recent = recordingState.transcripts.take(3).toList();
+    _syncTitleController(recordingState.currentTranscript);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.recording)),
@@ -44,58 +58,12 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
         child: AppPageListView(
           children: [
             AppCard(
-              showAccent: true,
-              accentColor: _statusColor(context, app),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SectionHeader(
-                    title: l10n.recordingStatus,
-                    subtitle: app.isRecording
-                        ? app.isPaused
-                              ? l10n.recordingPaused
-                              : l10n.isRecording
-                        : l10n.tapToRecord,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: [
-                      StatusPill(
-                        icon: app.modelState == ModelBootstrapState.ready
-                            ? Icons.check_circle
-                            : Icons.sync,
-                        label: app.modelState == ModelBootstrapState.ready
-                            ? l10n.modelReady
-                            : l10n.modelLoading,
-                        color: app.modelState == ModelBootstrapState.ready
-                            ? AppTheme.teal
-                            : theme.colorScheme.secondary,
-                      ),
-                      MetricPill(
-                        icon: Icons.timer_outlined,
-                        value: formatCompactDuration(app.durationSeconds),
-                        label: l10n.duration,
-                      ),
-                      MetricPill(
-                        icon: Icons.graphic_eq,
-                        value: '${app.chunkCount}',
-                        label: l10n.chunks,
-                        color: AppTheme.amber,
-                      ),
-                    ],
-                  ),
-                  if (!app.isRecording) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    AppTextField(
-                      controller: _titleController,
-                      hintText: l10n.sessionNamePlaceholder,
-                      prefixIcon: Icons.edit_note,
-                      textInputAction: TextInputAction.done,
-                    ),
-                  ],
-                ],
+              child: AppTextField(
+                controller: _titleController,
+                hintText: l10n.sessionNamePlaceholder,
+                prefixIcon: Icons.edit_note,
+                textInputAction: TextInputAction.done,
+                onChanged: (value) => _updateCurrentTitle(app, value),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -104,9 +72,9 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                 builder: (context, constraints) {
                   final compact = constraints.maxWidth < AppLayout.compactWidth;
                   return _RecordButton(
-                    isRecording: app.isRecording,
+                    isRecording: recordingState.isRecording,
                     dimension: compact ? 154 : 172,
-                    semanticLabel: app.isRecording
+                    semanticLabel: recordingState.isRecording
                         ? l10n.stop
                         : l10n.tapToRecord,
                     onPressed: () => _toggleRecording(app),
@@ -115,30 +83,18 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.timer_outlined,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Text(
-                  formatDuration(app.durationSeconds),
-                  style: theme.textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ],
+            AppDurationDisplay(
+              value: formatDuration(recordingState.durationSeconds),
             ),
-            if (app.isRecording) ...[
+            if (recordingState.isRecording) ...[
               const SizedBox(height: AppSpacing.lg),
               AppButtonGroup(
                 children: [
                   AppButton(
-                    label: app.isPaused ? l10n.resume : l10n.pause,
-                    icon: app.isPaused ? Icons.play_arrow : Icons.pause,
+                    label: recordingState.isPaused ? l10n.resume : l10n.pause,
+                    icon: recordingState.isPaused
+                        ? Icons.play_arrow
+                        : Icons.pause,
                     onPressed: app.togglePause,
                   ),
                   AppButton(
@@ -149,40 +105,16 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
                   ),
                 ],
               ),
-              if (!app.isPaused) ...[
+              if (!recordingState.isPaused) ...[
                 const SizedBox(height: AppSpacing.xl),
-                AudioVisualizer(level: app.audioLevel),
+                const _LiveAudioVisualizer(),
               ],
             ],
-            if (app.liveTranscriptPreview.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.lg),
-              AppCard(
-                showAccent: true,
-                accentColor: theme.colorScheme.secondary,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SectionHeader(
-                      title: l10n.liveTranscript,
-                      subtitle: '${app.chunkCount} ${l10n.chunks}',
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      app.liveTranscriptPreview,
-                      maxLines: 5,
-                      overflow: TextOverflow.fade,
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            if (app.lastError != null) ...[
+            if (recordingState.lastError != null) ...[
               const SizedBox(height: AppSpacing.sm),
-              Text(
-                app.lastError!,
+              AppErrorText(
+                message: recordingState.lastError!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: theme.colorScheme.error),
               ),
             ],
             const SizedBox(height: AppSpacing.xl),
@@ -220,7 +152,6 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     }
     try {
       await app.startRecording(_titleController.text);
-      _titleController.clear();
     } catch (error) {
       if (!mounted) {
         return;
@@ -235,14 +166,39 @@ class _RecordingScreenState extends ConsumerState<RecordingScreen> {
     }
   }
 
-  Color _statusColor(BuildContext context, AppController app) {
-    if (app.isPaused) {
-      return AppTheme.amber;
+  void _syncTitleController(Transcript? transcript) {
+    final id = transcript?.id;
+    if (_boundTranscriptId == id) {
+      return;
     }
-    if (app.isRecording) {
-      return Theme.of(context).colorScheme.error;
+    _boundTranscriptId = id;
+    if (id == null) {
+      return;
     }
-    return AppTheme.teal;
+    final title = transcript?.title ?? '';
+    if (_titleController.text != title) {
+      _titleController.text = title;
+    }
+  }
+
+  void _updateCurrentTitle(AppController app, String value) {
+    final transcript = app.currentTranscript;
+    if (transcript == null) {
+      return;
+    }
+    ref.read(appControllerProvider).updateTranscriptTitle(transcript.id, value);
+  }
+}
+
+class _LiveAudioVisualizer extends ConsumerWidget {
+  const _LiveAudioVisualizer();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final level = ref.watch(
+      appControllerProvider.select((app) => app.audioLevel),
+    );
+    return RepaintBoundary(child: AudioVisualizer(level: level));
   }
 }
 
@@ -300,14 +256,9 @@ class _RecentTranscriptCard extends StatelessWidget {
     final recordedAt = transcript.recordedAt ?? transcript.createdAt;
 
     return AppCard(
-      showAccent: true,
-      accentColor: theme.colorScheme.secondary,
       child: Row(
         children: [
-          CircleAvatar(
-            backgroundColor: theme.colorScheme.primaryContainer,
-            child: Icon(Icons.graphic_eq, color: theme.colorScheme.primary),
-          ),
+          const AppIconBadge(icon: Icons.graphic_eq),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(

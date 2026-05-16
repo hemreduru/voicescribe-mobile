@@ -42,20 +42,22 @@ class AppRadii {
 
   static const double xs = 6;
   static const double sm = 10;
-  static const double md = 14;
-  static const double lg = 18;
-  static const double xl = 24;
+  static const double md = 12;
+  static const double lg = 16;
+  static const double xl = 20;
   static const double pill = 999;
 }
 
 class AppMotion {
   const AppMotion._();
 
-  static const Duration fast = Duration(milliseconds: 140);
-  static const Duration normal = Duration(milliseconds: 220);
-  static const Duration slow = Duration(milliseconds: 300);
+  static const Duration instant = Duration(milliseconds: 90);
+  static const Duration fast = Duration(milliseconds: 150);
+  static const Duration normal = Duration(milliseconds: 240);
+  static const Duration slow = Duration(milliseconds: 320);
 
   static const Curve standardCurve = Curves.easeOutCubic;
+  static const Curve emphasizedCurve = Curves.easeInOutCubic;
 }
 
 class AppLayout {
@@ -123,12 +125,35 @@ class AppTypography {
 class AppElevation {
   const AppElevation._();
 
+  static List<BoxShadow> card(Color color) => [
+    BoxShadow(
+      color: color.withValues(alpha: 0.055),
+      blurRadius: 18,
+      spreadRadius: -10,
+      offset: const Offset(0, 10),
+    ),
+  ];
+
   static List<BoxShadow> soft(Color color) => [
     BoxShadow(
       color: color.withValues(alpha: 0.06),
       blurRadius: 24,
       spreadRadius: -6,
       offset: const Offset(0, 10),
+    ),
+  ];
+
+  static List<BoxShadow> glass(Color color) => [
+    BoxShadow(
+      color: color.withValues(alpha: 0.09),
+      blurRadius: 30,
+      spreadRadius: -10,
+      offset: const Offset(0, 18),
+    ),
+    BoxShadow(
+      color: Colors.white.withValues(alpha: 0.05),
+      blurRadius: 1,
+      offset: const Offset(0, 1),
     ),
   ];
 }

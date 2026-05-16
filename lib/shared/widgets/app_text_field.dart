@@ -4,6 +4,7 @@ class AppTextField extends StatelessWidget {
   const AppTextField({
     super.key,
     this.controller,
+    this.focusNode,
     this.labelText,
     this.hintText,
     this.prefixIcon,
@@ -20,6 +21,7 @@ class AppTextField extends StatelessWidget {
   });
 
   final TextEditingController? controller;
+  final FocusNode? focusNode;
   final String? labelText;
   final String? hintText;
   final IconData? prefixIcon;
@@ -42,6 +44,7 @@ class AppTextField extends StatelessWidget {
       label: semanticLabel ?? labelText ?? hintText,
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         keyboardType: keyboardType,
         textInputAction: textInputAction,
         obscureText: obscureText,

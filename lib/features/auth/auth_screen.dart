@@ -8,6 +8,7 @@ import 'package:voicescribe_mobile/shared/utils/env_config.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_button.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_card.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_page.dart';
+import 'package:voicescribe_mobile/shared/widgets/app_section.dart';
 import 'package:voicescribe_mobile/shared/widgets/app_text_field.dart';
 import 'package:voicescribe_mobile/shared/widgets/premium_widgets.dart';
 
@@ -48,7 +49,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final app = ref.watch(appControllerProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -64,13 +64,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     AppSpacing.lg,
                     AppSpacing.md,
                   ),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                    ),
+                  child: AppSurface(
+                    padding: const EdgeInsets.all(4),
                     child: TabBar(
                       controller: _tabController,
                       tabs: [
@@ -204,56 +199,49 @@ class _AuthForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final theme = Theme.of(context);
-
     return AppPageListView(
       padding: const EdgeInsets.only(top: AppSpacing.md),
       children: [
-        AppCard(
-          showAccent: true,
-          accentColor: theme.colorScheme.primary,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SectionHeader(title: buttonLabel, subtitle: l10n.authTitle),
-              const SizedBox(height: AppSpacing.md),
+        AppSectionCard(
+          title: buttonLabel,
+          subtitle: l10n.authTitle,
+          children: [
+            AppTextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              labelText: l10n.email,
+              prefixIcon: Icons.alternate_email,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (showPassword) ...[
               AppTextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                labelText: l10n.email,
-                prefixIcon: Icons.alternate_email,
+                controller: passwordController,
+                obscureText: true,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) async {
+                  if (!submitting) {
+                    await onSubmit();
+                  }
+                },
+                labelText: l10n.password,
+                prefixIcon: Icons.lock_outline,
               ),
-              const SizedBox(height: AppSpacing.md),
-              if (showPassword) ...[
-                AppTextField(
-                  controller: passwordController,
-                  obscureText: true,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) async {
-                    if (!submitting) {
-                      await onSubmit();
-                    }
-                  },
-                  labelText: l10n.password,
-                  prefixIcon: Icons.lock_outline,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-              ],
-              if (!showPassword) const SizedBox(height: AppSpacing.xl),
-              AppButton(
-                label: buttonLabel,
-                icon: Icons.login,
-                onPressed: onSubmit,
-                isLoading: submitting,
-                expanded: true,
-              ),
-              if (error != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                Text(error!, style: TextStyle(color: theme.colorScheme.error)),
-              ],
+              const SizedBox(height: AppSpacing.xl),
             ],
-          ),
+            if (!showPassword) const SizedBox(height: AppSpacing.xl),
+            AppButton(
+              label: buttonLabel,
+              icon: Icons.login,
+              onPressed: onSubmit,
+              isLoading: submitting,
+              expanded: true,
+            ),
+            if (error != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              AppErrorText(message: error!),
+            ],
+          ],
         ),
       ],
     );
@@ -304,51 +292,33 @@ class _ModelSetupCard extends StatelessWidget {
     final percent = progress?.percent;
     final isFailed = app.modelState == ModelBootstrapState.failed;
 
-    return AppCard(
-      showAccent: true,
-      accentColor: isFailed
-          ? Theme.of(context).colorScheme.error
-          : Theme.of(context).colorScheme.primary,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.modelSetupRequired,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            isFailed
-                ? l10n.modelDownloadFailed
-                : l10n.modelSetupContinueMessage,
-          ),
+    return AppSectionCard(
+      title: l10n.modelSetupRequired,
+      children: [
+        Text(
+          isFailed ? l10n.modelDownloadFailed : l10n.modelSetupContinueMessage,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        LinearProgressIndicator(value: percent == null ? null : percent / 100),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          percent == null
+              ? l10n.modelDownloading
+              : l10n.modelDownloadingPercent(percent.floor()),
+        ),
+        if (isFailed) ...[
           const SizedBox(height: AppSpacing.md),
-          LinearProgressIndicator(
-            value: percent == null ? null : percent / 100,
+          AppButton(
+            label: l10n.retrySetup,
+            icon: Icons.refresh,
+            onPressed: onRetry,
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            percent == null
-                ? l10n.modelDownloading
-                : l10n.modelDownloadingPercent(percent.floor()),
-          ),
-          if (isFailed) ...[
-            const SizedBox(height: AppSpacing.md),
-            AppButton(
-              label: l10n.retrySetup,
-              icon: Icons.refresh,
-              onPressed: onRetry,
-            ),
-          ],
-          if (app.bootstrapError != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              app.bootstrapError!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ],
         ],
-      ),
+        if (app.bootstrapError != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          AppErrorText(message: app.bootstrapError!),
+        ],
+      ],
     );
   }
 }

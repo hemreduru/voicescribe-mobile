@@ -48,6 +48,135 @@ void main() {
   });
 
   test(
+    'locale preference hydrates from persistence and saves updates',
+    () async {
+      final repository = _FakeRepository();
+      repository.state = const PersistedTranscriptState(
+        transcripts: [],
+        currentTranscript: null,
+        currentChunks: [],
+        allChunks: [],
+        summaries: [],
+        processingJobs: [],
+        summaryProvider: 'local',
+        summaryLength: 'medium',
+        themeMode: 'system',
+        localePreference: 'tr',
+      );
+
+      final controller = AppController(
+        repository: repository,
+        transcriptionService: _FakeTranscriptionService(responses: const {}),
+        audioService: _FakeRecordingService(),
+        summaryService: const LocalSummaryService(),
+        authService: _FakeAuthService(),
+      );
+
+      await controller.bootstrap();
+
+      expect(controller.localePreference, 'tr');
+
+      controller.setLocalePreference('en');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.localePreference, 'en');
+      expect(repository.savedSettings['localePreference'], 'en');
+
+      controller.dispose();
+    },
+  );
+
+  test(
+    'selected transcript summary is generated for that transcript',
+    () async {
+      final repository = _FakeRepository();
+      final now = DateTime.utc(2026, 5, 16, 12);
+      final controller = AppController(
+        repository: repository,
+        transcriptionService: _FakeTranscriptionService(responses: const {}),
+        audioService: _FakeRecordingService(),
+        summaryService: const LocalSummaryService(),
+        authService: _FakeAuthService(),
+      );
+
+      await controller.bootstrap();
+      controller.transcriptController.transcripts = [
+        Transcript(
+          id: 'local-1',
+          localId: 'local-1',
+          title: 'First',
+          durationSeconds: 8,
+          status: TranscriptStatus.completed,
+          recordedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        ),
+        Transcript(
+          id: 'local-2',
+          localId: 'local-2',
+          title: 'Second',
+          durationSeconds: 8,
+          status: TranscriptStatus.completed,
+          recordedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ];
+      controller.transcriptController.allChunks = [
+        TranscriptChunk(
+          id: 'chunk-2',
+          transcriptId: 'local-2',
+          chunkIndex: 1,
+          text: 'Second transcript text. It should be summarized.',
+          audioPath: null,
+          recordedAt: now,
+          startTime: 0,
+          endTime: 8,
+          confidence: null,
+          transcriptionError: null,
+        ),
+      ];
+
+      final summary = await controller.generateSummaryForTranscript('local-2');
+
+      expect(summary, isNotNull);
+      expect(summary!.transcriptId, 'local-2');
+      expect(summary.summaryText, contains('Second transcript text'));
+
+      controller.dispose();
+    },
+  );
+
+  test(
+    'stopping recording resets live UI counters but keeps saved duration',
+    () async {
+      final repository = _DelayedRepository();
+      final controller = AppController(
+        repository: repository,
+        transcriptionService: _FakeTranscriptionService(responses: const {}),
+        audioService: _FakeRecordingService(),
+        summaryService: const LocalSummaryService(),
+        authService: _FakeAuthService(),
+      );
+
+      await controller.bootstrap();
+      await controller.startRecording('Demo');
+      controller.recordingController.durationSeconds = 12;
+      controller.recordingController.chunkCount = 2;
+      controller.recordingController.appendPreview('preview text');
+
+      await controller.stopRecording();
+
+      expect(controller.durationSeconds, 0);
+      expect(controller.chunkCount, 0);
+      expect(controller.liveTranscriptPreview, isEmpty);
+      expect(controller.currentTranscript?.durationSeconds, 12);
+
+      controller.dispose();
+    },
+  );
+
+  test(
     'recording flow persists transcript and keeps error aggregate',
     () async {
       final repository = _FakeRepository();
@@ -481,6 +610,7 @@ class _DelayedRepository implements TranscriptRepository {
       summaryProvider: 'local',
       summaryLength: 'medium',
       themeMode: _settings['themeMode'] ?? 'system',
+      localePreference: _settings['localePreference'] ?? 'system',
     );
   }
 

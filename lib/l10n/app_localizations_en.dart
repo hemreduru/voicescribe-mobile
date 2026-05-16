@@ -135,6 +135,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dark => 'Dark';
 
   @override
+  String get language => 'Language';
+
+  @override
+  String get english => 'English';
+
+  @override
+  String get turkish => 'Turkish';
+
+  @override
+  String get systemStatus => 'System Status';
+
+  @override
   String get summaryProvider => 'Summary Provider';
 
   @override
@@ -246,6 +258,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statusEmpty => 'Empty';
 
   @override
+  String get statusReady => 'Ready';
+
+  @override
+  String get statusProcessing => 'Processing';
+
+  @override
+  String get statusIssue => 'Needs attention';
+
+  @override
+  String get all => 'All';
+
+  @override
   String get newest => 'Newest';
 
   @override
@@ -345,6 +369,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String recordingsCount(Object count) {
     return '$count recordings';
+  }
+
+  @override
+  String get deleteRecordingsTitle => 'Delete recordings?';
+
+  @override
+  String deleteRecordingsMessage(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recordings will be deleted safely.',
+      one: 'This recording will be deleted safely.',
+    );
+    return '$_temp0';
   }
 
   @override

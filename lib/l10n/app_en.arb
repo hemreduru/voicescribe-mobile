@@ -42,6 +42,10 @@
   "system": "System",
   "light": "Light",
   "dark": "Dark",
+  "language": "Language",
+  "english": "English",
+  "turkish": "Turkish",
+  "systemStatus": "System Status",
   "summaryProvider": "Summary Provider",
   "summaryLength": "Summary Length",
   "summaryPreferences": "Manage where summaries run and how much detail they include.",
@@ -78,6 +82,10 @@
   "statusCompleted": "Completed",
   "statusTranscriptionError": "Error",
   "statusEmpty": "Empty",
+  "statusReady": "Ready",
+  "statusProcessing": "Processing",
+  "statusIssue": "Needs attention",
+  "all": "All",
   "newest": "Newest",
   "oldest": "Oldest",
   "longest": "Longest",
@@ -129,6 +137,13 @@
   },
   "recordingsCount": "{count} recordings",
   "@recordingsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "deleteRecordingsTitle": "Delete recordings?",
+  "deleteRecordingsMessage": "{count, plural, =1{This recording will be deleted safely.} other{{count} recordings will be deleted safely.}}",
+  "@deleteRecordingsMessage": {
     "placeholders": {
       "count": {}
     }
