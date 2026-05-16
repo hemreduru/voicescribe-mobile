@@ -4,8 +4,6 @@
   "recording": "Recording",
   "transcript": "Transcript",
   "summary": "Summary",
-  "history": "History",
-  "speaker": "Speaker",
   "bootstrapTitle": "Preparing VoiceScribe",
   "bootstrapMessage": "Loading on-device Whisper model...",
   "bootstrapFailed": "Model setup failed.",
@@ -49,10 +47,6 @@
   "summaryProvider": "Summary Provider",
   "summaryLength": "Summary Length",
   "summaryPreferences": "Manage where summaries run and how much detail they include.",
-  "preferences": "More Settings",
-  "billingPlans": "Billing & Plans",
-  "notifications": "Notifications",
-  "comingSoon": "Coming soon",
   "userId": "User ID",
   "summarySettings": "Summary Settings",
   "latestTranscript": "Latest Transcript",
@@ -63,12 +57,6 @@
   "chunks": "Chunks",
   "duration": "Duration",
   "selected": "Selected",
-  "speakerRecognition": "Speaker Recognition",
-  "speakerRecognitionDesc": "Automatically identify and label speakers in recordings.",
-  "addNewSpeaker": "Add Speaker",
-  "registeredSpeakers": "Registered Speakers",
-  "recordVoiceSample": "Record voice sample",
-  "voiceSampleAvailable": "Voice sample available",
   "unnamed": "Untitled",
   "delete": "Delete",
   "cancel": "Cancel",
@@ -76,9 +64,6 @@
   "statusRecording": "Recording",
   "statusTranscribing": "Transcribing",
   "statusTranscriptionCompleted": "Transcription done",
-  "statusSpeakerAnalysisPending": "Speaker analysis pending",
-  "statusSpeakerAnalysisRunning": "Speaker analysis running",
-  "statusSpeakerAnalysisCompleted": "Completed",
   "statusCompleted": "Completed",
   "statusTranscriptionError": "Error",
   "statusEmpty": "Empty",
@@ -93,11 +78,8 @@
   "transcriptBadge": "Transcript",
   "active": "Active",
   "disabled": "Disabled",
-  "speakerNameLabel": "Speaker name",
   "ready": "Ready",
   "pending": "Pending",
-  "profileReadyForRecognition": "Ready for profile recognition",
-  "addSampleLater": "Voice sample can be added later",
   "summaryGeneratedAt": "Generated {time}",
   "@summaryGeneratedAt": {
     "placeholders": {
@@ -122,19 +104,6 @@
       "percent": {}
     }
   },
-  "calibrate": "Calibrate",
-  "speakerThreshold": "Threshold: {value}",
-  "@speakerThreshold": {
-    "placeholders": {
-      "value": {}
-    }
-  },
-  "profilesCount": "{count} profiles",
-  "@profilesCount": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "recordingsCount": "{count} recordings",
   "@recordingsCount": {
     "placeholders": {
@@ -153,19 +122,5 @@
     "placeholders": {
       "count": {}
     }
-  },
-  "calibrationSkipped": "Calibration skipped: not enough labeled audio chunks.",
-  "calibrationCompleted": "Calibration completed: {threshold}",
-  "@calibrationCompleted": {
-    "placeholders": {
-      "threshold": {}
-    }
-  },
-  "calibrationFailed": "Calibration failed: {error}",
-  "@calibrationFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
-  "speakerFallback": "Speaker"
+  }
 }

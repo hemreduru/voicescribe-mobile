@@ -21,12 +21,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get summary => 'Özet';
 
   @override
-  String get history => 'Geçmiş';
-
-  @override
-  String get speaker => 'Konuşmacı';
-
-  @override
   String get bootstrapTitle => 'VoiceScribe hazırlanıyor';
 
   @override
@@ -157,18 +151,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Özetlerin nerede çalışacağını ve ne kadar detay içereceğini yönetin.';
 
   @override
-  String get preferences => 'Diğer Ayarlar';
-
-  @override
-  String get billingPlans => 'Ödeme ve Planlar';
-
-  @override
-  String get notifications => 'Bildirimler';
-
-  @override
-  String get comingSoon => 'Yakında';
-
-  @override
   String get userId => 'Kullanıcı ID';
 
   @override
@@ -200,25 +182,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get selected => 'Seçildi';
 
   @override
-  String get speakerRecognition => 'Konuşmacı Tanıma';
-
-  @override
-  String get speakerRecognitionDesc =>
-      'Kayıtlardaki konuşmacıları otomatik olarak tanımla ve etiketle.';
-
-  @override
-  String get addNewSpeaker => 'Konuşmacı Ekle';
-
-  @override
-  String get registeredSpeakers => 'Kayıtlı Konuşmacılar';
-
-  @override
-  String get recordVoiceSample => 'Ses örneği kaydet';
-
-  @override
-  String get voiceSampleAvailable => 'Ses örneği var';
-
-  @override
   String get unnamed => 'Adsız';
 
   @override
@@ -238,15 +201,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get statusTranscriptionCompleted => 'Transkripsiyon tamamlandı';
-
-  @override
-  String get statusSpeakerAnalysisPending => 'Konuşmacı analizi bekleniyor';
-
-  @override
-  String get statusSpeakerAnalysisRunning => 'Konuşmacı analizi sürüyor';
-
-  @override
-  String get statusSpeakerAnalysisCompleted => 'Tamamlandı';
 
   @override
   String get statusCompleted => 'Tamamlandı';
@@ -291,19 +245,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get disabled => 'Kapalı';
 
   @override
-  String get speakerNameLabel => 'Konuşmacı adı';
-
-  @override
   String get ready => 'Hazır';
 
   @override
   String get pending => 'Bekliyor';
-
-  @override
-  String get profileReadyForRecognition => 'Profil tanıma için hazır';
-
-  @override
-  String get addSampleLater => 'Daha sonra örnek kayıt eklenebilir';
 
   @override
   String summaryGeneratedAt(Object time) {
@@ -355,19 +300,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get calibrate => 'Kalibre Et';
-
-  @override
-  String speakerThreshold(Object value) {
-    return 'Eşik: $value';
-  }
-
-  @override
-  String profilesCount(Object count) {
-    return '$count profil';
-  }
-
-  @override
   String recordingsCount(Object count) {
     return '$count kayıt';
   }
@@ -390,21 +322,4 @@ class AppLocalizationsTr extends AppLocalizations {
   String chunksCount(Object count) {
     return '$count parça';
   }
-
-  @override
-  String get calibrationSkipped =>
-      'Kalibrasyon atlandı: etiketli ses parçası yetersiz.';
-
-  @override
-  String calibrationCompleted(Object threshold) {
-    return 'Kalibrasyon tamamlandı: $threshold';
-  }
-
-  @override
-  String calibrationFailed(Object error) {
-    return 'Kalibrasyon başarısız: $error';
-  }
-
-  @override
-  String get speakerFallback => 'Konuşmacı';
 }

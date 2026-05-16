@@ -21,12 +21,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get summary => 'Summary';
 
   @override
-  String get history => 'History';
-
-  @override
-  String get speaker => 'Speaker';
-
-  @override
   String get bootstrapTitle => 'Preparing VoiceScribe';
 
   @override
@@ -157,18 +151,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage where summaries run and how much detail they include.';
 
   @override
-  String get preferences => 'More Settings';
-
-  @override
-  String get billingPlans => 'Billing & Plans';
-
-  @override
-  String get notifications => 'Notifications';
-
-  @override
-  String get comingSoon => 'Coming soon';
-
-  @override
   String get userId => 'User ID';
 
   @override
@@ -200,25 +182,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selected => 'Selected';
 
   @override
-  String get speakerRecognition => 'Speaker Recognition';
-
-  @override
-  String get speakerRecognitionDesc =>
-      'Automatically identify and label speakers in recordings.';
-
-  @override
-  String get addNewSpeaker => 'Add Speaker';
-
-  @override
-  String get registeredSpeakers => 'Registered Speakers';
-
-  @override
-  String get recordVoiceSample => 'Record voice sample';
-
-  @override
-  String get voiceSampleAvailable => 'Voice sample available';
-
-  @override
   String get unnamed => 'Untitled';
 
   @override
@@ -238,15 +201,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statusTranscriptionCompleted => 'Transcription done';
-
-  @override
-  String get statusSpeakerAnalysisPending => 'Speaker analysis pending';
-
-  @override
-  String get statusSpeakerAnalysisRunning => 'Speaker analysis running';
-
-  @override
-  String get statusSpeakerAnalysisCompleted => 'Completed';
 
   @override
   String get statusCompleted => 'Completed';
@@ -291,19 +245,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get disabled => 'Disabled';
 
   @override
-  String get speakerNameLabel => 'Speaker name';
-
-  @override
   String get ready => 'Ready';
 
   @override
   String get pending => 'Pending';
-
-  @override
-  String get profileReadyForRecognition => 'Ready for profile recognition';
-
-  @override
-  String get addSampleLater => 'Voice sample can be added later';
 
   @override
   String summaryGeneratedAt(Object time) {
@@ -354,19 +299,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get calibrate => 'Calibrate';
-
-  @override
-  String speakerThreshold(Object value) {
-    return 'Threshold: $value';
-  }
-
-  @override
-  String profilesCount(Object count) {
-    return '$count profiles';
-  }
-
-  @override
   String recordingsCount(Object count) {
     return '$count recordings';
   }
@@ -389,21 +321,4 @@ class AppLocalizationsEn extends AppLocalizations {
   String chunksCount(Object count) {
     return '$count chunks';
   }
-
-  @override
-  String get calibrationSkipped =>
-      'Calibration skipped: not enough labeled audio chunks.';
-
-  @override
-  String calibrationCompleted(Object threshold) {
-    return 'Calibration completed: $threshold';
-  }
-
-  @override
-  String calibrationFailed(Object error) {
-    return 'Calibration failed: $error';
-  }
-
-  @override
-  String get speakerFallback => 'Speaker';
 }

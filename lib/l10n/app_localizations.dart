@@ -122,18 +122,6 @@ abstract class AppLocalizations {
   /// **'Summary'**
   String get summary;
 
-  /// No description provided for @history.
-  ///
-  /// In en, this message translates to:
-  /// **'History'**
-  String get history;
-
-  /// No description provided for @speaker.
-  ///
-  /// In en, this message translates to:
-  /// **'Speaker'**
-  String get speaker;
-
   /// No description provided for @bootstrapTitle.
   ///
   /// In en, this message translates to:
@@ -392,30 +380,6 @@ abstract class AppLocalizations {
   /// **'Manage where summaries run and how much detail they include.'**
   String get summaryPreferences;
 
-  /// No description provided for @preferences.
-  ///
-  /// In en, this message translates to:
-  /// **'More Settings'**
-  String get preferences;
-
-  /// No description provided for @billingPlans.
-  ///
-  /// In en, this message translates to:
-  /// **'Billing & Plans'**
-  String get billingPlans;
-
-  /// No description provided for @notifications.
-  ///
-  /// In en, this message translates to:
-  /// **'Notifications'**
-  String get notifications;
-
-  /// No description provided for @comingSoon.
-  ///
-  /// In en, this message translates to:
-  /// **'Coming soon'**
-  String get comingSoon;
-
   /// No description provided for @userId.
   ///
   /// In en, this message translates to:
@@ -476,42 +440,6 @@ abstract class AppLocalizations {
   /// **'Selected'**
   String get selected;
 
-  /// No description provided for @speakerRecognition.
-  ///
-  /// In en, this message translates to:
-  /// **'Speaker Recognition'**
-  String get speakerRecognition;
-
-  /// No description provided for @speakerRecognitionDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatically identify and label speakers in recordings.'**
-  String get speakerRecognitionDesc;
-
-  /// No description provided for @addNewSpeaker.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Speaker'**
-  String get addNewSpeaker;
-
-  /// No description provided for @registeredSpeakers.
-  ///
-  /// In en, this message translates to:
-  /// **'Registered Speakers'**
-  String get registeredSpeakers;
-
-  /// No description provided for @recordVoiceSample.
-  ///
-  /// In en, this message translates to:
-  /// **'Record voice sample'**
-  String get recordVoiceSample;
-
-  /// No description provided for @voiceSampleAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice sample available'**
-  String get voiceSampleAvailable;
-
   /// No description provided for @unnamed.
   ///
   /// In en, this message translates to:
@@ -553,24 +481,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcription done'**
   String get statusTranscriptionCompleted;
-
-  /// No description provided for @statusSpeakerAnalysisPending.
-  ///
-  /// In en, this message translates to:
-  /// **'Speaker analysis pending'**
-  String get statusSpeakerAnalysisPending;
-
-  /// No description provided for @statusSpeakerAnalysisRunning.
-  ///
-  /// In en, this message translates to:
-  /// **'Speaker analysis running'**
-  String get statusSpeakerAnalysisRunning;
-
-  /// No description provided for @statusSpeakerAnalysisCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Completed'**
-  String get statusSpeakerAnalysisCompleted;
 
   /// No description provided for @statusCompleted.
   ///
@@ -656,12 +566,6 @@ abstract class AppLocalizations {
   /// **'Disabled'**
   String get disabled;
 
-  /// No description provided for @speakerNameLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Speaker name'**
-  String get speakerNameLabel;
-
   /// No description provided for @ready.
   ///
   /// In en, this message translates to:
@@ -673,18 +577,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pending'**
   String get pending;
-
-  /// No description provided for @profileReadyForRecognition.
-  ///
-  /// In en, this message translates to:
-  /// **'Ready for profile recognition'**
-  String get profileReadyForRecognition;
-
-  /// No description provided for @addSampleLater.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice sample can be added later'**
-  String get addSampleLater;
 
   /// No description provided for @summaryGeneratedAt.
   ///
@@ -770,24 +662,6 @@ abstract class AppLocalizations {
   /// **'Downloading model {percent}%'**
   String modelDownloadingPercent(Object percent);
 
-  /// No description provided for @calibrate.
-  ///
-  /// In en, this message translates to:
-  /// **'Calibrate'**
-  String get calibrate;
-
-  /// No description provided for @speakerThreshold.
-  ///
-  /// In en, this message translates to:
-  /// **'Threshold: {value}'**
-  String speakerThreshold(Object value);
-
-  /// No description provided for @profilesCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} profiles'**
-  String profilesCount(Object count);
-
   /// No description provided for @recordingsCount.
   ///
   /// In en, this message translates to:
@@ -811,30 +685,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} chunks'**
   String chunksCount(Object count);
-
-  /// No description provided for @calibrationSkipped.
-  ///
-  /// In en, this message translates to:
-  /// **'Calibration skipped: not enough labeled audio chunks.'**
-  String get calibrationSkipped;
-
-  /// No description provided for @calibrationCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Calibration completed: {threshold}'**
-  String calibrationCompleted(Object threshold);
-
-  /// No description provided for @calibrationFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Calibration failed: {error}'**
-  String calibrationFailed(Object error);
-
-  /// No description provided for @speakerFallback.
-  ///
-  /// In en, this message translates to:
-  /// **'Speaker'**
-  String get speakerFallback;
 }
 
 class _AppLocalizationsDelegate

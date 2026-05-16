@@ -4,8 +4,6 @@
   "recording": "Kayıt",
   "transcript": "Transkript",
   "summary": "Özet",
-  "history": "Geçmiş",
-  "speaker": "Konuşmacı",
   "bootstrapTitle": "VoiceScribe hazırlanıyor",
   "bootstrapMessage": "Cihaz içi Whisper modeli yükleniyor...",
   "bootstrapFailed": "Model kurulumu başarısız oldu.",
@@ -49,10 +47,6 @@
   "summaryProvider": "Özet Sağlayıcısı",
   "summaryLength": "Özet Uzunluğu",
   "summaryPreferences": "Özetlerin nerede çalışacağını ve ne kadar detay içereceğini yönetin.",
-  "preferences": "Diğer Ayarlar",
-  "billingPlans": "Ödeme ve Planlar",
-  "notifications": "Bildirimler",
-  "comingSoon": "Yakında",
   "userId": "Kullanıcı ID",
   "summarySettings": "Özet Ayarları",
   "latestTranscript": "Son Transkript",
@@ -63,12 +57,6 @@
   "chunks": "Parçalar",
   "duration": "Süre",
   "selected": "Seçildi",
-  "speakerRecognition": "Konuşmacı Tanıma",
-  "speakerRecognitionDesc": "Kayıtlardaki konuşmacıları otomatik olarak tanımla ve etiketle.",
-  "addNewSpeaker": "Konuşmacı Ekle",
-  "registeredSpeakers": "Kayıtlı Konuşmacılar",
-  "recordVoiceSample": "Ses örneği kaydet",
-  "voiceSampleAvailable": "Ses örneği var",
   "unnamed": "Adsız",
   "delete": "Sil",
   "cancel": "İptal",
@@ -76,9 +64,6 @@
   "statusRecording": "Kaydediliyor",
   "statusTranscribing": "Çevriliyor",
   "statusTranscriptionCompleted": "Transkripsiyon tamamlandı",
-  "statusSpeakerAnalysisPending": "Konuşmacı analizi bekleniyor",
-  "statusSpeakerAnalysisRunning": "Konuşmacı analizi sürüyor",
-  "statusSpeakerAnalysisCompleted": "Tamamlandı",
   "statusCompleted": "Tamamlandı",
   "statusTranscriptionError": "Hata",
   "statusEmpty": "Boş Kayıt",
@@ -93,11 +78,8 @@
   "transcriptBadge": "Transkript",
   "active": "Aktif",
   "disabled": "Kapalı",
-  "speakerNameLabel": "Konuşmacı adı",
   "ready": "Hazır",
   "pending": "Bekliyor",
-  "profileReadyForRecognition": "Profil tanıma için hazır",
-  "addSampleLater": "Daha sonra örnek kayıt eklenebilir",
   "summaryGeneratedAt": "Oluşturulma: {time}",
   "@summaryGeneratedAt": {
     "placeholders": {
@@ -122,19 +104,6 @@
       "percent": {}
     }
   },
-  "calibrate": "Kalibre Et",
-  "speakerThreshold": "Eşik: {value}",
-  "@speakerThreshold": {
-    "placeholders": {
-      "value": {}
-    }
-  },
-  "profilesCount": "{count} profil",
-  "@profilesCount": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "recordingsCount": "{count} kayıt",
   "@recordingsCount": {
     "placeholders": {
@@ -153,19 +122,5 @@
     "placeholders": {
       "count": {}
     }
-  },
-  "calibrationSkipped": "Kalibrasyon atlandı: etiketli ses parçası yetersiz.",
-  "calibrationCompleted": "Kalibrasyon tamamlandı: {threshold}",
-  "@calibrationCompleted": {
-    "placeholders": {
-      "threshold": {}
-    }
-  },
-  "calibrationFailed": "Kalibrasyon başarısız: {error}",
-  "@calibrationFailed": {
-    "placeholders": {
-      "error": {}
-    }
-  },
-  "speakerFallback": "Konuşmacı"
+  }
 }

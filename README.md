@@ -5,10 +5,10 @@ Flutter migration of the offline-first VoiceScribe mobile app.
 ## Stack
 
 - Flutter + Dart
-- Riverpod for app state and service injection
+- flutter_bloc for feature state and repository injection
 - `record` for cross-platform microphone capture
 - `whisper_ggml_plus` for on-device whisper.cpp transcription
-- JSON persistence behind a repository interface
+- SQLite persistence behind repository interfaces
 
 ## App Shape
 
@@ -16,9 +16,8 @@ The app keeps the VoiceScribe product flow while using Flutter-native structure:
 
 - Recording: model bootstrap, recording controls, chunking, live transcript preview
 - Transcript: searchable transcript sessions and chunk detail
-- Summary: UI-ready local/cloud summary controls
-- History: searchable/sortable session history with delete
-- Speaker: UI-ready speaker profile management
+- Summary: local/cloud summary controls
+- Settings: account, summary, theme, language, and model status controls
 
 ## Development
 
