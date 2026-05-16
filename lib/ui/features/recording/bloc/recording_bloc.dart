@@ -642,7 +642,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       return TranscriptStatus.transcriptionError;
     }
     if (chunks.any((chunk) => chunk.text.trim().isNotEmpty)) {
-      return TranscriptStatus.transcriptionCompleted;
+      return TranscriptStatus.completed;
     }
     return TranscriptStatus.empty;
   }

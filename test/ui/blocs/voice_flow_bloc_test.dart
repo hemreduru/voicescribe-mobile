@@ -50,10 +50,7 @@ void main() {
         repository,
       ).execute(repository.snapshot);
 
-      expect(
-        repaired.transcripts.single.status,
-        TranscriptStatus.transcriptionCompleted,
-      );
+      expect(repaired.transcripts.single.status, TranscriptStatus.completed);
       expect(repaired.transcripts.single.durationSeconds, 15);
     },
   );
@@ -95,7 +92,7 @@ void main() {
         expect(bloc.state.currentChunks.single.text, 'Merhaba dunya');
         expect(
           bloc.state.currentTranscript?.status,
-          TranscriptStatus.transcriptionCompleted,
+          TranscriptStatus.completed,
         );
       },
     );

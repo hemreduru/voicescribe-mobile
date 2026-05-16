@@ -253,21 +253,21 @@ class TranscriptListBloc
     items.sort((a, b) {
       final aTranscript = a.transcript;
       final bTranscript = b.transcript;
+      final aSortTime = _sortTimeFor(aTranscript);
+      final bSortTime = _sortTimeFor(bTranscript);
       return switch (sort) {
-        TranscriptSort.newest =>
-          (bTranscript.recordedAt ?? bTranscript.createdAt).compareTo(
-            aTranscript.recordedAt ?? aTranscript.createdAt,
-          ),
-        TranscriptSort.oldest =>
-          (aTranscript.recordedAt ?? aTranscript.createdAt).compareTo(
-            bTranscript.recordedAt ?? bTranscript.createdAt,
-          ),
+        TranscriptSort.newest => bSortTime.compareTo(aSortTime),
+        TranscriptSort.oldest => aSortTime.compareTo(bSortTime),
         TranscriptSort.longest => bTranscript.durationSeconds.compareTo(
           aTranscript.durationSeconds,
         ),
       };
     });
     return List.unmodifiable(items);
+  }
+
+  DateTime _sortTimeFor(Transcript transcript) {
+    return transcript.updatedAt;
   }
 
   bool _matchesFilter(TranscriptStatus status, TranscriptFilter filter) {
@@ -294,8 +294,8 @@ TranscriptDisplayStatus displayStatusFor(TranscriptStatus status) {
     TranscriptStatus.recording => TranscriptDisplayStatus.active,
     TranscriptStatus.transcriptionError => TranscriptDisplayStatus.issue,
     TranscriptStatus.completed => TranscriptDisplayStatus.ready,
-    TranscriptStatus.transcribing ||
-    TranscriptStatus.transcriptionCompleted ||
+    TranscriptStatus.transcribing => TranscriptDisplayStatus.processing,
+    TranscriptStatus.transcriptionCompleted => TranscriptDisplayStatus.ready,
     TranscriptStatus.empty => TranscriptDisplayStatus.processing,
   };
 }

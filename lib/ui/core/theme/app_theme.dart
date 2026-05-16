@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:voicescribe_mobile/ui/core/theme/design_system.dart';
 
@@ -13,7 +12,6 @@ class AppTheme {
   static const Color slate = AppColors.ink;
 
   static ThemeData light() {
-    _configureFonts();
     const scheme = ColorScheme(
       brightness: Brightness.light,
       primary: AppColors.primary,
@@ -46,7 +44,6 @@ class AppTheme {
   }
 
   static ThemeData dark() {
-    _configureFonts();
     const scheme = ColorScheme(
       brightness: Brightness.dark,
       primary: Color(0xFF8CB4FF),
@@ -328,11 +325,6 @@ class AppTheme {
     );
   }
 
-  static void _configureFonts() {
-    // Keep typography deterministic in tests and offline mode.
-    GoogleFonts.config.allowRuntimeFetching = false;
-  }
-
   static TextTheme _textTheme(Brightness brightness) {
     final base = ThemeData(
       useMaterial3: true,
@@ -340,68 +332,29 @@ class AppTheme {
     ).textTheme;
 
     return TextTheme(
-      displayLarge: GoogleFonts.poppins(
-        textStyle: base.displayLarge,
+      displayLarge: base.displayLarge?.copyWith(
         fontWeight: FontWeight.w700,
         letterSpacing: AppTypography.letterSpacing,
       ),
-      displayMedium: GoogleFonts.poppins(
-        textStyle: base.displayMedium,
+      displayMedium: base.displayMedium?.copyWith(
         fontWeight: FontWeight.w700,
         letterSpacing: AppTypography.letterSpacing,
       ),
-      displaySmall: GoogleFonts.poppins(
-        textStyle: base.displaySmall,
+      displaySmall: base.displaySmall?.copyWith(fontWeight: FontWeight.w700),
+      headlineLarge: base.headlineLarge?.copyWith(fontWeight: FontWeight.w700),
+      headlineMedium: base.headlineMedium?.copyWith(
         fontWeight: FontWeight.w700,
       ),
-      headlineLarge: GoogleFonts.poppins(
-        textStyle: base.headlineLarge,
-        fontWeight: FontWeight.w700,
-      ),
-      headlineMedium: GoogleFonts.poppins(
-        textStyle: base.headlineMedium,
-        fontWeight: FontWeight.w700,
-      ),
-      headlineSmall: GoogleFonts.poppins(
-        textStyle: base.headlineSmall,
-        fontWeight: FontWeight.w700,
-      ),
-      titleLarge: GoogleFonts.poppins(
-        textStyle: base.titleLarge,
-        fontWeight: FontWeight.w700,
-      ),
-      titleMedium: GoogleFonts.poppins(
-        textStyle: base.titleMedium,
-        fontWeight: FontWeight.w700,
-      ),
-      titleSmall: GoogleFonts.poppins(
-        textStyle: base.titleSmall,
-        fontWeight: FontWeight.w700,
-      ),
-      labelLarge: GoogleFonts.sourceSans3(
-        textStyle: base.labelLarge,
-        fontWeight: FontWeight.w700,
-      ),
-      labelMedium: GoogleFonts.sourceSans3(
-        textStyle: base.labelMedium,
-        fontWeight: FontWeight.w600,
-      ),
-      labelSmall: GoogleFonts.sourceSans3(
-        textStyle: base.labelSmall,
-        fontWeight: FontWeight.w600,
-      ),
-      bodyLarge: GoogleFonts.sourceSans3(
-        textStyle: base.bodyLarge,
-        height: AppTypography.bodyHeight,
-      ),
-      bodyMedium: GoogleFonts.sourceSans3(
-        textStyle: base.bodyMedium,
-        height: AppTypography.bodyHeight,
-      ),
-      bodySmall: GoogleFonts.sourceSans3(
-        textStyle: base.bodySmall,
-        height: 1.35,
-      ),
+      headlineSmall: base.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+      titleLarge: base.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+      titleMedium: base.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+      titleSmall: base.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+      labelLarge: base.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+      labelMedium: base.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+      labelSmall: base.labelSmall?.copyWith(fontWeight: FontWeight.w600),
+      bodyLarge: base.bodyLarge?.copyWith(height: AppTypography.bodyHeight),
+      bodyMedium: base.bodyMedium?.copyWith(height: AppTypography.bodyHeight),
+      bodySmall: base.bodySmall?.copyWith(height: 1.35),
     );
   }
 }
