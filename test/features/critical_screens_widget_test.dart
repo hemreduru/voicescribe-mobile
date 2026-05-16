@@ -55,7 +55,6 @@ void main() {
         recordedAt: DateTime.now(),
         startTime: 0,
         endTime: 30,
-        speakerLabel: null,
         confidence: null,
         transcriptionError: null,
       ),
@@ -141,12 +140,6 @@ class _FakeRepository implements TranscriptRepository {
   Future<void> saveChunk(TranscriptChunk chunk) async {}
 
   @override
-  Future<void> saveSpeaker(SpeakerProfile speaker) async {}
-
-  @override
-  Future<void> deleteSpeaker(String id) async {}
-
-  @override
   Future<void> saveSummary(Summary summary) async {}
 
   @override
@@ -154,9 +147,6 @@ class _FakeRepository implements TranscriptRepository {
 
   @override
   Future<void> deleteProcessingJob(String id) async {}
-
-  @override
-  Future<List<ProcessingJob>> pendingSpeakerAnalysisJobs() async => const [];
 
   @override
   Future<void> saveSetting(String key, String value) async {}

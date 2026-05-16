@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show ChangeNotifier;
@@ -9,13 +8,11 @@ import 'package:voicescribe_mobile/shared/models/domain.dart';
 import 'package:voicescribe_mobile/shared/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/shared/services/auth/auth_service.dart';
 import 'package:voicescribe_mobile/shared/services/database/sqflite_transcript_repository.dart';
-import 'package:voicescribe_mobile/shared/services/speaker/speaker_analysis_service.dart';
 import 'package:voicescribe_mobile/shared/services/summary_service.dart';
 import 'package:voicescribe_mobile/shared/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/shared/services/transcript_repository.dart';
 import 'package:voicescribe_mobile/shared/services/whisper_service.dart';
 import 'package:voicescribe_mobile/shared/state/controllers/recording_controller.dart';
-import 'package:voicescribe_mobile/shared/state/controllers/speaker_controller.dart';
 import 'package:voicescribe_mobile/shared/state/controllers/summary_controller.dart';
 import 'package:voicescribe_mobile/shared/state/controllers/transcript_controller.dart';
 
@@ -23,7 +20,6 @@ part 'app_controller.g.dart';
 part 'flows/auth_flow.dart';
 part 'flows/recording_flow.dart';
 part 'flows/transcription_flow.dart';
-part 'flows/speaker_analysis_flow.dart';
 part 'flows/sync_flow.dart';
 
 @Riverpod(keepAlive: true)
@@ -76,11 +72,9 @@ class AppController extends ChangeNotifier {
     required SummaryService summaryService,
     VoiceScribeAuthService? authService,
     SyncQueueService? syncQueueService,
-    SpeakerAnalysisService? speakerAnalysisService,
     AuthFlow? authFlow,
     RecordingFlow? recordingFlow,
     TranscriptionFlow? transcriptionFlow,
-    SpeakerAnalysisFlow? speakerAnalysisFlow,
     SyncFlow? syncFlow,
   }) : _repository = repository,
        _transcriptionService = transcriptionService,
@@ -88,13 +82,9 @@ class AppController extends ChangeNotifier {
        _summaryService = summaryService,
        _authService = authService ?? VoiceScribeAuthService(),
        _syncQueueService = syncQueueService ?? SyncQueueService(),
-       _speakerAnalysisService =
-           speakerAnalysisService ?? SpeakerAnalysisService(),
        _authFlow = authFlow ?? const AuthFlow(),
        _recordingFlow = recordingFlow ?? const RecordingFlow(),
        _transcriptionFlow = transcriptionFlow ?? const TranscriptionFlow(),
-       _speakerAnalysisFlow =
-           speakerAnalysisFlow ?? const SpeakerAnalysisFlow(),
        _syncFlow = syncFlow ?? const SyncFlow() {
     _chunkSubscription = _audioService.chunks.listen(_handleAudioChunk);
     _levelSubscription = _audioService.levels.listen(_handleAudioLevel);
@@ -112,16 +102,13 @@ class AppController extends ChangeNotifier {
   final SummaryService _summaryService;
   final VoiceScribeAuthService _authService;
   final SyncQueueService _syncQueueService;
-  final SpeakerAnalysisService _speakerAnalysisService;
   final AuthFlow _authFlow;
   final RecordingFlow _recordingFlow;
   final TranscriptionFlow _transcriptionFlow;
-  final SpeakerAnalysisFlow _speakerAnalysisFlow;
   final SyncFlow _syncFlow;
 
   final RecordingController recordingController = RecordingController();
   final TranscriptController transcriptController = TranscriptController();
-  final SpeakerController speakerController = SpeakerController();
   final SummaryController summaryController = SummaryController();
 
   StreamSubscription<RecordedAudioChunk>? _chunkSubscription;
@@ -129,8 +116,8 @@ class AppController extends ChangeNotifier {
   StreamSubscription<ModelDownloadProgress>? _modelProgressSubscription;
   // ignore: use_late_for_private_fields_and_variables
   Timer? _durationTimer;
+  Future<void> _pendingTranscriptSave = Future<void>.value();
   bool _disposed = false;
-  bool _speakerAnalysisInProgress = false;
   bool _syncStarted = false;
   bool _authResolved = false;
   DateTime? _lastAudioLevelNotifyAt;
@@ -150,8 +137,6 @@ class AppController extends ChangeNotifier {
   List<TranscriptChunk> get allChunks => transcriptController.allChunks;
   String? get lastError => transcriptController.lastError;
 
-  List<SpeakerProfile> get speakers => speakerController.speakers;
-
   bool get isRecording => recordingController.isRecording;
   bool get isPaused => recordingController.isPaused;
   int get durationSeconds => recordingController.durationSeconds;
@@ -170,27 +155,20 @@ class AppController extends ChangeNotifier {
   bool get isModelReady => modelState == ModelBootstrapState.ready;
   String? get currentUserId => _authSession?.userId;
   String? get currentUserEmail => _authSession?.email;
-  double get speakerSimilarityThreshold =>
-      _speakerAnalysisService.similarityThreshold;
 
   Future<void> bootstrap() async {
     modelState = ModelBootstrapState.bootstrapping;
     bootstrapError = null;
     _notify();
 
-    final saved = await _repository.load();
+    final saved = await _repairStaleRecordings(await _repository.load());
     transcriptController.hydrate(saved);
-    speakerController.hydrate(saved.speakers);
     summaryController.hydrate(
       summaries: saved.summaries,
       provider: saved.summaryProvider,
       length: saved.summaryLength,
     );
-    _speakerAnalysisService.setSimilarityThreshold(
-      saved.speakerSimilarityThreshold,
-    );
     processingJobs = saved.processingJobs;
-    await _archiveDuplicateSpeakerAnalysisJobs();
     _notify();
 
     try {
@@ -199,7 +177,6 @@ class AppController extends ChangeNotifier {
       if (_authSession != null) {
         await _ensureSyncStarted();
       }
-      await _recoverPendingProcessingJobs();
       await _transcriptionService.ensureModel();
       modelState = ModelBootstrapState.ready;
     } catch (error) {
@@ -234,28 +211,6 @@ class AppController extends ChangeNotifier {
         .where((item) => item.transcriptId != id)
         .toList();
     _persistLater(_repository.deleteTranscript(id));
-    _notify();
-  }
-
-  void addSpeaker(String name) {
-    _ensureAuthenticated();
-    speakerController.addSpeaker(name, userId: currentUserId);
-    _persistLater(_repository.saveSpeaker(speakers.last));
-    _notify();
-  }
-
-  void updateSpeaker(String id, String name) {
-    _ensureAuthenticated();
-    speakerController.updateSpeaker(id, name);
-    final speaker = speakers.firstWhere((s) => s.id == id);
-    _persistLater(_repository.saveSpeaker(speaker));
-    _notify();
-  }
-
-  void deleteSpeaker(String id) {
-    _ensureAuthenticated();
-    speakerController.deleteSpeaker(id);
-    _persistLater(_repository.deleteSpeaker(id));
     _notify();
   }
 
@@ -306,15 +261,6 @@ class AppController extends ChangeNotifier {
 
   String transcriptText(String transcriptId) {
     return transcriptController.transcriptText(transcriptId);
-  }
-
-  Future<double?> calibrateSpeakerThreshold() async {
-    _ensureAuthenticated();
-    final threshold = await _speakerAnalysisFlow.calibrateThreshold(this);
-    if (threshold != null) {
-      _notify();
-    }
-    return threshold;
   }
 
   Future<void> ensureModelReady() async {
@@ -374,15 +320,6 @@ class AppController extends ChangeNotifier {
   Future<void> _transcribe(TranscriptChunk chunk) =>
       _transcriptionFlow.transcribe(this, chunk);
 
-  Future<void> _recoverPendingProcessingJobs() =>
-      _speakerAnalysisFlow.recoverPendingProcessingJobs(this);
-
-  Future<void> _enqueueSpeakerAnalysisIfReady(String transcriptId) =>
-      _speakerAnalysisFlow.enqueueSpeakerAnalysisIfReady(this, transcriptId);
-
-  Future<void> _archiveDuplicateSpeakerAnalysisJobs() =>
-      _speakerAnalysisFlow.archiveDuplicateSpeakerAnalysisJobs(this);
-
   void _startTimer() {
     _recordingFlow.startTimer(this);
   }
@@ -404,6 +341,63 @@ class AppController extends ChangeNotifier {
   Future<void> _persist(Future<void> operation) =>
       _syncFlow.persist(this, operation);
 
+  Future<void> _saveTranscript(
+    Transcript transcript, {
+    bool scheduleSync = false,
+  }) {
+    final next = _pendingTranscriptSave.catchError((_) {}).then((_) async {
+      if (scheduleSync) {
+        await _persist(_repository.saveTranscript(transcript));
+      } else {
+        await _repository.saveTranscript(transcript);
+      }
+      _reconcileSavedTranscript(transcript);
+    });
+    _pendingTranscriptSave = next;
+    return next;
+  }
+
+  Future<void> _saveChunkAndTranscript(
+    TranscriptChunk chunk,
+    Transcript transcript, {
+    bool scheduleSync = false,
+  }) {
+    final next = _pendingTranscriptSave.catchError((_) {}).then((_) async {
+      await _repository.saveChunk(chunk);
+      if (scheduleSync) {
+        await _persist(_repository.saveTranscript(transcript));
+      } else {
+        await _repository.saveTranscript(transcript);
+      }
+      _reconcileSavedTranscript(transcript);
+    });
+    _pendingTranscriptSave = next;
+    return next;
+  }
+
+  void _reconcileSavedTranscript(Transcript transcript) {
+    final existingMatches = transcriptController.transcripts.where(
+      (item) => item.id == transcript.id,
+    );
+    final existing = existingMatches.isEmpty ? null : existingMatches.first;
+    if (existing != null && existing.updatedAt.isAfter(transcript.updatedAt)) {
+      return;
+    }
+    transcriptController.replaceTranscript(transcript);
+    if (transcriptController.currentTranscript == null ||
+        transcriptController.currentTranscript!.id == transcript.id) {
+      transcriptController.currentTranscript = transcript;
+    }
+    _notify();
+  }
+
+  void _saveTranscriptLater(
+    Transcript transcript, {
+    bool scheduleSync = false,
+  }) {
+    unawaited(_saveTranscript(transcript, scheduleSync: scheduleSync));
+  }
+
   void _persistLater(Future<void> operation) {
     _syncFlow.persistLater(this, operation);
   }
@@ -416,9 +410,8 @@ class AppController extends ChangeNotifier {
   /// Reloads all data from SQLite to reflect server-pulled changes in the UI.
   Future<void> _refreshFromDb() async {
     try {
-      final saved = await _repository.load();
+      final saved = _preserveActiveSession(await _repository.load());
       transcriptController.hydrate(saved);
-      speakerController.hydrate(saved.speakers);
       summaryController.hydrate(
         summaries: saved.summaries,
         provider: saved.summaryProvider,
@@ -429,5 +422,169 @@ class AppController extends ChangeNotifier {
     } catch (_) {
       // Ignore refresh errors — UI will be stale until next sync
     }
+  }
+
+  Future<PersistedTranscriptState> _repairStaleRecordings(
+    PersistedTranscriptState saved,
+  ) async {
+    final chunksByTranscript = <String, List<TranscriptChunk>>{};
+    for (final chunk in saved.allChunks) {
+      chunksByTranscript.putIfAbsent(chunk.transcriptId, () => []).add(chunk);
+    }
+
+    var changed = false;
+    final repairedTranscripts = <Transcript>[];
+    for (final transcript in saved.transcripts) {
+      if (transcript.status != TranscriptStatus.recording) {
+        repairedTranscripts.add(transcript);
+        continue;
+      }
+
+      final chunks =
+          chunksByTranscript[transcript.id] ?? const <TranscriptChunk>[];
+      final repaired = transcript.copyWith(
+        status: _staleRecordingStatusFor(chunks),
+        durationSeconds: math.max(
+          transcript.durationSeconds,
+          _maxChunkEnd(chunks).round(),
+        ),
+        updatedAt: DateTime.now(),
+        syncStatus: SyncStatus.pending,
+        clearSyncError: true,
+      );
+      repairedTranscripts.add(repaired);
+      changed = true;
+      await _repository.saveTranscript(repaired);
+    }
+
+    if (!changed) {
+      return saved;
+    }
+
+    return PersistedTranscriptState(
+      transcripts: repairedTranscripts,
+      currentTranscript: saved.currentTranscript,
+      currentChunks: saved.currentChunks,
+      allChunks: saved.allChunks,
+      summaries: saved.summaries,
+      processingJobs: saved.processingJobs,
+      summaryProvider: saved.summaryProvider,
+      summaryLength: saved.summaryLength,
+    );
+  }
+
+  TranscriptStatus _staleRecordingStatusFor(List<TranscriptChunk> chunks) {
+    if (chunks.isEmpty) {
+      return TranscriptStatus.empty;
+    }
+    if (chunks.any((chunk) => (chunk.transcriptionError ?? '').isNotEmpty)) {
+      return TranscriptStatus.transcriptionError;
+    }
+    if (chunks.any((chunk) => chunk.text.trim().isNotEmpty)) {
+      return TranscriptStatus.transcriptionCompleted;
+    }
+    return TranscriptStatus.transcriptionError;
+  }
+
+  double _maxChunkEnd(List<TranscriptChunk> chunks) {
+    var maxEnd = 0.0;
+    for (final chunk in chunks) {
+      if (chunk.endTime > maxEnd) {
+        maxEnd = chunk.endTime;
+      }
+    }
+    return maxEnd;
+  }
+
+  PersistedTranscriptState _preserveActiveSession(
+    PersistedTranscriptState saved,
+  ) {
+    final activeTranscript = transcriptController.currentTranscript;
+    if (activeTranscript == null) {
+      return saved;
+    }
+
+    final savedTranscript = _findTranscript(
+      saved.transcripts,
+      activeTranscript.id,
+    );
+    final preservedTranscript = _mergeTranscriptSyncMetadata(
+      activeTranscript,
+      savedTranscript,
+    );
+    final savedChunksById = {
+      for (final chunk in saved.allChunks) chunk.id: chunk,
+    };
+    final preservedCurrentChunks = transcriptController.currentChunks
+        .map(
+          (chunk) => _mergeChunkSyncMetadata(chunk, savedChunksById[chunk.id]),
+        )
+        .toList(growable: false);
+
+    var replacedTranscript = false;
+    final transcripts = <Transcript>[];
+    for (final transcript in saved.transcripts) {
+      if (transcript.id == preservedTranscript.id) {
+        transcripts.add(preservedTranscript);
+        replacedTranscript = true;
+      } else {
+        transcripts.add(transcript);
+      }
+    }
+    if (!replacedTranscript) {
+      transcripts.insert(0, preservedTranscript);
+    }
+
+    final allChunks = [
+      for (final chunk in saved.allChunks)
+        if (chunk.transcriptId != preservedTranscript.id) chunk,
+      ...preservedCurrentChunks,
+    ];
+
+    return PersistedTranscriptState(
+      transcripts: transcripts,
+      currentTranscript: preservedTranscript,
+      currentChunks: preservedCurrentChunks,
+      allChunks: allChunks,
+      summaries: saved.summaries,
+      processingJobs: saved.processingJobs,
+      summaryProvider: saved.summaryProvider,
+      summaryLength: saved.summaryLength,
+    );
+  }
+
+  Transcript? _findTranscript(List<Transcript> transcripts, String id) {
+    for (final transcript in transcripts) {
+      if (transcript.id == id) {
+        return transcript;
+      }
+    }
+    return null;
+  }
+
+  Transcript _mergeTranscriptSyncMetadata(
+    Transcript active,
+    Transcript? saved,
+  ) {
+    if (saved == null) {
+      return active;
+    }
+    return active.copyWith(
+      remoteId: active.remoteId ?? saved.remoteId,
+      lastSyncedAt: active.lastSyncedAt ?? saved.lastSyncedAt,
+    );
+  }
+
+  TranscriptChunk _mergeChunkSyncMetadata(
+    TranscriptChunk active,
+    TranscriptChunk? saved,
+  ) {
+    if (saved == null) {
+      return active;
+    }
+    return active.copyWith(
+      remoteId: active.remoteId ?? saved.remoteId,
+      lastSyncedAt: active.lastSyncedAt ?? saved.lastSyncedAt,
+    );
   }
 }

@@ -4,40 +4,17 @@ class TranscriptionFlow {
   const TranscriptionFlow();
 
   Future<void> transcribe(AppController app, TranscriptChunk chunk) async {
+    Transcript? transcriptForPersistence;
     try {
       final transcription = await app._transcriptionService.transcribeChunk(
         chunk.audioPath ?? '',
       );
-      final firstSegment = transcription.segments.isEmpty
-          ? null
-          : transcription.segments.first;
-      final lastSegment = transcription.segments.isEmpty
-          ? null
-          : transcription.segments.last;
-      final nextStart = firstSegment == null
-          ? null
-          : math.min(
-              chunk.endTime,
-              math.max(
-                chunk.startTime,
-                chunk.startTime + firstSegment.startSeconds,
-              ),
-            );
-      final nextEnd = lastSegment == null
-          ? null
-          : math.min(
-              chunk.endTime,
-              math.max(
-                chunk.startTime,
-                chunk.startTime + lastSegment.endSeconds,
-              ),
-            );
       app.transcriptController.applyTranscriptionSuccess(
         chunk,
         transcription.text,
-        absoluteStartTime: nextStart,
-        absoluteEndTime: nextEnd,
       );
+      transcriptForPersistence = app.transcriptController.transcripts
+          .firstWhere((item) => item.id == chunk.transcriptId);
       final updatedChunk = app.transcriptController.allChunks.firstWhere(
         (c) => c.id == chunk.id,
       );
@@ -49,19 +26,20 @@ class TranscriptionFlow {
       }
     } catch (error) {
       app.transcriptController.applyTranscriptionError(chunk, error);
+      transcriptForPersistence = app.transcriptController.transcripts
+          .firstWhere((item) => item.id == chunk.transcriptId);
       final updatedChunk = app.transcriptController.allChunks.firstWhere(
         (c) => c.id == chunk.id,
       );
       app._persistLater(app._repository.saveChunk(updatedChunk));
     } finally {
-      if (app.currentTranscript != null) {
-        app._persistLater(
-          app._repository.saveTranscript(app.currentTranscript!),
-        );
+      final transcript = transcriptForPersistence;
+      if (transcript != null) {
+        app._saveTranscriptLater(transcript, scheduleSync: true);
       }
       app._notify();
       if (!app.isRecording && app.currentTranscript != null) {
-        await app._enqueueSpeakerAnalysisIfReady(app.currentTranscript!.id);
+        // Speaker analysis removed
       }
     }
   }

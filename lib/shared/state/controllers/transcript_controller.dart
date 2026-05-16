@@ -71,7 +71,6 @@ class TranscriptController {
       recordedAt: now,
       startTime: previousEnd,
       endTime: previousEnd + audioChunk.durationSeconds,
-      speakerLabel: null,
       confidence: null,
       transcriptionError: null,
     );
@@ -118,12 +117,7 @@ class TranscriptController {
     _updateTranscript(transcript.id, durationSeconds: durationSeconds);
   }
 
-  void applyTranscriptionSuccess(
-    TranscriptChunk chunk,
-    String rawText, {
-    double? absoluteStartTime,
-    double? absoluteEndTime,
-  }) {
+  void applyTranscriptionSuccess(TranscriptChunk chunk, String rawText) {
     final normalized = normalizeWhitespace(rawText);
     final previousChunk = chunksFor(
       chunk.transcriptId,
@@ -133,13 +127,7 @@ class TranscriptController {
         ? normalized
         : removeOverlap(previousChunk.text, normalized);
 
-    _updateChunk(
-      chunk.id,
-      text: deduped,
-      clearError: true,
-      startTime: absoluteStartTime,
-      endTime: absoluteEndTime,
-    );
+    _updateChunk(chunk.id, text: deduped, clearError: true);
 
     final stats = _stats.putIfAbsent(
       chunk.transcriptId,
@@ -206,26 +194,20 @@ class TranscriptController {
   }
 
   PersistedTranscriptState toPersistedState({
-    required List<SpeakerProfile> speakers,
     required List<Summary> summaries,
     required List<ProcessingJob> processingJobs,
     required String summaryProvider,
     required String summaryLength,
-    required bool speakerRecognitionEnabled,
-    required double speakerSimilarityThreshold,
   }) {
     return PersistedTranscriptState(
       transcripts: transcripts,
       currentTranscript: currentTranscript,
       currentChunks: currentChunks,
       allChunks: allChunks,
-      speakers: speakers,
       summaries: summaries,
       processingJobs: processingJobs,
       summaryProvider: summaryProvider,
       summaryLength: summaryLength,
-      speakerRecognitionEnabled: speakerRecognitionEnabled,
-      speakerSimilarityThreshold: speakerSimilarityThreshold,
     );
   }
 
@@ -233,8 +215,6 @@ class TranscriptController {
     String chunkId, {
     String? text,
     String? transcriptionError,
-    double? startTime,
-    double? endTime,
     bool clearError = false,
   }) {
     currentChunks = currentChunks
@@ -243,8 +223,6 @@ class TranscriptController {
               ? chunk.copyWith(
                   text: text,
                   transcriptionError: transcriptionError,
-                  startTime: startTime,
-                  endTime: endTime,
                   clearTranscriptionError: clearError,
                   syncStatus: SyncStatus.pending,
                   clearSyncError: true,
@@ -259,8 +237,6 @@ class TranscriptController {
               ? chunk.copyWith(
                   text: text,
                   transcriptionError: transcriptionError,
-                  startTime: startTime,
-                  endTime: endTime,
                   clearTranscriptionError: clearError,
                   syncStatus: SyncStatus.pending,
                   clearSyncError: true,

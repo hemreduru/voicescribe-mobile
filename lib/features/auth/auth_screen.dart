@@ -240,8 +240,7 @@ class _AuthForm extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.xl),
               ],
-              if (!showPassword)
-                const SizedBox(height: AppSpacing.xl),
+              if (!showPassword) const SizedBox(height: AppSpacing.xl),
               AppButton(
                 label: buttonLabel,
                 icon: Icons.login,

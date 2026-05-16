@@ -29,17 +29,8 @@ void main() {
           recordedAt: now,
           startTime: 0,
           endTime: 12,
-          speakerLabel: null,
           confidence: null,
           transcriptionError: null,
-        ),
-      ],
-      speakers: [
-        SpeakerProfile(
-          id: 'speaker-1',
-          name: 'Ahmet',
-          embedding: const [],
-          createdAt: now,
         ),
       ],
       summaries: [
@@ -57,8 +48,6 @@ void main() {
       processingJobs: const [],
       summaryProvider: 'local',
       summaryLength: 'medium',
-      speakerRecognitionEnabled: true,
-      speakerSimilarityThreshold: 0.78,
     );
 
     final decoded = PersistedTranscriptState.fromJson(state.toJson());
@@ -66,8 +55,22 @@ void main() {
     expect(decoded.transcripts.single.title, 'Demo');
     expect(decoded.transcripts.single.status, TranscriptStatus.completed);
     expect(decoded.allChunks.single.text, 'Merhaba');
-    expect(decoded.speakers.single.name, 'Ahmet');
     expect(decoded.summaries.single.summaryText, 'Kisa ozet');
+  });
+
+  test('legacy speaker analysis statuses are not restored as empty', () {
+    expect(
+      TranscriptStatus.fromKey('speaker_analysis_completed'),
+      TranscriptStatus.completed,
+    );
+    expect(
+      TranscriptStatus.fromKey('speaker_analysis_pending'),
+      TranscriptStatus.transcriptionCompleted,
+    );
+    expect(
+      TranscriptStatus.fromKey('speaker_analysis_running'),
+      TranscriptStatus.transcriptionCompleted,
+    );
   });
 
   test('PersistedTranscriptState tolerates missing arrays', () {
@@ -76,7 +79,6 @@ void main() {
     expect(decoded.transcripts, isEmpty);
     expect(decoded.currentTranscript, isNull);
     expect(decoded.allChunks, isEmpty);
-    expect(decoded.speakers, isEmpty);
     expect(decoded.summaries, isEmpty);
   });
 }

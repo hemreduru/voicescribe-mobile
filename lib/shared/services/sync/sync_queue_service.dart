@@ -491,17 +491,13 @@ class SyncQueueService {
       return MergeDecision.keepLocal;
     }
 
-    // Already synced — server row is the newer truth
-    if (localSyncStatus == SyncStatus.synced) {
-      return MergeDecision.updateFromServer;
-    }
-
-    // pending or failed — compare timestamps (last-write-wins)
+    // Compare timestamps for every non-syncing local row. A stale server echo
+    // must not overwrite final local recording/transcription state.
     final localUpdatedAt = DateTime.tryParse(
       (localRow['updatedAt'] ?? localRow['createdAt'] ?? '').toString(),
     );
     final serverUpdatedAt = DateTime.tryParse(
-      _toText(serverRow['updated_at']) ?? '',
+      _toText(serverRow['updated_at'] ?? serverRow['updatedAt']) ?? '',
     );
 
     if (serverUpdatedAt == null) {
@@ -563,20 +559,22 @@ class SyncQueueService {
     required Map<String, Object?> payload,
   }) async {
     final uri = Uri.parse(url);
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 10);
     try {
-      final request = await client.postUrl(uri).timeout(
-        const Duration(seconds: 10),
-      );
+      final request = await client
+          .postUrl(uri)
+          .timeout(const Duration(seconds: 10));
       request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
       request.write(jsonEncode(payload));
       final response = await request.close().timeout(
         const Duration(seconds: 15),
       );
-      final body = await utf8.decoder.bind(response).join().timeout(
-        const Duration(seconds: 20),
-      );
+      final body = await utf8.decoder
+          .bind(response)
+          .join()
+          .timeout(const Duration(seconds: 20));
       return _HttpResult(statusCode: response.statusCode, body: body);
     } finally {
       client.close(force: true);
@@ -652,7 +650,6 @@ class SyncQueueService {
 const _syncTables = <String>[
   'transcripts',
   'transcript_chunks',
-  'speakers',
   'summaries',
   'processing_jobs',
 ];
@@ -698,17 +695,9 @@ final _syncConfigs = <_SyncTableConfig>[
         'transcriptClientLocalId': SyncQueueService._toText(
           row['transcriptId'],
         ),
-        'speaker_client_local_id': SyncQueueService._toText(row['speakerId']),
-        'speakerClientLocalId': SyncQueueService._toText(row['speakerId']),
         'chunk_index': SyncQueueService._toInt(row['chunkIndex']),
         'chunkIndex': SyncQueueService._toInt(row['chunkIndex']),
         'text': row['text'],
-        'speaker_label': row['speakerLabel'],
-        'speakerLabel': row['speakerLabel'],
-        'speaker_confidence': row['speakerConfidence'],
-        'speakerConfidence': row['speakerConfidence'],
-        'speaker_analysis_status': row['speakerAnalysisStatus'],
-        'speakerAnalysisStatus': row['speakerAnalysisStatus'],
         'start_time': SyncQueueService._toDouble(row['startTime']),
         'startTime': SyncQueueService._toDouble(row['startTime']),
         'end_time': SyncQueueService._toDouble(row['endTime']),
@@ -720,38 +709,7 @@ final _syncConfigs = <_SyncTableConfig>[
     },
     applyServerRow: _applyTranscriptChunkServerRow,
   ),
-  _SyncTableConfig(
-    table: 'speakers',
-    toPayload: (row) {
-      final localId = SyncQueueService._toText(row['id']) ?? '';
-      final embeddingValue = row['embedding'];
-      Object? embedding;
-      if (embeddingValue is String && embeddingValue.isNotEmpty) {
-        try {
-          embedding = jsonDecode(embeddingValue);
-        } catch (_) {
-          embedding = embeddingValue;
-        }
-      } else {
-        embedding = embeddingValue;
-      }
-      return {
-        'id': localId,
-        'client_local_id': localId,
-        'clientLocalId': localId,
-        'name': row['name'],
-        'embedding': embedding,
-        'recordings': SyncQueueService._toInt(row['recordings']),
-        'has_voice_sample': SyncQueueService._toInt(row['hasVoiceSample']) == 1,
-        'hasVoiceSample': SyncQueueService._toInt(row['hasVoiceSample']) == 1,
-        'is_user_named': SyncQueueService._toInt(row['isUserNamed']) == 1,
-        'isUserNamed': SyncQueueService._toInt(row['isUserNamed']) == 1,
-        'deleted_at': row['deletedAt'],
-        'deletedAt': row['deletedAt'],
-      };
-    },
-    applyServerRow: _applySpeakerServerRow,
-  ),
+
   _SyncTableConfig(
     table: 'summaries',
     toPayload: (row) {
@@ -946,18 +904,6 @@ Future<void> _applyTranscriptChunkServerRow(
   if (transcriptLocalId == null) {
     return;
   }
-
-  String? speakerLocalId;
-  final speakerRemoteId = SyncQueueService._toText(row['speaker_id']);
-  if (speakerRemoteId != null) {
-    speakerLocalId = await _findFirstId(
-      db: db,
-      table: 'speakers',
-      where: 'remoteId = ?',
-      whereArgs: [speakerRemoteId],
-    );
-  }
-
   final now = DateTime.now().toIso8601String();
   final effectiveLocalId =
       localId ??
@@ -971,76 +917,16 @@ Future<void> _applyTranscriptChunkServerRow(
     'id': effectiveLocalId,
     'transcriptId': transcriptLocalId,
     'remoteId': remoteId,
-    'chunkIndex': SyncQueueService._toInt(row['chunk_index']),
+    'chunkIndex': SyncQueueService._toInt(
+      row['chunk_index'] ?? row['chunkIndex'],
+    ),
     'text': SyncQueueService._toText(row['text']) ?? '',
     'audioPath': null,
     'recordedAt': null,
     'startTime': SyncQueueService._toDouble(row['start_time']),
     'endTime': SyncQueueService._toDouble(row['end_time']),
-    'speakerId': speakerLocalId,
-    'speakerLabel': SyncQueueService._toText(row['speaker_label']),
-    'speakerConfidence': row['speaker_confidence'],
-    'speakerAnalysisStatus':
-        SyncQueueService._toText(row['speaker_analysis_status']) ?? 'pending',
     'confidence': row['confidence'],
     'transcriptionError': null,
-    'syncStatus': SyncStatus.synced.key,
-    'lastSyncedAt': SyncQueueService._toText(row['last_synced_at']) ?? now,
-    'syncError': null,
-    'deletedAt': SyncQueueService._toText(row['deleted_at']),
-  }, conflictAlgorithm: ConflictAlgorithm.replace);
-}
-
-Future<void> _applySpeakerServerRow(
-  Database db,
-  Map<String, Object?> row,
-) async {
-  final remoteId = SyncQueueService._toText(row['remote_id'] ?? row['id']);
-  final clientLocalId = SyncQueueService._toText(row['client_local_id']);
-  String? localId;
-
-  if (remoteId != null) {
-    localId = await _findFirstId(
-      db: db,
-      table: 'speakers',
-      where: 'remoteId = ?',
-      whereArgs: [remoteId],
-    );
-  }
-  if ((localId == null || localId.isEmpty) && clientLocalId != null) {
-    localId = await _findFirstId(
-      db: db,
-      table: 'speakers',
-      where: 'id = ?',
-      whereArgs: [clientLocalId],
-    );
-  }
-
-  final effectiveLocalId =
-      localId ??
-      clientLocalId ??
-      (remoteId == null ? null : 'remote-speaker-$remoteId');
-  if (effectiveLocalId == null) {
-    return;
-  }
-
-  final embedding = row['embedding'];
-  final now = DateTime.now().toIso8601String();
-  await db.insert('speakers', {
-    'id': effectiveLocalId,
-    'userId': SyncQueueService._toText(row['user_id']),
-    'remoteId': remoteId,
-    'name': SyncQueueService._toText(row['name']) ?? 'Konuşmacı',
-    'embedding': embedding is String ? embedding : jsonEncode(embedding ?? []),
-    'recordings': SyncQueueService._toInt(row['recordings']),
-    'hasVoiceSample':
-        (row['has_voice_sample'] == true || row['hasVoiceSample'] == true)
-        ? 1
-        : 0,
-    'isUserNamed': (row['is_user_named'] == true || row['isUserNamed'] == true)
-        ? 1
-        : 0,
-    'createdAt': SyncQueueService._toText(row['created_at']) ?? now,
     'syncStatus': SyncStatus.synced.key,
     'lastSyncedAt': SyncQueueService._toText(row['last_synced_at']) ?? now,
     'syncError': null,
@@ -1206,17 +1092,11 @@ String _normalizeServerTranscriptStatusKey(String? key) {
       return TranscriptStatus.transcribing.key;
     case 'transcription_completed':
       return TranscriptStatus.transcriptionCompleted.key;
-    case 'speaker_analysis_pending':
-      return TranscriptStatus.speakerAnalysisPending.key;
-    case 'speaker_analysis_running':
-      return TranscriptStatus.speakerAnalysisRunning.key;
-    case 'speaker_analysis_completed':
-      return TranscriptStatus.speakerAnalysisCompleted.key;
     case 'failed':
     case 'transcription_error':
       return TranscriptStatus.transcriptionError.key;
     case 'completed':
-      return TranscriptStatus.speakerAnalysisCompleted.key;
+      return TranscriptStatus.completed.key;
     default:
       return TranscriptStatus.transcriptionCompleted.key;
   }

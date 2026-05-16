@@ -36,32 +36,55 @@ void main() {
     final decision = await service.decideMergeForRow(
       db: db,
       table: 'transcripts',
-      serverRow: {
-        'id': 'remote-1',
-        'updated_at': '2026-05-10T10:00:00Z',
-      },
+      serverRow: {'id': 'remote-1', 'updated_at': '2026-05-10T10:00:00Z'},
     );
     expect(decision, MergeDecision.insertNew);
   });
 
-  test('updateFromServer: when local row is synced', () async {
-    await db.insert('transcripts', {
-      'id': 'local-1',
-      'remoteId': 'remote-1',
-      'syncStatus': SyncStatus.synced.key,
-      'updatedAt': '2026-05-10T09:00:00Z',
-    });
+  test(
+    'updateFromServer: when local row is synced and server is newer',
+    () async {
+      await db.insert('transcripts', {
+        'id': 'local-1',
+        'remoteId': 'remote-1',
+        'syncStatus': SyncStatus.synced.key,
+        'updatedAt': '2026-05-10T09:00:00Z',
+      });
 
-    final decision = await service.decideMergeForRow(
-      db: db,
-      table: 'transcripts',
-      serverRow: {
-        'id': 'remote-1',
-        'updated_at': '2026-05-10T10:00:00Z', // server is newer, but even if older, synced means server wins
-      },
-    );
-    expect(decision, MergeDecision.updateFromServer);
-  });
+      final decision = await service.decideMergeForRow(
+        db: db,
+        table: 'transcripts',
+        serverRow: {'id': 'remote-1', 'updated_at': '2026-05-10T10:00:00Z'},
+      );
+      expect(decision, MergeDecision.updateFromServer);
+    },
+  );
+
+  test(
+    'keepLocal: when synced local row is newer or equal to server',
+    () async {
+      await db.insert('transcripts', {
+        'id': 'local-1',
+        'remoteId': 'remote-1',
+        'syncStatus': SyncStatus.synced.key,
+        'updatedAt': '2026-05-10T10:00:00Z',
+      });
+
+      final olderDecision = await service.decideMergeForRow(
+        db: db,
+        table: 'transcripts',
+        serverRow: {'id': 'remote-1', 'updated_at': '2026-05-10T09:00:00Z'},
+      );
+      final equalDecision = await service.decideMergeForRow(
+        db: db,
+        table: 'transcripts',
+        serverRow: {'id': 'remote-1', 'updated_at': '2026-05-10T10:00:00Z'},
+      );
+
+      expect(olderDecision, MergeDecision.keepLocal);
+      expect(equalDecision, MergeDecision.keepLocal);
+    },
+  );
 
   test('keepLocal: when local row is actively syncing', () async {
     await db.insert('transcripts', {
@@ -74,10 +97,7 @@ void main() {
     final decision = await service.decideMergeForRow(
       db: db,
       table: 'transcripts',
-      serverRow: {
-        'id': 'remote-1',
-        'updated_at': '2026-05-10T10:00:00Z',
-      },
+      serverRow: {'id': 'remote-1', 'updated_at': '2026-05-10T10:00:00Z'},
     );
     expect(decision, MergeDecision.keepLocal);
   });
@@ -101,24 +121,27 @@ void main() {
     expect(decision, MergeDecision.keepLocal);
   });
 
-  test('updateFromServer: when local row is pending but older than server', () async {
-    await db.insert('transcripts', {
-      'id': 'local-1',
-      'remoteId': 'remote-1',
-      'syncStatus': SyncStatus.pending.key,
-      'updatedAt': '2026-05-10T09:00:00Z', // local is older
-    });
+  test(
+    'updateFromServer: when local row is pending but older than server',
+    () async {
+      await db.insert('transcripts', {
+        'id': 'local-1',
+        'remoteId': 'remote-1',
+        'syncStatus': SyncStatus.pending.key,
+        'updatedAt': '2026-05-10T09:00:00Z', // local is older
+      });
 
-    final decision = await service.decideMergeForRow(
-      db: db,
-      table: 'transcripts',
-      serverRow: {
-        'id': 'remote-1',
-        'updated_at': '2026-05-10T10:00:00Z', // server is newer
-      },
-    );
-    expect(decision, MergeDecision.updateFromServer);
-  });
+      final decision = await service.decideMergeForRow(
+        db: db,
+        table: 'transcripts',
+        serverRow: {
+          'id': 'remote-1',
+          'updated_at': '2026-05-10T10:00:00Z', // server is newer
+        },
+      );
+      expect(decision, MergeDecision.updateFromServer);
+    },
+  );
 
   test('matches by localId when remoteId is missing in db', () async {
     await db.insert('transcripts', {

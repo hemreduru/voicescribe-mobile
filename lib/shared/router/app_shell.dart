@@ -147,11 +147,6 @@ class AppShell extends StatelessWidget {
         selectedIcon: const Icon(Icons.history),
         label: l10n.history,
       ),
-      NavigationDestination(
-        icon: const Icon(Icons.group_outlined),
-        selectedIcon: const Icon(Icons.group),
-        label: l10n.speaker,
-      ),
     ];
 
     return LayoutBuilder(

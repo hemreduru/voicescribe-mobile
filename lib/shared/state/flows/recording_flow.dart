@@ -19,7 +19,7 @@ class RecordingFlow {
     try {
       await app._audioService.start();
       app._startTimer();
-      await app._persist(app._repository.saveTranscript(transcript));
+      await app._saveTranscript(transcript);
     } catch (error) {
       app.transcriptController.removeTranscript(transcript.id);
       app.recordingController.stop();
@@ -41,10 +41,7 @@ class RecordingFlow {
       durationSeconds: app.recordingController.durationSeconds,
     );
     if (app.currentTranscript != null) {
-      await app._persist(
-        app._repository.saveTranscript(app.currentTranscript!),
-      );
-      await app._enqueueSpeakerAnalysisIfReady(app.currentTranscript!.id);
+      await app._saveTranscript(app.currentTranscript!, scheduleSync: true);
     }
     app._notify();
   }
@@ -72,10 +69,27 @@ class RecordingFlow {
     }
 
     final chunk = app.transcriptController.addRecordedChunk(audioChunk);
+    final transcriptForPersistence = app.currentTranscript;
     app.recordingController.incrementChunkCount();
     app._notify();
-    app._persistLater(app._repository.saveChunk(chunk));
-    unawaited(app._transcribe(chunk));
+    if (transcriptForPersistence == null) {
+      return;
+    }
+    unawaited(_persistAndTranscribe(app, chunk, transcriptForPersistence));
+  }
+
+  Future<void> _persistAndTranscribe(
+    AppController app,
+    TranscriptChunk chunk,
+    Transcript transcript,
+  ) async {
+    try {
+      await app._saveChunkAndTranscript(chunk, transcript, scheduleSync: true);
+      await app._transcribe(chunk);
+    } catch (error) {
+      app.transcriptController.applyTranscriptionError(chunk, error);
+      app._notify();
+    }
   }
 
   void startTimer(AppController app) {
@@ -86,7 +100,7 @@ class RecordingFlow {
         app.recordingController.durationSeconds,
       );
       if (app.currentTranscript != null) {
-        unawaited(app._repository.saveTranscript(app.currentTranscript!));
+        app._saveTranscriptLater(app.currentTranscript!);
       }
       app._notify();
     });

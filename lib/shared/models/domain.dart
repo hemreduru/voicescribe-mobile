@@ -5,9 +5,6 @@ enum TranscriptStatus {
   transcribing('transcribing'),
   completed('completed'),
   transcriptionCompleted('transcription_completed'),
-  speakerAnalysisPending('speaker_analysis_pending'),
-  speakerAnalysisRunning('speaker_analysis_running'),
-  speakerAnalysisCompleted('speaker_analysis_completed'),
   transcriptionError('transcription_error'),
   empty('empty');
 
@@ -16,10 +13,15 @@ enum TranscriptStatus {
   final String key;
 
   static TranscriptStatus fromKey(String? key) {
-    return TranscriptStatus.values.firstWhere(
-      (status) => status.key == key,
-      orElse: () => TranscriptStatus.empty,
-    );
+    return switch (key) {
+      'speaker_analysis_completed' => TranscriptStatus.completed,
+      'speaker_analysis_pending' ||
+      'speaker_analysis_running' => TranscriptStatus.transcriptionCompleted,
+      _ => TranscriptStatus.values.firstWhere(
+        (status) => status.key == key,
+        orElse: () => TranscriptStatus.empty,
+      ),
+    };
   }
 }
 
@@ -41,27 +43,7 @@ enum SyncStatus {
   }
 }
 
-enum SpeakerAnalysisStatus {
-  pending('pending'),
-  running('running'),
-  completed('completed'),
-  failed('failed'),
-  skipped('skipped');
-
-  const SpeakerAnalysisStatus(this.key);
-
-  final String key;
-
-  static SpeakerAnalysisStatus fromKey(String? key) {
-    return SpeakerAnalysisStatus.values.firstWhere(
-      (status) => status.key == key,
-      orElse: () => SpeakerAnalysisStatus.pending,
-    );
-  }
-}
-
 enum ProcessingJobType {
-  speakerAnalysis('speakerAnalysis'),
   sync('sync');
 
   const ProcessingJobType(this.key);
@@ -235,12 +217,8 @@ class TranscriptChunk {
     required this.recordedAt,
     required this.startTime,
     required this.endTime,
-    required this.speakerLabel,
     required this.confidence,
     required this.transcriptionError,
-    this.speakerId,
-    this.speakerConfidence,
-    this.speakerAnalysisStatus = SpeakerAnalysisStatus.pending,
     this.remoteId,
     this.syncStatus = SyncStatus.pending,
     this.lastSyncedAt,
@@ -259,19 +237,9 @@ class TranscriptChunk {
       recordedAt: _readDate(json['recordedAt'] ?? json['recorded_at']),
       startTime: _readDouble(json['startTime'] ?? json['start_time']),
       endTime: _readDouble(json['endTime'] ?? json['end_time']),
-      speakerLabel: _readString(json['speakerLabel'] ?? json['speaker_label']),
       confidence: _readNullableDouble(json['confidence']),
       transcriptionError: _readString(
         json['transcriptionError'] ?? json['transcription_error'],
-      ),
-      speakerId: _readString(json['speakerId'] ?? json['speaker_id']),
-      speakerConfidence: _readNullableDouble(
-        json['speakerConfidence'] ?? json['speaker_confidence'],
-      ),
-      speakerAnalysisStatus: SpeakerAnalysisStatus.fromKey(
-        _readString(
-          json['speakerAnalysisStatus'] ?? json['speaker_analysis_status'],
-        ),
       ),
       remoteId: _readString(json['remoteId'] ?? json['remote_id']),
       syncStatus: SyncStatus.fromKey(
@@ -291,12 +259,8 @@ class TranscriptChunk {
   final DateTime? recordedAt;
   final double startTime;
   final double endTime;
-  final String? speakerLabel;
   final double? confidence;
   final String? transcriptionError;
-  final String? speakerId;
-  final double? speakerConfidence;
-  final SpeakerAnalysisStatus speakerAnalysisStatus;
   final String? remoteId;
   final SyncStatus syncStatus;
   final DateTime? lastSyncedAt;
@@ -314,17 +278,10 @@ class TranscriptChunk {
     bool clearRecordedAt = false,
     double? startTime,
     double? endTime,
-    String? speakerLabel,
-    bool clearSpeakerLabel = false,
     double? confidence,
     bool clearConfidence = false,
     String? transcriptionError,
     bool clearTranscriptionError = false,
-    String? speakerId,
-    bool clearSpeakerId = false,
-    double? speakerConfidence,
-    bool clearSpeakerConfidence = false,
-    SpeakerAnalysisStatus? speakerAnalysisStatus,
     String? remoteId,
     bool clearRemoteId = false,
     SyncStatus? syncStatus,
@@ -344,19 +301,10 @@ class TranscriptChunk {
       recordedAt: clearRecordedAt ? null : recordedAt ?? this.recordedAt,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
-      speakerLabel: clearSpeakerLabel
-          ? null
-          : speakerLabel ?? this.speakerLabel,
       confidence: clearConfidence ? null : confidence ?? this.confidence,
       transcriptionError: clearTranscriptionError
           ? null
           : transcriptionError ?? this.transcriptionError,
-      speakerId: clearSpeakerId ? null : speakerId ?? this.speakerId,
-      speakerConfidence: clearSpeakerConfidence
-          ? null
-          : speakerConfidence ?? this.speakerConfidence,
-      speakerAnalysisStatus:
-          speakerAnalysisStatus ?? this.speakerAnalysisStatus,
       remoteId: clearRemoteId ? null : remoteId ?? this.remoteId,
       syncStatus: syncStatus ?? this.syncStatus,
       lastSyncedAt: clearLastSyncedAt
@@ -377,12 +325,8 @@ class TranscriptChunk {
       'recordedAt': recordedAt?.toIso8601String(),
       'startTime': startTime,
       'endTime': endTime,
-      'speakerLabel': speakerLabel,
       'confidence': confidence,
       'transcriptionError': transcriptionError,
-      'speakerId': speakerId,
-      'speakerConfidence': speakerConfidence,
-      'speakerAnalysisStatus': speakerAnalysisStatus.key,
       'remoteId': remoteId,
       'syncStatus': syncStatus.key,
       'lastSyncedAt': lastSyncedAt?.toIso8601String(),
@@ -515,124 +459,6 @@ class Summary {
 }
 
 @immutable
-class SpeakerProfile {
-  const SpeakerProfile({
-    required this.id,
-    required this.name,
-    required this.embedding,
-    required this.createdAt,
-    this.userId,
-    this.remoteId,
-    this.recordings = 0,
-    this.hasVoiceSample = false,
-    this.isUserNamed = false,
-    this.syncStatus = SyncStatus.pending,
-    this.lastSyncedAt,
-    this.syncError,
-    this.deletedAt,
-  });
-
-  factory SpeakerProfile.fromJson(Map<String, Object?> json) {
-    final createdAt =
-        _readDate(json['createdAt'] ?? json['created_at']) ?? DateTime.now();
-    final embedding = json['embedding'] is List<Object?>
-        ? (json['embedding']! as List<Object?>).map(_readDouble).toList()
-        : const <double>[];
-    return SpeakerProfile(
-      id:
-          _readString(json['id']) ??
-          'speaker-${createdAt.millisecondsSinceEpoch}',
-      name: _readString(json['name']) ?? 'Speaker',
-      embedding: embedding,
-      createdAt: createdAt,
-      userId: _readString(json['userId'] ?? json['user_id']),
-      remoteId: _readString(json['remoteId'] ?? json['remote_id']),
-      recordings: _readInt(json['recordings']),
-      hasVoiceSample: _readBool(
-        json['hasVoiceSample'] ?? json['has_voice_sample'],
-      ),
-      isUserNamed: _readBool(json['isUserNamed'] ?? json['is_user_named']),
-      syncStatus: SyncStatus.fromKey(
-        _readString(json['syncStatus'] ?? json['sync_status']),
-      ),
-      lastSyncedAt: _readDate(json['lastSyncedAt'] ?? json['last_synced_at']),
-      syncError: _readString(json['syncError'] ?? json['sync_error']),
-      deletedAt: _readDate(json['deletedAt'] ?? json['deleted_at']),
-    );
-  }
-
-  final String id;
-  final String name;
-  final List<double> embedding;
-  final DateTime createdAt;
-  final String? userId;
-  final String? remoteId;
-  final int recordings;
-  final bool hasVoiceSample;
-  final bool isUserNamed;
-  final SyncStatus syncStatus;
-  final DateTime? lastSyncedAt;
-  final String? syncError;
-  final DateTime? deletedAt;
-
-  SpeakerProfile copyWith({
-    String? id,
-    String? name,
-    List<double>? embedding,
-    DateTime? createdAt,
-    String? userId,
-    bool clearUserId = false,
-    String? remoteId,
-    bool clearRemoteId = false,
-    int? recordings,
-    bool? hasVoiceSample,
-    bool? isUserNamed,
-    SyncStatus? syncStatus,
-    DateTime? lastSyncedAt,
-    bool clearLastSyncedAt = false,
-    String? syncError,
-    bool clearSyncError = false,
-    DateTime? deletedAt,
-    bool clearDeletedAt = false,
-  }) {
-    return SpeakerProfile(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      embedding: embedding ?? this.embedding,
-      createdAt: createdAt ?? this.createdAt,
-      userId: clearUserId ? null : userId ?? this.userId,
-      remoteId: clearRemoteId ? null : remoteId ?? this.remoteId,
-      recordings: recordings ?? this.recordings,
-      hasVoiceSample: hasVoiceSample ?? this.hasVoiceSample,
-      isUserNamed: isUserNamed ?? this.isUserNamed,
-      syncStatus: syncStatus ?? this.syncStatus,
-      lastSyncedAt: clearLastSyncedAt
-          ? null
-          : lastSyncedAt ?? this.lastSyncedAt,
-      syncError: clearSyncError ? null : syncError ?? this.syncError,
-      deletedAt: clearDeletedAt ? null : deletedAt ?? this.deletedAt,
-    );
-  }
-
-  Map<String, Object?> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'embedding': embedding,
-      'createdAt': createdAt.toIso8601String(),
-      'userId': userId,
-      'remoteId': remoteId,
-      'recordings': recordings,
-      'hasVoiceSample': hasVoiceSample,
-      'isUserNamed': isUserNamed,
-      'syncStatus': syncStatus.key,
-      'lastSyncedAt': lastSyncedAt?.toIso8601String(),
-      'syncError': syncError,
-      'deletedAt': deletedAt?.toIso8601String(),
-    };
-  }
-}
-
 @immutable
 class ProcessingJob {
   const ProcessingJob({
@@ -761,13 +587,10 @@ class PersistedTranscriptState {
     required this.currentTranscript,
     required this.currentChunks,
     required this.allChunks,
-    required this.speakers,
     required this.summaries,
     required this.processingJobs,
     required this.summaryProvider,
     required this.summaryLength,
-    required this.speakerRecognitionEnabled,
-    required this.speakerSimilarityThreshold,
   });
 
   factory PersistedTranscriptState.fromJson(Map<String, Object?> json) {
@@ -786,21 +609,12 @@ class PersistedTranscriptState {
       allChunks: _readList(
         json['allChunks'],
       ).map(TranscriptChunk.fromJson).toList(),
-      speakers: _readList(
-        json['speakers'],
-      ).map(SpeakerProfile.fromJson).toList(),
       summaries: _readList(json['summaries']).map(Summary.fromJson).toList(),
       processingJobs: _readList(
         json['processingJobs'],
       ).map(ProcessingJob.fromJson).toList(),
       summaryProvider: _readString(json['summaryProvider']) ?? 'local',
       summaryLength: _readString(json['summaryLength']) ?? 'medium',
-      speakerRecognitionEnabled: _readBool(
-        json['speakerRecognitionEnabled'],
-        defaultValue: true,
-      ),
-      speakerSimilarityThreshold:
-          _readNullableDouble(json['speakerSimilarityThreshold']) ?? 0.78,
     );
   }
 
@@ -810,13 +624,10 @@ class PersistedTranscriptState {
       currentTranscript: null,
       currentChunks: [],
       allChunks: [],
-      speakers: [],
       summaries: [],
       processingJobs: [],
       summaryProvider: 'local',
       summaryLength: 'medium',
-      speakerRecognitionEnabled: true,
-      speakerSimilarityThreshold: 0.78,
     );
   }
 
@@ -824,13 +635,10 @@ class PersistedTranscriptState {
   final Transcript? currentTranscript;
   final List<TranscriptChunk> currentChunks;
   final List<TranscriptChunk> allChunks;
-  final List<SpeakerProfile> speakers;
   final List<Summary> summaries;
   final List<ProcessingJob> processingJobs;
   final String summaryProvider;
   final String summaryLength;
-  final bool speakerRecognitionEnabled;
-  final double speakerSimilarityThreshold;
 
   Map<String, Object?> toJson() {
     return {
@@ -838,13 +646,10 @@ class PersistedTranscriptState {
       'currentTranscript': currentTranscript?.toJson(),
       'currentChunks': currentChunks.map((item) => item.toJson()).toList(),
       'allChunks': allChunks.map((item) => item.toJson()).toList(),
-      'speakers': speakers.map((item) => item.toJson()).toList(),
       'summaries': summaries.map((item) => item.toJson()).toList(),
       'processingJobs': processingJobs.map((item) => item.toJson()).toList(),
       'summaryProvider': summaryProvider,
       'summaryLength': summaryLength,
-      'speakerRecognitionEnabled': speakerRecognitionEnabled,
-      'speakerSimilarityThreshold': speakerSimilarityThreshold,
     };
   }
 }
@@ -900,23 +705,6 @@ DateTime? _readDate(Object? value) {
     return null;
   }
   return DateTime.tryParse(text);
-}
-
-bool _readBool(Object? value, {bool defaultValue = false}) {
-  if (value is bool) {
-    return value;
-  }
-  final text = value?.toString().toLowerCase();
-  if (text == null) {
-    return defaultValue;
-  }
-  if (text == 'true' || text == '1') {
-    return true;
-  }
-  if (text == 'false' || text == '0') {
-    return false;
-  }
-  return defaultValue;
 }
 
 List<Map<String, Object?>> _readList(Object? value) {

@@ -85,9 +85,7 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
     Transcript transcript,
   ) {
     final chunks = app.chunksFor(transcript.id);
-    final speakersById = {
-      for (final speaker in app.speakers) speaker.id: speaker.name,
-    };
+
     final mergedText = mergeTranscriptChunks(chunks);
     final l10n = context.l10n;
 
@@ -168,23 +166,6 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                const SizedBox(width: AppSpacing.sm),
-                                Expanded(
-                                  child: Text(
-                                    _speakerNameForChunk(
-                                      chunk: chunk,
-                                      speakersById: speakersById,
-                                      fallbackLabel: l10n.speakerFallback,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelMedium
-                                        ?.copyWith(
-                                          color: theme.colorScheme.secondary,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                ),
                               ],
                             ),
                             const SizedBox(height: AppSpacing.xs + 2),
@@ -207,22 +188,6 @@ class _TranscriptScreenState extends ConsumerState<TranscriptScreen> {
       },
     );
   }
-}
-
-String _speakerNameForChunk({
-  required TranscriptChunk chunk,
-  required Map<String, String> speakersById,
-  required String fallbackLabel,
-}) {
-  final byId = speakersById[chunk.speakerId];
-  if (byId != null && byId.trim().isNotEmpty) {
-    return byId;
-  }
-  final label = chunk.speakerLabel;
-  if (label != null && label.trim().isNotEmpty) {
-    return label;
-  }
-  return fallbackLabel;
 }
 
 String _formatChunkTimeRange(TranscriptChunk chunk) {
@@ -325,28 +290,22 @@ class _TranscriptCard extends StatelessWidget {
 Color _statusColor(BuildContext context, TranscriptStatus status) {
   final theme = Theme.of(context);
   return switch (status) {
-    TranscriptStatus.completed ||
-    TranscriptStatus.speakerAnalysisCompleted => AppTheme.teal,
+    TranscriptStatus.completed => AppTheme.teal,
     TranscriptStatus.transcriptionError => theme.colorScheme.error,
     TranscriptStatus.recording ||
     TranscriptStatus.transcribing ||
-    TranscriptStatus.transcriptionCompleted ||
-    TranscriptStatus.speakerAnalysisPending ||
-    TranscriptStatus.speakerAnalysisRunning => AppTheme.amber,
+    TranscriptStatus.transcriptionCompleted => AppTheme.amber,
     TranscriptStatus.empty => theme.colorScheme.outline,
   };
 }
 
 IconData _statusIcon(TranscriptStatus status) {
   return switch (status) {
-    TranscriptStatus.completed ||
-    TranscriptStatus.speakerAnalysisCompleted => Icons.check_circle,
+    TranscriptStatus.completed => Icons.check_circle,
     TranscriptStatus.transcriptionError => Icons.error,
     TranscriptStatus.recording => Icons.mic,
     TranscriptStatus.transcribing => Icons.sync,
     TranscriptStatus.transcriptionCompleted => Icons.subtitles,
-    TranscriptStatus.speakerAnalysisPending => Icons.pending,
-    TranscriptStatus.speakerAnalysisRunning => Icons.psychology_alt,
     TranscriptStatus.empty => Icons.radio_button_unchecked,
   };
 }

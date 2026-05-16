@@ -1,5 +1,6 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:voicescribe_mobile/shared/models/domain.dart';
 
 class DatabaseProvider {
   factory DatabaseProvider() => _instance;
@@ -20,7 +21,7 @@ class DatabaseProvider {
 
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -57,10 +58,6 @@ class DatabaseProvider {
         recordedAt TEXT,
         startTime REAL,
         endTime REAL,
-        speakerId TEXT,
-        speakerLabel TEXT,
-        speakerConfidence REAL,
-        speakerAnalysisStatus TEXT DEFAULT 'pending',
         confidence REAL,
         transcriptionError TEXT,
         syncStatus TEXT DEFAULT 'pending',
@@ -87,24 +84,6 @@ class DatabaseProvider {
         syncError TEXT,
         deletedAt TEXT,
         FOREIGN KEY (transcriptId) REFERENCES transcripts (id) ON DELETE CASCADE
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE speakers (
-        id TEXT PRIMARY KEY,
-        userId TEXT,
-        remoteId TEXT,
-        name TEXT,
-        embedding TEXT,
-        recordings INTEGER,
-        hasVoiceSample INTEGER,
-        isUserNamed INTEGER,
-        createdAt TEXT,
-        syncStatus TEXT DEFAULT 'pending',
-        lastSyncedAt TEXT,
-        syncError TEXT,
-        deletedAt TEXT
       )
     ''');
 
@@ -140,6 +119,31 @@ class DatabaseProvider {
     if (oldVersion < 2) {
       await _migrateV1ToV2(db);
     }
+    if (oldVersion < 3) {
+      await _migrateV2ToV3(db);
+    }
+  }
+
+  Future<void> _migrateV2ToV3(Database db) async {
+    await db.execute('DROP TABLE IF EXISTS speakers');
+    await db.execute(
+      "DELETE FROM processing_jobs WHERE type = 'speakerAnalysis'",
+    );
+    await db.execute(
+      "DELETE FROM processing_jobs WHERE type = 'processingJobType.speakerAnalysis'",
+    );
+    await db.update(
+      'transcripts',
+      {'statusKey': TranscriptStatus.completed.key},
+      where: 'statusKey = ?',
+      whereArgs: ['speaker_analysis_completed'],
+    );
+    await db.update(
+      'transcripts',
+      {'statusKey': TranscriptStatus.transcriptionCompleted.key},
+      where: 'statusKey IN (?, ?)',
+      whereArgs: ['speaker_analysis_pending', 'speaker_analysis_running'],
+    );
   }
 
   Future<void> _migrateV1ToV2(Database db) async {
@@ -156,19 +160,6 @@ class DatabaseProvider {
     await _addColumnIfMissing(db, 'transcripts', 'deletedAt', 'TEXT');
 
     await _addColumnIfMissing(db, 'transcript_chunks', 'remoteId', 'TEXT');
-    await _addColumnIfMissing(db, 'transcript_chunks', 'speakerId', 'TEXT');
-    await _addColumnIfMissing(
-      db,
-      'transcript_chunks',
-      'speakerConfidence',
-      'REAL',
-    );
-    await _addColumnIfMissing(
-      db,
-      'transcript_chunks',
-      'speakerAnalysisStatus',
-      "TEXT DEFAULT 'pending'",
-    );
     await _addColumnIfMissing(
       db,
       'transcript_chunks',
@@ -189,19 +180,6 @@ class DatabaseProvider {
     await _addColumnIfMissing(db, 'summaries', 'lastSyncedAt', 'TEXT');
     await _addColumnIfMissing(db, 'summaries', 'syncError', 'TEXT');
     await _addColumnIfMissing(db, 'summaries', 'deletedAt', 'TEXT');
-
-    await _addColumnIfMissing(db, 'speakers', 'userId', 'TEXT');
-    await _addColumnIfMissing(db, 'speakers', 'remoteId', 'TEXT');
-    await _addColumnIfMissing(db, 'speakers', 'isUserNamed', 'INTEGER');
-    await _addColumnIfMissing(
-      db,
-      'speakers',
-      'syncStatus',
-      "TEXT DEFAULT 'pending'",
-    );
-    await _addColumnIfMissing(db, 'speakers', 'lastSyncedAt', 'TEXT');
-    await _addColumnIfMissing(db, 'speakers', 'syncError', 'TEXT');
-    await _addColumnIfMissing(db, 'speakers', 'deletedAt', 'TEXT');
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS processing_jobs (
