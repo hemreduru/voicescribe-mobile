@@ -6,6 +6,7 @@ import 'package:talker_riverpod_logger/talker_riverpod_logger.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
 import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
 import 'package:voicescribe_mobile/shared/router/app_router.dart';
+import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 import 'package:voicescribe_mobile/shared/theme/app_theme.dart';
 import 'package:voicescribe_mobile/shared/utils/env_config.dart';
 import 'package:voicescribe_mobile/shared/utils/logger.dart';
@@ -45,6 +46,7 @@ class VoiceScribeApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goRouter = ref.watch(goRouterProvider);
+    final themeMode = ref.watch(appThemeModeProvider);
 
     return MaterialApp.router(
       routerConfig: goRouter,
@@ -52,6 +54,7 @@ class VoiceScribeApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      themeMode: themeMode,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

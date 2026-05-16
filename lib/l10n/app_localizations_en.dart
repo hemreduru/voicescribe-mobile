@@ -117,6 +117,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings => 'Settings';
 
   @override
+  String get account => 'Account';
+
+  @override
+  String get appearance => 'Appearance';
+
+  @override
+  String get theme => 'Theme';
+
+  @override
+  String get system => 'System';
+
+  @override
+  String get light => 'Light';
+
+  @override
+  String get dark => 'Dark';
+
+  @override
+  String get summaryProvider => 'Summary Provider';
+
+  @override
+  String get summaryLength => 'Summary Length';
+
+  @override
+  String get summaryPreferences =>
+      'Manage where summaries run and how much detail they include.';
+
+  @override
+  String get preferences => 'More Settings';
+
+  @override
+  String get billingPlans => 'Billing & Plans';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get comingSoon => 'Coming soon';
+
+  @override
+  String get userId => 'User ID';
+
+  @override
   String get summarySettings => 'Summary Settings';
 
   @override

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
 import 'package:voicescribe_mobile/shared/services/audio_recording_service.dart';
@@ -11,6 +12,41 @@ import 'package:voicescribe_mobile/shared/services/whisper_service.dart';
 import 'package:voicescribe_mobile/shared/state/app_controller.dart';
 
 void main() {
+  test('theme mode hydrates from persistence and saves updates', () async {
+    final repository = _FakeRepository();
+    repository.state = const PersistedTranscriptState(
+      transcripts: [],
+      currentTranscript: null,
+      currentChunks: [],
+      allChunks: [],
+      summaries: [],
+      processingJobs: [],
+      summaryProvider: 'local',
+      summaryLength: 'medium',
+      themeMode: 'dark',
+    );
+
+    final controller = AppController(
+      repository: repository,
+      transcriptionService: _FakeTranscriptionService(responses: const {}),
+      audioService: _FakeRecordingService(),
+      summaryService: const LocalSummaryService(),
+      authService: _FakeAuthService(),
+    );
+
+    await controller.bootstrap();
+
+    expect(controller.themeMode, ThemeMode.dark);
+
+    controller.setThemeMode(ThemeMode.light);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.themeMode, ThemeMode.light);
+    expect(repository.savedSettings['themeMode'], 'light');
+
+    controller.dispose();
+  });
+
   test(
     'recording flow persists transcript and keeps error aggregate',
     () async {
@@ -393,6 +429,7 @@ class _FakeAuthService extends VoiceScribeAuthService {
 class _FakeRepository implements TranscriptRepository {
   PersistedTranscriptState state = PersistedTranscriptState.empty();
   final List<PersistedTranscriptState> savedStates = [];
+  final Map<String, String> savedSettings = {};
 
   @override
   Future<PersistedTranscriptState> load() async => state;
@@ -418,12 +455,15 @@ class _FakeRepository implements TranscriptRepository {
   Future<void> deleteProcessingJob(String id) async {}
 
   @override
-  Future<void> saveSetting(String key, String value) async {}
+  Future<void> saveSetting(String key, String value) async {
+    savedSettings[key] = value;
+  }
 }
 
 class _DelayedRepository implements TranscriptRepository {
   final Map<String, Transcript> _transcripts = {};
   final Map<String, TranscriptChunk> _chunks = {};
+  final Map<String, String> _settings = {};
 
   @override
   Future<PersistedTranscriptState> load() async {
@@ -440,6 +480,7 @@ class _DelayedRepository implements TranscriptRepository {
       processingJobs: const [],
       summaryProvider: 'local',
       summaryLength: 'medium',
+      themeMode: _settings['themeMode'] ?? 'system',
     );
   }
 
@@ -473,7 +514,9 @@ class _DelayedRepository implements TranscriptRepository {
   Future<void> deleteProcessingJob(String id) async {}
 
   @override
-  Future<void> saveSetting(String key, String value) async {}
+  Future<void> saveSetting(String key, String value) async {
+    _settings[key] = value;
+  }
 }
 
 class _SyncRefreshRaceRepository extends _DelayedRepository {

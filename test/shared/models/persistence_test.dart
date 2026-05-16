@@ -48,6 +48,7 @@ void main() {
       processingJobs: const [],
       summaryProvider: 'local',
       summaryLength: 'medium',
+      themeMode: 'dark',
     );
 
     final decoded = PersistedTranscriptState.fromJson(state.toJson());
@@ -56,6 +57,7 @@ void main() {
     expect(decoded.transcripts.single.status, TranscriptStatus.completed);
     expect(decoded.allChunks.single.text, 'Merhaba');
     expect(decoded.summaries.single.summaryText, 'Kisa ozet');
+    expect(decoded.themeMode, 'dark');
   });
 
   test('legacy speaker analysis statuses are not restored as empty', () {
@@ -80,5 +82,14 @@ void main() {
     expect(decoded.currentTranscript, isNull);
     expect(decoded.allChunks, isEmpty);
     expect(decoded.summaries, isEmpty);
+    expect(decoded.themeMode, 'system');
+  });
+
+  test('PersistedTranscriptState falls back to system theme mode', () {
+    final decoded = PersistedTranscriptState.fromJson(const {
+      'themeMode': 'sepia',
+    });
+
+    expect(decoded.themeMode, 'system');
   });
 }

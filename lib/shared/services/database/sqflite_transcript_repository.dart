@@ -53,6 +53,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
       processingJobs: processingJobs,
       summaryProvider: settingsMap['summaryProvider'] ?? 'local',
       summaryLength: settingsMap['summaryLength'] ?? 'medium',
+      themeMode: settingsMap['themeMode'] ?? 'system',
     );
   }
 

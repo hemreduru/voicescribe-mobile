@@ -314,6 +314,90 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
+  /// No description provided for @account.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get account;
+
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get theme;
+
+  /// No description provided for @system.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get system;
+
+  /// No description provided for @light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get light;
+
+  /// No description provided for @dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get dark;
+
+  /// No description provided for @summaryProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary Provider'**
+  String get summaryProvider;
+
+  /// No description provided for @summaryLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary Length'**
+  String get summaryLength;
+
+  /// No description provided for @summaryPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage where summaries run and how much detail they include.'**
+  String get summaryPreferences;
+
+  /// No description provided for @preferences.
+  ///
+  /// In en, this message translates to:
+  /// **'More Settings'**
+  String get preferences;
+
+  /// No description provided for @billingPlans.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing & Plans'**
+  String get billingPlans;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get comingSoon;
+
+  /// No description provided for @userId.
+  ///
+  /// In en, this message translates to:
+  /// **'User ID'**
+  String get userId;
+
   /// No description provided for @summarySettings.
   ///
   /// In en, this message translates to:

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:voicescribe_mobile/shared/i18n/l10n.dart';
@@ -42,7 +43,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
         title: Text(l10n.summary),
         actions: [
           IconButton(
-            onPressed: _openSummarySettings,
+            onPressed: _openSettings,
             icon: const Icon(Icons.tune),
             tooltip: l10n.summarySettings,
           ),
@@ -74,7 +75,7 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
                       ActionChip(
                         avatar: Icon(_providerIcon(), size: 17),
                         label: Text('${_providerLabel()} • ${_lengthLabel()}'),
-                        onPressed: _openSummarySettings,
+                        onPressed: _openSettings,
                       ),
                       if (latestText.isNotEmpty)
                         StatusPill(
@@ -165,86 +166,8 @@ class _SummaryScreenState extends ConsumerState<SummaryScreen> {
     await app.generateSummaryForLatest();
   }
 
-  void _openSummarySettings() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        final l10n = context.l10n;
-        final app = ref.read(appControllerProvider);
-        final theme = Theme.of(context);
-        return StatefulBuilder(
-          builder: (context, modalSetState) {
-            return SafeArea(
-              child: AppModalBody(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.summarySettings,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      l10n.settings,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    SegmentedButton<String>(
-                      segments: [
-                        ButtonSegment(
-                          value: 'local',
-                          label: Text(l10n.local),
-                          icon: const Icon(Icons.storage),
-                        ),
-                        ButtonSegment(
-                          value: 'cloud',
-                          label: Text(l10n.cloud),
-                          icon: const Icon(Icons.cloud),
-                        ),
-                      ],
-                      selected: {app.summaryProvider},
-                      onSelectionChanged: (value) {
-                        app.setSummaryProvider(value.first);
-                        modalSetState(() {});
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      l10n.duration,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    SegmentedButton<String>(
-                      segments: [
-                        ButtonSegment(value: 'short', label: Text(l10n.short)),
-                        ButtonSegment(
-                          value: 'medium',
-                          label: Text(l10n.medium),
-                        ),
-                        ButtonSegment(value: 'long', label: Text(l10n.long)),
-                      ],
-                      selected: {app.summaryLength},
-                      onSelectionChanged: (value) {
-                        app.setSummaryLength(value.first);
-                        modalSetState(() {});
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
+  void _openSettings() {
+    context.go('/settings');
   }
 
   String _providerLabel() {

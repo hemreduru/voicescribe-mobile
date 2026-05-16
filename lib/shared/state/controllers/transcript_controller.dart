@@ -198,6 +198,7 @@ class TranscriptController {
     required List<ProcessingJob> processingJobs,
     required String summaryProvider,
     required String summaryLength,
+    required String themeMode,
   }) {
     return PersistedTranscriptState(
       transcripts: transcripts,
@@ -208,6 +209,7 @@ class TranscriptController {
       processingJobs: processingJobs,
       summaryProvider: summaryProvider,
       summaryLength: summaryLength,
+      themeMode: themeMode,
     );
   }
 

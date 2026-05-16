@@ -591,6 +591,7 @@ class PersistedTranscriptState {
     required this.processingJobs,
     required this.summaryProvider,
     required this.summaryLength,
+    required this.themeMode,
   });
 
   factory PersistedTranscriptState.fromJson(Map<String, Object?> json) {
@@ -615,6 +616,7 @@ class PersistedTranscriptState {
       ).map(ProcessingJob.fromJson).toList(),
       summaryProvider: _readString(json['summaryProvider']) ?? 'local',
       summaryLength: _readString(json['summaryLength']) ?? 'medium',
+      themeMode: _readThemeMode(json['themeMode']),
     );
   }
 
@@ -628,6 +630,7 @@ class PersistedTranscriptState {
       processingJobs: [],
       summaryProvider: 'local',
       summaryLength: 'medium',
+      themeMode: 'system',
     );
   }
 
@@ -639,6 +642,7 @@ class PersistedTranscriptState {
   final List<ProcessingJob> processingJobs;
   final String summaryProvider;
   final String summaryLength;
+  final String themeMode;
 
   Map<String, Object?> toJson() {
     return {
@@ -650,8 +654,17 @@ class PersistedTranscriptState {
       'processingJobs': processingJobs.map((item) => item.toJson()).toList(),
       'summaryProvider': summaryProvider,
       'summaryLength': summaryLength,
+      'themeMode': themeMode,
     };
   }
+}
+
+String _readThemeMode(Object? value) {
+  return switch (_readString(value)) {
+    'light' => 'light',
+    'dark' => 'dark',
+    _ => 'system',
+  };
 }
 
 String? _readString(Object? value) {

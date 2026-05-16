@@ -277,24 +277,14 @@ class _AuthenticatedView extends StatelessWidget {
 
     return AppPageListView(
       children: [
-        AppCard(
-          showAccent: true,
-          child: ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.account_circle),
-            title: Text(l10n.authenticatedUser),
-            subtitle: Text(app.currentUserEmail ?? '-'),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
         if (!app.isModelReady)
           _ModelSetupCard(app: app, onRetry: onRetryModelSetup),
-        if (!app.isModelReady) const SizedBox(height: AppSpacing.lg),
+        if (!app.isModelReady) const SizedBox(height: AppSpacing.md),
         AppButton(
           label: l10n.logout,
           icon: Icons.logout,
           onPressed: onLogout,
-          expanded: true,
+          variant: AppButtonVariant.text,
         ),
       ],
     );

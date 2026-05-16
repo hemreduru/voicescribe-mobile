@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show ChangeNotifier;
+import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:voicescribe_mobile/shared/models/domain.dart';
@@ -60,6 +62,10 @@ final appControllerProvider = ChangeNotifierProvider<AppController>((ref) {
   ref.onDispose(controller.dispose);
   unawaited(controller.bootstrap());
   return controller;
+});
+
+final appThemeModeProvider = Provider<ThemeMode>((ref) {
+  return ref.watch(appControllerProvider).themeMode;
 });
 
 enum ModelBootstrapState { bootstrapping, ready, failed }
@@ -122,6 +128,7 @@ class AppController extends ChangeNotifier {
   bool _authResolved = false;
   DateTime? _lastAudioLevelNotifyAt;
   double _lastNotifiedAudioLevel = 0;
+  ThemeMode _themeMode = ThemeMode.system;
 
   static const Duration _audioLevelNotifyInterval = Duration(milliseconds: 120);
 
@@ -155,6 +162,7 @@ class AppController extends ChangeNotifier {
   bool get isModelReady => modelState == ModelBootstrapState.ready;
   String? get currentUserId => _authSession?.userId;
   String? get currentUserEmail => _authSession?.email;
+  ThemeMode get themeMode => _themeMode;
 
   Future<void> bootstrap() async {
     modelState = ModelBootstrapState.bootstrapping;
@@ -168,6 +176,7 @@ class AppController extends ChangeNotifier {
       provider: saved.summaryProvider,
       length: saved.summaryLength,
     );
+    _themeMode = _themeModeFromKey(saved.themeMode);
     processingJobs = saved.processingJobs;
     _notify();
 
@@ -225,6 +234,15 @@ class AppController extends ChangeNotifier {
     _ensureAuthenticated();
     summaryController.applyLength(value);
     _persistLater(_repository.saveSetting('summaryLength', value));
+    _notify();
+  }
+
+  void setThemeMode(ThemeMode value) {
+    if (_themeMode == value) {
+      return;
+    }
+    _themeMode = value;
+    _persistLater(_repository.saveSetting('themeMode', _themeModeKey(value)));
     _notify();
   }
 
@@ -417,6 +435,7 @@ class AppController extends ChangeNotifier {
         provider: saved.summaryProvider,
         length: saved.summaryLength,
       );
+      _themeMode = _themeModeFromKey(saved.themeMode);
       processingJobs = saved.processingJobs;
       _notify();
     } catch (_) {
@@ -470,6 +489,7 @@ class AppController extends ChangeNotifier {
       processingJobs: saved.processingJobs,
       summaryProvider: saved.summaryProvider,
       summaryLength: saved.summaryLength,
+      themeMode: saved.themeMode,
     );
   }
 
@@ -550,6 +570,7 @@ class AppController extends ChangeNotifier {
       processingJobs: saved.processingJobs,
       summaryProvider: saved.summaryProvider,
       summaryLength: saved.summaryLength,
+      themeMode: saved.themeMode,
     );
   }
 
@@ -586,5 +607,21 @@ class AppController extends ChangeNotifier {
       remoteId: active.remoteId ?? saved.remoteId,
       lastSyncedAt: active.lastSyncedAt ?? saved.lastSyncedAt,
     );
+  }
+
+  static ThemeMode _themeModeFromKey(String? value) {
+    return switch (value) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+  }
+
+  static String _themeModeKey(ThemeMode value) {
+    return switch (value) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      ThemeMode.system => 'system',
+    };
   }
 }

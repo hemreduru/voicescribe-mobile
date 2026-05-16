@@ -117,6 +117,49 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settings => 'Ayarlar';
 
   @override
+  String get account => 'Hesap';
+
+  @override
+  String get appearance => 'Görünüm';
+
+  @override
+  String get theme => 'Tema';
+
+  @override
+  String get system => 'Sistem';
+
+  @override
+  String get light => 'Açık';
+
+  @override
+  String get dark => 'Koyu';
+
+  @override
+  String get summaryProvider => 'Özet Sağlayıcısı';
+
+  @override
+  String get summaryLength => 'Özet Uzunluğu';
+
+  @override
+  String get summaryPreferences =>
+      'Özetlerin nerede çalışacağını ve ne kadar detay içereceğini yönetin.';
+
+  @override
+  String get preferences => 'Diğer Ayarlar';
+
+  @override
+  String get billingPlans => 'Ödeme ve Planlar';
+
+  @override
+  String get notifications => 'Bildirimler';
+
+  @override
+  String get comingSoon => 'Yakında';
+
+  @override
+  String get userId => 'Kullanıcı ID';
+
+  @override
   String get summarySettings => 'Özet Ayarları';
 
   @override
