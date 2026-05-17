@@ -18,6 +18,7 @@ import 'package:voicescribe_mobile/ui/core/router/app_router.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/utils/env_config.dart';
 import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
+import 'package:voicescribe_mobile/ui/core/widgets/global_sync_feedback_host.dart';
 import 'package:voicescribe_mobile/ui/features/auth/bloc/auth_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/bootstrap/bloc/bootstrap_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/recording/bloc/recording_bloc.dart';
@@ -95,17 +96,20 @@ class VoiceScribeRoot extends StatelessWidget {
               recordingService: context.read<RecordingService>(),
               transcriptionService: context.read<TranscriptionService>(),
               authRepository: context.read<AuthRepository>(),
+              syncQueueService: context.read<SyncQueueService>(),
             )..add(const RecordingSubscriptionRequested()),
           ),
           BlocProvider<TranscriptListBloc>(
             create: (context) => TranscriptListBloc(
               transcriptRepository: context.read<TranscriptRepository>(),
+              syncQueueService: context.read<SyncQueueService>(),
             )..add(const TranscriptListSubscriptionRequested()),
           ),
           BlocProvider<SettingsBloc>(
             create: (context) => SettingsBloc(
               transcriptRepository: context.read<TranscriptRepository>(),
               authRepository: context.read<AuthRepository>(),
+              syncQueueService: context.read<SyncQueueService>(),
             )..add(const SettingsSubscriptionRequested()),
           ),
         ],
@@ -159,6 +163,12 @@ class _VoiceScribeAppState extends State<VoiceScribeApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [Locale('en'), Locale('tr')],
+      builder: (context, child) {
+        return GlobalSyncFeedbackHost(
+          syncQueueService: context.read<SyncQueueService>(),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 

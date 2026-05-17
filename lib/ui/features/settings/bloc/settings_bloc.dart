@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -41,6 +42,10 @@ final class SettingsLogoutRequested extends SettingsEvent {
   const SettingsLogoutRequested();
 }
 
+final class SettingsManualSyncRequested extends SettingsEvent {
+  const SettingsManualSyncRequested();
+}
+
 final class _SettingsSnapshotChanged extends SettingsEvent {
   const _SettingsSnapshotChanged(this.snapshot);
 
@@ -53,17 +58,29 @@ final class _SettingsSessionChanged extends SettingsEvent {
   final AuthSessionState? session;
 }
 
+final class _SettingsSyncEventChanged extends SettingsEvent {
+  const _SettingsSyncEventChanged(this.event);
+
+  final SyncEvent event;
+}
+
 class SettingsState {
   const SettingsState({
     this.preferences = const AppPreferences(),
     this.session,
     this.loggingOut = false,
+    this.syncing = false,
+    this.lastSyncAt,
+    this.syncErrorMessage,
     this.errorMessage,
   });
 
   final AppPreferences preferences;
   final AuthSessionState? session;
   final bool loggingOut;
+  final bool syncing;
+  final DateTime? lastSyncAt;
+  final String? syncErrorMessage;
   final String? errorMessage;
 
   SettingsState copyWith({
@@ -71,6 +88,11 @@ class SettingsState {
     AuthSessionState? session,
     bool clearSession = false,
     bool? loggingOut,
+    bool? syncing,
+    DateTime? lastSyncAt,
+    bool clearLastSyncAt = false,
+    String? syncErrorMessage,
+    bool clearSyncErrorMessage = false,
     String? errorMessage,
     bool clearErrorMessage = false,
   }) {
@@ -78,6 +100,11 @@ class SettingsState {
       preferences: preferences ?? this.preferences,
       session: clearSession ? null : session ?? this.session,
       loggingOut: loggingOut ?? this.loggingOut,
+      syncing: syncing ?? this.syncing,
+      lastSyncAt: clearLastSyncAt ? null : lastSyncAt ?? this.lastSyncAt,
+      syncErrorMessage: clearSyncErrorMessage
+          ? null
+          : syncErrorMessage ?? this.syncErrorMessage,
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
@@ -89,23 +116,29 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   SettingsBloc({
     required TranscriptRepository transcriptRepository,
     required AuthRepository authRepository,
+    required SyncQueueService syncQueueService,
   }) : _transcriptRepository = transcriptRepository,
        _authRepository = authRepository,
+       _syncQueueService = syncQueueService,
        super(const SettingsState()) {
     on<SettingsSubscriptionRequested>(_onSubscriptionRequested);
     on<_SettingsSnapshotChanged>(_onSnapshotChanged);
     on<_SettingsSessionChanged>(_onSessionChanged);
+    on<_SettingsSyncEventChanged>(_onSyncEventChanged);
     on<SettingsSummaryProviderChanged>(_onSummaryProviderChanged);
     on<SettingsSummaryLengthChanged>(_onSummaryLengthChanged);
     on<SettingsThemeModeChanged>(_onThemeModeChanged);
     on<SettingsLocalePreferenceChanged>(_onLocalePreferenceChanged);
+    on<SettingsManualSyncRequested>(_onManualSyncRequested);
     on<SettingsLogoutRequested>(_onLogoutRequested);
   }
 
   final TranscriptRepository _transcriptRepository;
   final AuthRepository _authRepository;
+  final SyncQueueService _syncQueueService;
   StreamSubscription<TranscriptSnapshot>? _snapshotSubscription;
   StreamSubscription<AuthSessionState?>? _sessionSubscription;
+  StreamSubscription<SyncEvent>? _syncSubscription;
 
   Future<void> _onSubscriptionRequested(
     SettingsSubscriptionRequested event,
@@ -113,12 +146,15 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     await _snapshotSubscription?.cancel();
     await _sessionSubscription?.cancel();
+    await _syncSubscription?.cancel();
     final snapshot = await _transcriptRepository.loadSnapshot();
+    final lastSyncAt = await _syncQueueService.readLastSuccessfulSyncAt();
     emit(
       state.copyWith(
         preferences: snapshot.preferences,
         session: _authRepository.currentSession(),
         clearSession: _authRepository.currentSession() == null,
+        lastSyncAt: lastSyncAt,
       ),
     );
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
@@ -126,6 +162,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     );
     _sessionSubscription = _authRepository.watchSession().listen(
       (session) => add(_SettingsSessionChanged(session)),
+    );
+    _syncSubscription = _syncQueueService.syncEvents.listen(
+      (event) => add(_SettingsSyncEventChanged(event)),
     );
   }
 
@@ -146,6 +185,37 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         clearSession: event.session == null,
       ),
     );
+  }
+
+  void _onSyncEventChanged(
+    _SettingsSyncEventChanged event,
+    Emitter<SettingsState> emit,
+  ) {
+    switch (event.event.type) {
+      case SyncEventType.started:
+        if (event.event.trigger == SyncTrigger.manual ||
+            event.event.trigger == SyncTrigger.refresh) {
+          emit(state.copyWith(syncing: true, clearSyncErrorMessage: true));
+        }
+      case SyncEventType.success:
+        emit(
+          state.copyWith(
+            syncing: false,
+            lastSyncAt: event.event.occurredAt,
+            clearSyncErrorMessage: true,
+          ),
+        );
+      case SyncEventType.failure:
+        if (event.event.trigger == SyncTrigger.manual ||
+            event.event.trigger == SyncTrigger.refresh) {
+          emit(
+            state.copyWith(
+              syncing: false,
+              syncErrorMessage: event.event.error ?? 'Sync failed.',
+            ),
+          );
+        }
+    }
   }
 
   Future<void> _onSummaryProviderChanged(
@@ -215,6 +285,26 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     }
   }
 
+  Future<void> _onManualSyncRequested(
+    SettingsManualSyncRequested event,
+    Emitter<SettingsState> emit,
+  ) async {
+    emit(state.copyWith(syncing: true, clearSyncErrorMessage: true));
+    try {
+      await _syncQueueService.runManualSync();
+      final lastSyncAt = await _syncQueueService.readLastSuccessfulSyncAt();
+      emit(
+        state.copyWith(
+          syncing: false,
+          lastSyncAt: lastSyncAt,
+          clearSyncErrorMessage: true,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(syncing: false, syncErrorMessage: error.toString()));
+    }
+  }
+
   Future<void> _savePreferences(
     Emitter<SettingsState> emit,
     AppPreferences preferences,
@@ -231,6 +321,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   Future<void> close() async {
     await _snapshotSubscription?.cancel();
     await _sessionSubscription?.cancel();
+    await _syncSubscription?.cancel();
     return super.close();
   }
 }

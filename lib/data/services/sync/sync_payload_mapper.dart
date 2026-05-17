@@ -16,7 +16,7 @@ class SyncPayloadMapper {
   }
 
   Future<void> applyServerRow({
-    required Database db,
+    required DatabaseExecutor db,
     required String table,
     required Map<String, Object?> row,
   }) async {
@@ -96,7 +96,7 @@ class SyncPayloadMapper {
   }
 
   Future<void> _applyTranscriptServerRow(
-    Database db,
+    DatabaseExecutor db,
     Map<String, Object?> row,
   ) async {
     final remoteId = _toText(row['remote_id'] ?? row['id']);
@@ -131,14 +131,14 @@ class SyncPayloadMapper {
       'createdAt': _toText(row['created_at']) ?? now,
       'updatedAt': _toText(row['updated_at']) ?? now,
       'syncStatus': SyncStatus.synced.key,
-      'lastSyncedAt': _toText(row['last_synced_at']) ?? now,
+      'lastSyncedAt': now,
       'syncError': null,
       'deletedAt': _toText(row['deleted_at']),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> _applyTranscriptChunkServerRow(
-    Database db,
+    DatabaseExecutor db,
     Map<String, Object?> row,
   ) async {
     final remoteId = _toText(row['remote_id'] ?? row['id']);
@@ -176,14 +176,14 @@ class SyncPayloadMapper {
       'confidence': row['confidence'],
       'transcriptionError': null,
       'syncStatus': SyncStatus.synced.key,
-      'lastSyncedAt': _toText(row['last_synced_at']) ?? now,
+      'lastSyncedAt': now,
       'syncError': null,
       'deletedAt': _toText(row['deleted_at']),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<void> _applySummaryServerRow(
-    Database db,
+    DatabaseExecutor db,
     Map<String, Object?> row,
   ) async {
     final remoteId = _toText(row['remote_id'] ?? row['id']);
@@ -219,14 +219,14 @@ class SyncPayloadMapper {
       'processingTimeMs': row['processing_time_ms'],
       'createdAt': _toText(row['created_at']) ?? now,
       'syncStatus': SyncStatus.synced.key,
-      'lastSyncedAt': _toText(row['last_synced_at']) ?? now,
+      'lastSyncedAt': now,
       'syncError': null,
       'deletedAt': _toText(row['deleted_at']),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<String?> _resolveTranscriptLocalId(
-    Database db,
+    DatabaseExecutor db,
     Map<String, Object?> row,
   ) async {
     final transcriptRemoteId = _toText(row['transcript_id']);
@@ -256,7 +256,7 @@ class SyncPayloadMapper {
   }
 
   Future<String?> _findLocalId({
-    required Database db,
+    required DatabaseExecutor db,
     required String table,
     required String? remoteId,
     required String? clientLocalId,
@@ -285,7 +285,7 @@ class SyncPayloadMapper {
   }
 
   Future<String?> _findFirstId({
-    required Database db,
+    required DatabaseExecutor db,
     required String table,
     required String where,
     required List<Object?> whereArgs,

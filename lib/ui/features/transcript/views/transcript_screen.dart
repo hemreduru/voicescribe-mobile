@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
+import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
@@ -142,51 +145,61 @@ class TranscriptScreen extends StatelessWidget {
                   ],
                   const SizedBox(height: AppSpacing.md),
                   Expanded(
-                    child: state.items.isEmpty
-                        ? EmptyState(
-                            icon: Icons.description_outlined,
-                            title: l10n.transcript,
-                            description: state.query.isEmpty
-                                ? l10n.noTranscriptAvailable
-                                : l10n.noMatchingText,
-                          )
-                        : ListView.separated(
-                            itemBuilder: (context, index) {
-                              final item = state.items[index];
-                              final transcript = item.transcript;
-                              final isSelected = selected.contains(
-                                transcript.id,
-                              );
-                              return _TranscriptCard(
-                                transcript: transcript,
-                                mergedText: item.mergedText,
-                                selected: isSelected,
-                                onTap: () {
-                                  if (selected.isNotEmpty) {
-                                    context.read<TranscriptListBloc>().add(
-                                      TranscriptListSelectionToggled(
+                    child: RefreshIndicator(
+                      onRefresh: () => _refreshFromBackend(context),
+                      child: state.items.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                const SizedBox(height: AppSpacing.xl),
+                                EmptyState(
+                                  icon: Icons.description_outlined,
+                                  title: l10n.transcript,
+                                  description: state.query.isEmpty
+                                      ? l10n.noTranscriptAvailable
+                                      : l10n.noMatchingText,
+                                ),
+                              ],
+                            )
+                          : ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemBuilder: (context, index) {
+                                final item = state.items[index];
+                                final transcript = item.transcript;
+                                final isSelected = selected.contains(
+                                  transcript.id,
+                                );
+                                return _TranscriptCard(
+                                  transcript: transcript,
+                                  mergedText: item.mergedText,
+                                  selected: isSelected,
+                                  onTap: () {
+                                    if (selected.isNotEmpty) {
+                                      context.read<TranscriptListBloc>().add(
+                                        TranscriptListSelectionToggled(
+                                          transcript.id,
+                                        ),
+                                      );
+                                    } else {
+                                      _showTranscriptDetail(
+                                        context,
                                         transcript.id,
+                                      );
+                                    }
+                                  },
+                                  onLongPress: () =>
+                                      context.read<TranscriptListBloc>().add(
+                                        TranscriptListSelectionToggled(
+                                          transcript.id,
+                                        ),
                                       ),
-                                    );
-                                  } else {
-                                    _showTranscriptDetail(
-                                      context,
-                                      transcript.id,
-                                    );
-                                  }
-                                },
-                                onLongPress: () =>
-                                    context.read<TranscriptListBloc>().add(
-                                      TranscriptListSelectionToggled(
-                                        transcript.id,
-                                      ),
-                                    ),
-                              );
-                            },
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: AppSpacing.sm + 2),
-                            itemCount: state.items.length,
-                          ),
+                                );
+                              },
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: AppSpacing.sm + 2),
+                              itemCount: state.items.length,
+                            ),
+                    ),
                   ),
                 ],
               ),
@@ -233,6 +246,7 @@ class TranscriptScreen extends StatelessWidget {
   void _showTranscriptDetail(BuildContext context, String transcriptId) {
     final repository = context.read<TranscriptRepository>();
     final summaryService = context.read<SummaryService>();
+    final syncQueueService = context.read<SyncQueueService>();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -243,11 +257,28 @@ class TranscriptScreen extends StatelessWidget {
             transcriptId: transcriptId,
             transcriptRepository: repository,
             summaryService: summaryService,
+            syncQueueService: syncQueueService,
           )..add(const TranscriptDetailSubscriptionRequested()),
           child: const _TranscriptDetailSheet(),
         );
       },
     );
+  }
+
+  Future<void> _refreshFromBackend(BuildContext context) async {
+    final completer = Completer<void>();
+    context.read<TranscriptListBloc>().add(
+      TranscriptListRefreshRequested(completer: completer),
+    );
+    try {
+      await completer.future;
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    }
   }
 
   void _showStatusHelp(BuildContext context) {

@@ -30,6 +30,7 @@ void main() {
               recordingService: fakes.recording,
               transcriptionService: fakes.transcription,
               authRepository: fakes.auth,
+              syncQueueService: fakes.sync,
             )..add(const RecordingSubscriptionRequested()),
           ),
         ],
@@ -85,9 +86,10 @@ void main() {
         fakes: fakes,
         blocs: [
           BlocProvider<TranscriptListBloc>(
-            create: (_) =>
-                TranscriptListBloc(transcriptRepository: fakes.transcripts)
-                  ..add(const TranscriptListSubscriptionRequested()),
+            create: (_) => TranscriptListBloc(
+              transcriptRepository: fakes.transcripts,
+              syncQueueService: fakes.sync,
+            )..add(const TranscriptListSubscriptionRequested()),
           ),
         ],
         child: const TranscriptScreen(),

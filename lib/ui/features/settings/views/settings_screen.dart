@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
@@ -48,6 +49,22 @@ class SettingsScreen extends StatelessWidget {
                         subtitle: l10n.userId,
                         trailing: const SizedBox.shrink(),
                       ),
+                    ],
+                    const SizedBox(height: AppSpacing.lg),
+                    AppButton(
+                      label: l10n.logout,
+                      icon: Icons.logout,
+                      onPressed: () => context.read<SettingsBloc>().add(
+                        const SettingsLogoutRequested(),
+                      ),
+                      isLoading: state.loggingOut,
+                      expanded: true,
+                      variant: AppButtonVariant.outline,
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                    if (state.errorMessage != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      AppErrorText(message: state.errorMessage!),
                     ],
                   ],
                 ),
@@ -142,6 +159,84 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 AppSectionCard(
+                  title: l10n.sync,
+                  subtitle: l10n.syncSectionSubtitle,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AppIconBadge(
+                              icon: state.syncing
+                                  ? Icons.sync
+                                  : Icons.cloud_done_outlined,
+                              color: state.syncing
+                                  ? Theme.of(context).colorScheme.secondary
+                                  : AppTheme.teal,
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    state.syncing
+                                        ? l10n.syncInProgress
+                                        : l10n.syncIdle,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    state.lastSyncAt == null
+                                        ? l10n.lastSyncNever
+                                        : l10n.lastSyncAt(
+                                            DateFormat(
+                                              'dd MMM, HH:mm',
+                                              Localizations.localeOf(
+                                                context,
+                                              ).toLanguageTag(),
+                                            ).format(state.lastSyncAt!),
+                                          ),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        AppButton(
+                          label: l10n.syncNow,
+                          icon: Icons.sync,
+                          onPressed: state.syncing
+                              ? null
+                              : () => context.read<SettingsBloc>().add(
+                                  const SettingsManualSyncRequested(),
+                                ),
+                          isLoading: state.syncing,
+                          variant: AppButtonVariant.outline,
+                          expanded: true,
+                        ),
+                        if (state.syncErrorMessage != null) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          AppErrorText(message: state.syncErrorMessage!),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppSectionCard(
                   title: l10n.systemStatus,
                   children: [
                     ActionRow(
@@ -177,18 +272,6 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ],
-            ),
-          ),
-          bottomNavigationBar: AppBottomActionBar(
-            errorText: state.errorMessage,
-            child: AppButton(
-              label: l10n.logout,
-              icon: Icons.logout,
-              onPressed: () => context.read<SettingsBloc>().add(
-                const SettingsLogoutRequested(),
-              ),
-              isLoading: state.loggingOut,
-              expanded: true,
             ),
           ),
         );

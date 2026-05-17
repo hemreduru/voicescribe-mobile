@@ -36,6 +36,28 @@
   "settings": "Ayarlar",
   "account": "Hesap",
   "appearance": "Görünüm",
+  "sync": "Senkronizasyon",
+  "syncSectionSubtitle": "Bekleyen verileri sunucuyla eşitle ve yerel önbelleği temizle.",
+  "syncNow": "Şimdi Eşitle",
+  "syncInProgress": "Eşitleme sürüyor",
+  "syncIdle": "Eşitlemeye hazır",
+  "lastSyncNever": "Son eşitleme: Henüz yok",
+  "lastSyncAt": "Son eşitleme: {time}",
+  "@lastSyncAt": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "syncBannerTitle": "Eşitleme tamamlandı",
+  "syncBannerSuccess": "Her şey güncel.",
+  "syncBannerSuccessWithCounts": "{pushed} yüklendi, {pulled} yenilendi, {cleaned} temizlendi",
+  "@syncBannerSuccessWithCounts": {
+    "placeholders": {
+      "pushed": {},
+      "pulled": {},
+      "cleaned": {}
+    }
+  },
   "theme": "Tema",
   "system": "Sistem",
   "light": "Açık",

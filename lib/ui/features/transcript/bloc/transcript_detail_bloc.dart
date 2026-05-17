@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
+import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/use_cases/generate_summary.dart';
@@ -96,8 +97,10 @@ class TranscriptDetailBloc
     required String transcriptId,
     required TranscriptRepository transcriptRepository,
     required SummaryService summaryService,
+    required SyncQueueService syncQueueService,
   }) : _transcriptRepository = transcriptRepository,
        _summaryService = summaryService,
+       _syncQueueService = syncQueueService,
        super(TranscriptDetailState(transcriptId: transcriptId)) {
     on<TranscriptDetailSubscriptionRequested>(_onSubscriptionRequested);
     on<_TranscriptDetailSnapshotChanged>(_onSnapshotChanged);
@@ -108,6 +111,7 @@ class TranscriptDetailBloc
 
   final TranscriptRepository _transcriptRepository;
   final SummaryService _summaryService;
+  final SyncQueueService _syncQueueService;
   StreamSubscription<TranscriptSnapshot>? _snapshotSubscription;
 
   Future<void> _onSubscriptionRequested(
@@ -146,6 +150,7 @@ class TranscriptDetailBloc
     );
     emit(state.copyWith(transcript: updated));
     await _transcriptRepository.saveTranscript(updated);
+    _syncQueueService.scheduleSync();
   }
 
   Future<void> _onSummaryRequested(
@@ -175,6 +180,9 @@ class TranscriptDetailBloc
           generatingSummary: false,
         ),
       );
+      if (summary != null) {
+        _syncQueueService.scheduleSync();
+      }
     } catch (error) {
       emit(
         state.copyWith(

@@ -314,6 +314,70 @@ abstract class AppLocalizations {
   /// **'Appearance'**
   String get appearance;
 
+  /// No description provided for @sync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get sync;
+
+  /// No description provided for @syncSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manually trigger a full push, pull, and cache cleanup.'**
+  String get syncSectionSubtitle;
+
+  /// No description provided for @syncNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Now'**
+  String get syncNow;
+
+  /// No description provided for @syncInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync in progress'**
+  String get syncInProgress;
+
+  /// No description provided for @syncIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to sync'**
+  String get syncIdle;
+
+  /// No description provided for @lastSyncNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sync: Never'**
+  String get lastSyncNever;
+
+  /// No description provided for @lastSyncAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sync: {time}'**
+  String lastSyncAt(Object time);
+
+  /// No description provided for @syncBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced'**
+  String get syncBannerTitle;
+
+  /// No description provided for @syncBannerSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is up to date.'**
+  String get syncBannerSuccess;
+
+  /// No description provided for @syncBannerSuccessWithCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded {pushed}, refreshed {pulled}, cleaned {cleaned}'**
+  String syncBannerSuccessWithCounts(
+    Object pushed,
+    Object pulled,
+    Object cleaned,
+  );
+
   /// No description provided for @theme.
   ///
   /// In en, this message translates to:

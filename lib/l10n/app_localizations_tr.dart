@@ -117,6 +117,45 @@ class AppLocalizationsTr extends AppLocalizations {
   String get appearance => 'Görünüm';
 
   @override
+  String get sync => 'Senkronizasyon';
+
+  @override
+  String get syncSectionSubtitle =>
+      'Bekleyen verileri sunucuyla eşitle ve yerel önbelleği temizle.';
+
+  @override
+  String get syncNow => 'Şimdi Eşitle';
+
+  @override
+  String get syncInProgress => 'Eşitleme sürüyor';
+
+  @override
+  String get syncIdle => 'Eşitlemeye hazır';
+
+  @override
+  String get lastSyncNever => 'Son eşitleme: Henüz yok';
+
+  @override
+  String lastSyncAt(Object time) {
+    return 'Son eşitleme: $time';
+  }
+
+  @override
+  String get syncBannerTitle => 'Eşitleme tamamlandı';
+
+  @override
+  String get syncBannerSuccess => 'Her şey güncel.';
+
+  @override
+  String syncBannerSuccessWithCounts(
+    Object pushed,
+    Object pulled,
+    Object cleaned,
+  ) {
+    return '$pushed yüklendi, $pulled yenilendi, $cleaned temizlendi';
+  }
+
+  @override
   String get theme => 'Tema';
 
   @override

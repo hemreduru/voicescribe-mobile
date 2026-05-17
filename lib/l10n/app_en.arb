@@ -36,6 +36,28 @@
   "settings": "Settings",
   "account": "Account",
   "appearance": "Appearance",
+  "sync": "Sync",
+  "syncSectionSubtitle": "Manually trigger a full push, pull, and cache cleanup.",
+  "syncNow": "Sync Now",
+  "syncInProgress": "Sync in progress",
+  "syncIdle": "Ready to sync",
+  "lastSyncNever": "Last sync: Never",
+  "lastSyncAt": "Last sync: {time}",
+  "@lastSyncAt": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "syncBannerTitle": "Synced",
+  "syncBannerSuccess": "Everything is up to date.",
+  "syncBannerSuccessWithCounts": "Uploaded {pushed}, refreshed {pulled}, cleaned {cleaned}",
+  "@syncBannerSuccessWithCounts": {
+    "placeholders": {
+      "pushed": {},
+      "pulled": {},
+      "cleaned": {}
+    }
+  },
   "theme": "Theme",
   "system": "System",
   "light": "Light",

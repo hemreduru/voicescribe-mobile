@@ -117,6 +117,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appearance => 'Appearance';
 
   @override
+  String get sync => 'Sync';
+
+  @override
+  String get syncSectionSubtitle =>
+      'Manually trigger a full push, pull, and cache cleanup.';
+
+  @override
+  String get syncNow => 'Sync Now';
+
+  @override
+  String get syncInProgress => 'Sync in progress';
+
+  @override
+  String get syncIdle => 'Ready to sync';
+
+  @override
+  String get lastSyncNever => 'Last sync: Never';
+
+  @override
+  String lastSyncAt(Object time) {
+    return 'Last sync: $time';
+  }
+
+  @override
+  String get syncBannerTitle => 'Synced';
+
+  @override
+  String get syncBannerSuccess => 'Everything is up to date.';
+
+  @override
+  String syncBannerSuccessWithCounts(
+    Object pushed,
+    Object pulled,
+    Object cleaned,
+  ) {
+    return 'Uploaded $pushed, refreshed $pulled, cleaned $cleaned';
+  }
+
+  @override
   String get theme => 'Theme';
 
   @override

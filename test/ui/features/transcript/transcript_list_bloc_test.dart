@@ -39,6 +39,7 @@ void main() {
             summaries: const [],
           ),
         ),
+        syncQueueService: FakeSyncQueueService(),
       );
     },
     act: (bloc) async {
@@ -86,6 +87,7 @@ void main() {
             summaries: const [],
           ),
         ),
+        syncQueueService: FakeSyncQueueService(),
       );
     },
     act: (bloc) async {
@@ -132,6 +134,7 @@ void main() {
             summaries: const [],
           ),
         ),
+        syncQueueService: FakeSyncQueueService(),
       );
     },
     act: (bloc) async {

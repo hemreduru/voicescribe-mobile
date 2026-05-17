@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -15,6 +16,53 @@ import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 
 typedef AccessTokenProvider = Future<String?> Function();
 typedef SyncCompletionCallback = Future<void> Function();
+
+enum SyncTrigger {
+  auto('auto'),
+  manual('manual'),
+  connectivity('connectivity'),
+  refresh('refresh');
+
+  const SyncTrigger(this.key);
+
+  final String key;
+}
+
+enum SyncEventType { started, success, failure }
+
+class SyncMetrics {
+  const SyncMetrics({
+    required this.pushed,
+    required this.pulled,
+    required this.kept,
+    required this.cleaned,
+  });
+
+  const SyncMetrics.empty() : this(pushed: 0, pulled: 0, kept: 0, cleaned: 0);
+
+  final int pushed;
+  final int pulled;
+  final int kept;
+  final int cleaned;
+
+  int get totalChanged => pushed + pulled + cleaned;
+}
+
+class SyncEvent {
+  const SyncEvent({
+    required this.type,
+    required this.trigger,
+    required this.occurredAt,
+    required this.metrics,
+    this.error,
+  });
+
+  final SyncEventType type;
+  final SyncTrigger trigger;
+  final DateTime occurredAt;
+  final SyncMetrics metrics;
+  final String? error;
+}
 
 class SyncQueueService {
   SyncQueueService({
@@ -35,6 +83,8 @@ class SyncQueueService {
   final SyncMergePolicy _mergePolicy;
   final SyncPayloadMapper _payloadMapper;
 
+  final _syncEventsController = StreamController<SyncEvent>.broadcast();
+
   StreamSubscription<dynamic>? _connectivitySubscription;
   AccessTokenProvider? _accessTokenProvider;
   SyncCompletionCallback? _onSyncComplete;
@@ -47,7 +97,12 @@ class SyncQueueService {
   static const Duration _maxRetryDelay = Duration(minutes: 2);
   static const Duration _periodicSyncInterval = Duration(minutes: 5);
   static const int _circuitBreakerThreshold = 3;
+  static const Duration _cacheTtl = Duration(minutes: 60);
+
   static const String _lastPullAtSettingKey = 'sync.lastPullAt';
+  static const String _lastSuccessAtSettingKey = 'sync.lastSuccessAt';
+
+  Stream<SyncEvent> get syncEvents => _syncEventsController.stream;
 
   Future<void> start({
     required AccessTokenProvider accessTokenProvider,
@@ -55,14 +110,17 @@ class SyncQueueService {
   }) async {
     _accessTokenProvider = accessTokenProvider;
     _onSyncComplete = onSyncComplete;
-    await triggerSyncIfOnline();
+    await triggerSyncIfOnline(force: true);
     _startPeriodicSync();
     _connectivitySubscription ??= _connectivity.onConnectivityChanged.listen((
       event,
     ) async {
       if (_isOnline(event)) {
         _consecutiveFailureCount = 0;
-        await triggerSyncIfOnline();
+        await triggerSyncIfOnline(
+          trigger: SyncTrigger.connectivity,
+          force: true,
+        );
       }
     });
   }
@@ -74,32 +132,40 @@ class SyncQueueService {
     _periodicSyncTimer = null;
     await _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
+    await _syncEventsController.close();
   }
 
-  void scheduleSync({Duration delay = _defaultSyncDebounce}) {
+  void scheduleSync({
+    Duration delay = _defaultSyncDebounce,
+    SyncTrigger trigger = SyncTrigger.auto,
+  }) {
     if (_accessTokenProvider == null) {
       return;
     }
     _syncDebounceTimer?.cancel();
     _syncDebounceTimer = Timer(delay, () {
-      unawaited(triggerSyncIfOnline());
+      unawaited(triggerSyncIfOnline(trigger: trigger, force: true));
     });
   }
 
-  Future<void> triggerSyncIfOnline() async {
-    if (_syncInProgress) {
-      return;
+  Future<void> triggerSyncIfOnline({
+    SyncTrigger trigger = SyncTrigger.auto,
+    bool force = false,
+  }) {
+    return _runSync(trigger: trigger, force: force, throwOnFailure: false);
+  }
+
+  Future<void> runManualSync({SyncTrigger trigger = SyncTrigger.manual}) {
+    return _runSync(trigger: trigger, force: true, throwOnFailure: true);
+  }
+
+  Future<DateTime?> readLastSuccessfulSyncAt() async {
+    final db = await _databaseProvider.database;
+    final value = await _readSetting(db, _lastSuccessAtSettingKey);
+    if (value == null || value.isEmpty) {
+      return null;
     }
-    if (_consecutiveFailureCount >= _circuitBreakerThreshold) {
-      AppLogger.debug(
-        'Sync circuit breaker open ($_consecutiveFailureCount failures).',
-      );
-      return;
-    }
-    if (!await _hasInternet()) {
-      return;
-    }
-    await _syncCycle();
+    return DateTime.tryParse(value);
   }
 
   @visibleForTesting
@@ -118,61 +184,237 @@ class SyncQueueService {
   void _startPeriodicSync() {
     _periodicSyncTimer?.cancel();
     _periodicSyncTimer = Timer.periodic(_periodicSyncInterval, (_) {
-      unawaited(triggerSyncIfOnline());
+      unawaited(triggerSyncIfOnline(force: true));
     });
   }
 
-  Future<void> _syncCycle() async {
+  Future<void> _runSync({
+    required SyncTrigger trigger,
+    required bool force,
+    required bool throwOnFailure,
+  }) async {
+    if (_syncInProgress) {
+      return;
+    }
+
     final accessTokenProvider = _accessTokenProvider;
     if (accessTokenProvider == null) {
+      if (throwOnFailure) {
+        throw StateError('Sync is not configured.');
+      }
       return;
     }
-    final token = await accessTokenProvider();
+
+    final token = (await accessTokenProvider())?.trim();
     if (token == null || token.isEmpty) {
+      if (throwOnFailure) {
+        throw StateError('Authentication is required for sync.');
+      }
       return;
     }
+
+    if (_consecutiveFailureCount >= _circuitBreakerThreshold && !force) {
+      AppLogger.debug(
+        'Sync circuit breaker open ($_consecutiveFailureCount failures).',
+      );
+      return;
+    }
+
+    if (!await _hasInternet()) {
+      const error = 'No internet connection.';
+      _emitEvent(
+        SyncEvent(
+          type: SyncEventType.failure,
+          trigger: trigger,
+          occurredAt: DateTime.now(),
+          metrics: const SyncMetrics.empty(),
+          error: error,
+        ),
+      );
+      if (throwOnFailure) {
+        throw StateError(error);
+      }
+      return;
+    }
+
+    _syncInProgress = true;
+    _emitEvent(
+      SyncEvent(
+        type: SyncEventType.started,
+        trigger: trigger,
+        occurredAt: DateTime.now(),
+        metrics: const SyncMetrics.empty(),
+      ),
+    );
 
     final db = await _databaseProvider.database;
-    _syncInProgress = true;
     try {
-      final pushBatch = await _buildPushBatch(db);
-      final hasPushChanges = pushBatch.payload.values.any(
-        (rows) => rows.isNotEmpty,
-      );
-
-      if (hasPushChanges) {
-        await _markBatchSyncing(db, pushBatch.idsByTable);
-        final pushResponse = await _httpClient.postJson(
-          url: '${EnvConfig.apiBaseUrl}/api/v1/sync/push',
-          token: token,
-          payload: pushBatch.payload,
-        );
-
-        if (pushResponse.statusCode >= 200 && pushResponse.statusCode < 300) {
-          await _applyPushResponse(
-            db: db,
-            responseBody: pushResponse.body,
-            pushBatch: pushBatch,
-          );
-        } else {
-          await _markBatchFailed(
-            db: db,
-            idsByTable: pushBatch.idsByTable,
-            error: 'push_http_${pushResponse.statusCode}: ${pushResponse.body}',
-          );
-        }
-      }
-
-      await _pullAndMerge(db: db, token: token);
+      final stats = await _syncCycle(db: db, token: token);
       _consecutiveFailureCount = 0;
+      await _writeSetting(
+        db,
+        _lastSuccessAtSettingKey,
+        DateTime.now().toIso8601String(),
+      );
       await _onSyncComplete?.call();
+      _emitEvent(
+        SyncEvent(
+          type: SyncEventType.success,
+          trigger: trigger,
+          occurredAt: DateTime.now(),
+          metrics: stats,
+        ),
+      );
       AppLogger.debug('Sync cycle completed successfully.');
     } catch (error) {
       _consecutiveFailureCount += 1;
       await _markAnySyncingAsFailed(db: db, error: error.toString());
       scheduleSync(delay: _retryDelayFor(_consecutiveFailureCount));
+      _emitEvent(
+        SyncEvent(
+          type: SyncEventType.failure,
+          trigger: trigger,
+          occurredAt: DateTime.now(),
+          metrics: const SyncMetrics.empty(),
+          error: error.toString(),
+        ),
+      );
+      if (throwOnFailure) {
+        rethrow;
+      }
     } finally {
       _syncInProgress = false;
+    }
+  }
+
+  Future<SyncMetrics> _syncCycle({
+    required Database db,
+    required String token,
+  }) async {
+    // Recover rows left in syncing after app/process interruptions.
+    await _markAnySyncingAsFailed(db: db, error: 'interrupted_previous_sync');
+
+    final pushBatch = await _buildPushBatch(db);
+    final stats = _SyncWorkStats();
+    SyncHttpResult? pushResponse;
+
+    final hasPushChanges = pushBatch.payload.values.any(
+      (rows) => rows.isNotEmpty,
+    );
+    if (hasPushChanges) {
+      await _markBatchSyncing(db, pushBatch.idsByTable);
+      pushResponse = await _httpClient.postJson(
+        url: '${EnvConfig.apiBaseUrl}/api/v1/sync/push',
+        token: token,
+        payload: pushBatch.payload,
+      );
+    }
+
+    final pullPayload = await _fetchPullPayload(db: db, token: token);
+    late final _CleanupResult cleanupResult;
+    await db.transaction((txn) async {
+      if (hasPushChanges) {
+        final response = pushResponse;
+        if (response == null) {
+          throw StateError('push_response_missing');
+        }
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          await _applyPushResponse(
+            db: txn,
+            responseBody: response.body,
+            pushBatch: pushBatch,
+            stats: stats,
+          );
+        } else {
+          await _markBatchFailed(
+            db: txn,
+            idsByTable: pushBatch.idsByTable,
+            error: 'push_http_${response.statusCode}: ${response.body}',
+          );
+        }
+      }
+      await _mergePulledRows(txn: txn, pullPayload: pullPayload, stats: stats);
+      await _writeSetting(txn, _lastPullAtSettingKey, pullPayload.serverTime);
+      cleanupResult = await _cleanupExpiredSyncedRows(
+        txn: txn,
+        now: DateTime.now(),
+      );
+      stats.cleaned += cleanupResult.idsByTable.values.fold<int>(
+        0,
+        (sum, ids) => sum + ids.length,
+      );
+    });
+    await _cleanupChunkAudioFiles(cleanupResult.chunkAudioPaths);
+
+    return stats.toMetrics();
+  }
+
+  Future<_PullPayload> _fetchPullPayload({
+    required Database db,
+    required String token,
+  }) async {
+    final since = await _readSetting(db, _lastPullAtSettingKey);
+    final response = await _httpClient.postJson(
+      url: '${EnvConfig.apiBaseUrl}/api/v1/sync/pull',
+      token: token,
+      payload: {
+        if (since != null && since.isNotEmpty) 'since': since,
+        'tables': syncTables,
+      },
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw StateError('pull_http_${response.statusCode}: ${response.body}');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map) {
+      throw const FormatException('Invalid sync pull response payload.');
+    }
+
+    final data = decoded['data'];
+    if (data is! Map) {
+      throw const FormatException('Missing data in sync pull response.');
+    }
+
+    final rowsByTable = <String, List<Map<String, Object?>>>{
+      for (final table in syncTables) table: _rowsFromDynamicList(data[table]),
+    };
+
+    return _PullPayload(
+      rowsByTable: rowsByTable,
+      serverTime:
+          _toText(data['serverTime']) ?? DateTime.now().toIso8601String(),
+    );
+  }
+
+  Future<void> _mergePulledRows({
+    required DatabaseExecutor txn,
+    required _PullPayload pullPayload,
+    required _SyncWorkStats stats,
+  }) async {
+    for (final table in syncTables) {
+      final rows =
+          pullPayload.rowsByTable[table] ?? const <Map<String, Object?>>[];
+      for (final row in rows) {
+        final decision = await _mergePolicy.decideMergeForRow(
+          db: txn,
+          table: table,
+          serverRow: row,
+        );
+        switch (decision) {
+          case MergeDecision.insertNew:
+          case MergeDecision.updateFromServer:
+            await _payloadMapper.applyServerRow(
+              db: txn,
+              table: table,
+              row: row,
+            );
+            stats.pulled += 1;
+          case MergeDecision.keepLocal:
+            stats.kept += 1;
+        }
+      }
     }
   }
 
@@ -243,7 +485,7 @@ class SyncQueueService {
   }
 
   Future<void> _markBatchFailed({
-    required Database db,
+    required DatabaseExecutor db,
     required Map<String, Set<String>> idsByTable,
     required String error,
   }) async {
@@ -268,7 +510,7 @@ class SyncQueueService {
   }
 
   Future<void> _markAnySyncingAsFailed({
-    required Database db,
+    required DatabaseExecutor db,
     required String error,
   }) async {
     final now = DateTime.now().toIso8601String();
@@ -287,9 +529,10 @@ class SyncQueueService {
   }
 
   Future<void> _applyPushResponse({
-    required Database db,
+    required DatabaseExecutor db,
     required String responseBody,
     required _PushBatch pushBatch,
+    required _SyncWorkStats stats,
   }) async {
     final now = DateTime.now().toIso8601String();
     final decoded = jsonDecode(responseBody);
@@ -338,13 +581,14 @@ class SyncQueueService {
           continue;
         }
         handledIds[table]!.add(localId);
+        stats.pushed += 1;
         await db.update(
           table,
           {
             'remoteId': _toText(appliedRow['remote_id']),
             'syncStatus': SyncStatus.synced.key,
             'syncError': null,
-            'lastSyncedAt': _toText(appliedRow['updated_at']) ?? now,
+            'lastSyncedAt': now,
           },
           where: 'id = ?',
           whereArgs: [localId],
@@ -389,66 +633,79 @@ class SyncQueueService {
     }
   }
 
-  Future<void> _pullAndMerge({
-    required Database db,
-    required String token,
+  Future<_CleanupResult> _cleanupExpiredSyncedRows({
+    required DatabaseExecutor txn,
+    required DateTime now,
   }) async {
-    final since = await _readSetting(db, _lastPullAtSettingKey);
-    final response = await _httpClient.postJson(
-      url: '${EnvConfig.apiBaseUrl}/api/v1/sync/pull',
-      token: token,
-      payload: {
-        if (since != null && since.isNotEmpty) 'since': since,
-        'tables': syncTables,
-      },
-    );
+    final cutoff = now.toUtc().subtract(_cacheTtl).toIso8601String();
+    final cleanedIds = <String, Set<String>>{
+      for (final table in syncTables) table: <String>{},
+    };
+    final chunkAudioPaths = <String>{};
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('pull_http_${response.statusCode}: ${response.body}');
-    }
-
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map) {
-      throw const FormatException('Invalid sync pull response payload.');
-    }
-    final data = decoded['data'];
-    if (data is! Map) {
-      throw const FormatException('Missing data in sync pull response.');
-    }
-
-    var appliedCount = 0;
-    var skippedCount = 0;
     for (final table in syncTables) {
-      final rows = _rowsFromDynamicList(data[table]);
-      for (final row in rows) {
-        final decision = await _mergePolicy.decideMergeForRow(
-          db: db,
-          table: table,
-          serverRow: row,
-        );
-        switch (decision) {
-          case MergeDecision.insertNew:
-          case MergeDecision.updateFromServer:
-            await _payloadMapper.applyServerRow(db: db, table: table, row: row);
-            appliedCount++;
-          case MergeDecision.keepLocal:
-            skippedCount++;
+      final columns = table == 'transcript_chunks'
+          ? const ['id', 'audioPath']
+          : const ['id'];
+      final rows = await txn.query(
+        table,
+        columns: columns,
+        where:
+            'syncStatus = ? AND ((deletedAt IS NOT NULL) OR (lastSyncedAt IS NOT NULL AND julianday(lastSyncedAt) <= julianday(?)))',
+        whereArgs: [SyncStatus.synced.key, cutoff],
+      );
+      final ids = rows
+          .map((row) => _toText(row['id']))
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      if (ids.isEmpty) {
+        continue;
+      }
+      final placeholders = List.filled(ids.length, '?').join(', ');
+      if (table == 'transcript_chunks') {
+        for (final row in rows) {
+          final audioPath = _toText(row['audioPath']);
+          if (audioPath != null && audioPath.isNotEmpty) {
+            chunkAudioPaths.add(audioPath);
+          }
         }
       }
+      await txn.delete(
+        table,
+        where: 'id IN ($placeholders)',
+        whereArgs: ids.toList(),
+      );
+      cleanedIds[table] = ids;
     }
 
-    AppLogger.debug(
-      'Pull merge: applied=$appliedCount, skipped=$skippedCount.',
+    return _CleanupResult(
+      idsByTable: cleanedIds,
+      chunkAudioPaths: chunkAudioPaths,
     );
-    final serverTime =
-        _toText(data['serverTime']) ?? DateTime.now().toIso8601String();
-    await _writeSetting(db, _lastPullAtSettingKey, serverTime);
   }
 
-  Future<String?> _readSetting(Database db, String key) async {
+  Future<void> _cleanupChunkAudioFiles(Set<String> audioPaths) async {
+    if (audioPaths.isEmpty) {
+      return;
+    }
+
+    for (final audioPath in audioPaths) {
+      final file = File(audioPath);
+      try {
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
+      } catch (_) {
+        // Best-effort cleanup; file deletion failures should not fail sync.
+      }
+    }
+  }
+
+  Future<String?> _readSetting(DatabaseExecutor db, String key) async {
     final rows = await db.query(
       'settings',
-      columns: ['value'],
+      columns: const ['value'],
       where: 'key = ?',
       whereArgs: [key],
       limit: 1,
@@ -459,7 +716,11 @@ class SyncQueueService {
     return _toText(rows.first['value']);
   }
 
-  Future<void> _writeSetting(Database db, String key, String value) async {
+  Future<void> _writeSetting(
+    DatabaseExecutor db,
+    String key,
+    String value,
+  ) async {
     await db.insert('settings', {
       'key': key,
       'value': value,
@@ -508,6 +769,13 @@ class SyncQueueService {
     final text = value.toString().trim();
     return text.isEmpty ? null : text;
   }
+
+  void _emitEvent(SyncEvent event) {
+    if (_syncEventsController.isClosed) {
+      return;
+    }
+    _syncEventsController.add(event);
+  }
 }
 
 class _PushBatch {
@@ -520,4 +788,37 @@ class _PushBatch {
   final Map<String, List<Map<String, Object?>>> payload;
   final Map<String, Set<String>> idsByTable;
   final Map<String, Map<String, String>> clientToLocalByTable;
+}
+
+class _SyncWorkStats {
+  int pushed = 0;
+  int pulled = 0;
+  int kept = 0;
+  int cleaned = 0;
+
+  SyncMetrics toMetrics() {
+    return SyncMetrics(
+      pushed: pushed,
+      pulled: pulled,
+      kept: kept,
+      cleaned: cleaned,
+    );
+  }
+}
+
+class _PullPayload {
+  const _PullPayload({required this.rowsByTable, required this.serverTime});
+
+  final Map<String, List<Map<String, Object?>>> rowsByTable;
+  final String serverTime;
+}
+
+class _CleanupResult {
+  const _CleanupResult({
+    required this.idsByTable,
+    required this.chunkAudioPaths,
+  });
+
+  final Map<String, Set<String>> idsByTable;
+  final Set<String> chunkAudioPaths;
 }

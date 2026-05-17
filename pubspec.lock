@@ -1217,6 +1217,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.1"
+  waveform_visualizer:
+    dependency: "direct main"
+    description:
+      name: waveform_visualizer
+      sha256: "9df0147d9ad5184219b658333ba16766a97ba786cc81a9ed53c44bcca57669c5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   web:
     dependency: transitive
     description:

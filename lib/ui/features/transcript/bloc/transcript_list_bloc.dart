@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
@@ -49,6 +50,12 @@ final class TranscriptListSelectionCleared extends TranscriptListEvent {
 
 final class TranscriptListSelectedDeleted extends TranscriptListEvent {
   const TranscriptListSelectedDeleted();
+}
+
+final class TranscriptListRefreshRequested extends TranscriptListEvent {
+  const TranscriptListRefreshRequested({this.completer});
+
+  final Completer<void>? completer;
 }
 
 final class _TranscriptListSnapshotChanged extends TranscriptListEvent {
@@ -105,8 +112,12 @@ class TranscriptListState {
 
 class TranscriptListBloc
     extends Bloc<TranscriptListEvent, TranscriptListState> {
-  TranscriptListBloc({required TranscriptRepository transcriptRepository})
+  TranscriptListBloc({
+    required TranscriptRepository transcriptRepository,
+    required SyncQueueService syncQueueService,
+  })
     : _transcriptRepository = transcriptRepository,
+      _syncQueueService = syncQueueService,
       super(const TranscriptListState()) {
     on<TranscriptListSubscriptionRequested>(_onSubscriptionRequested);
     on<_TranscriptListSnapshotChanged>(_onSnapshotChanged);
@@ -116,9 +127,11 @@ class TranscriptListBloc
     on<TranscriptListSelectionToggled>(_onSelectionToggled);
     on<TranscriptListSelectionCleared>(_onSelectionCleared);
     on<TranscriptListSelectedDeleted>(_onSelectedDeleted);
+    on<TranscriptListRefreshRequested>(_onRefreshRequested);
   }
 
   final TranscriptRepository _transcriptRepository;
+  final SyncQueueService _syncQueueService;
   StreamSubscription<TranscriptSnapshot>? _snapshotSubscription;
 
   Future<void> _onSubscriptionRequested(
@@ -188,6 +201,19 @@ class TranscriptListBloc
       await _transcriptRepository.deleteTranscript(id);
     }
     emit(_stateFor(selectedIds: const <String>{}));
+    _syncQueueService.scheduleSync();
+  }
+
+  Future<void> _onRefreshRequested(
+    TranscriptListRefreshRequested event,
+    Emitter<TranscriptListState> emit,
+  ) async {
+    try {
+      await _syncQueueService.runManualSync(trigger: SyncTrigger.refresh);
+      event.completer?.complete();
+    } catch (error, stackTrace) {
+      event.completer?.completeError(error, stackTrace);
+    }
   }
 
   TranscriptListState _stateFor({

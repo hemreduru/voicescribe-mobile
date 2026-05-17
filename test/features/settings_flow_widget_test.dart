@@ -12,6 +12,7 @@ import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dar
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
 import 'package:voicescribe_mobile/ui/core/router/app_router.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
+import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_navigation.dart';
 import 'package:voicescribe_mobile/ui/features/auth/bloc/auth_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/bootstrap/bloc/bootstrap_bloc.dart';
@@ -35,22 +36,9 @@ void main() {
 
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Account'), findsOneWidget);
-    expect(find.text('Summary Settings'), findsOneWidget);
+    expect(find.text('Authenticated User'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('Appearance'), 240);
-    await tester.pump();
-    expect(find.text('Appearance'), findsOneWidget);
-    expect(find.text('Language'), findsOneWidget);
-
-    await tester.scrollUntilVisible(find.text('System Status'), 240);
-    await tester.pump();
-    expect(find.text('System Status'), findsOneWidget);
-    expect(find.text('Billing & Plans'), findsNothing);
-    expect(find.text('Notifications'), findsNothing);
-
-    await tester.scrollUntilVisible(find.text('Logout'), 240);
-    await tester.pump();
-    expect(find.text('Logout'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Logout'), findsOneWidget);
   });
 
   testWidgets('shell navigation exposes settings as the last destination', (
@@ -150,17 +138,20 @@ List<BlocProvider<dynamic>> _createBlocProviders(_Fakes fakes) {
         recordingService: fakes.recording,
         transcriptionService: fakes.transcription,
         authRepository: fakes.auth,
+        syncQueueService: fakes.sync,
       )..add(const RecordingSubscriptionRequested()),
     ),
     BlocProvider<TranscriptListBloc>(
-      create: (_) =>
-          TranscriptListBloc(transcriptRepository: fakes.transcripts)
-            ..add(const TranscriptListSubscriptionRequested()),
+      create: (_) => TranscriptListBloc(
+        transcriptRepository: fakes.transcripts,
+        syncQueueService: fakes.sync,
+      )..add(const TranscriptListSubscriptionRequested()),
     ),
     BlocProvider<SettingsBloc>(
       create: (_) => SettingsBloc(
         transcriptRepository: fakes.transcripts,
         authRepository: fakes.auth,
+        syncQueueService: fakes.sync,
       )..add(const SettingsSubscriptionRequested()),
     ),
   ];

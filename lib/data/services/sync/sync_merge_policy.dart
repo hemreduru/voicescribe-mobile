@@ -7,7 +7,7 @@ class SyncMergePolicy {
   const SyncMergePolicy();
 
   Future<MergeDecision> decideMergeForRow({
-    required Database db,
+    required DatabaseExecutor db,
     required String table,
     required Map<String, Object?> serverRow,
   }) async {

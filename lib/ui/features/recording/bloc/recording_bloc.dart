@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
@@ -154,10 +155,12 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     required RecordingService recordingService,
     required TranscriptionService transcriptionService,
     required AuthRepository authRepository,
+    required SyncQueueService syncQueueService,
   }) : _transcriptRepository = transcriptRepository,
        _recordingService = recordingService,
        _transcriptionService = transcriptionService,
        _authRepository = authRepository,
+       _syncQueueService = syncQueueService,
        super(const RecordingState()) {
     on<RecordingSubscriptionRequested>(_onSubscriptionRequested);
     on<RecordingStarted>(_onStarted, transformer: droppable());
@@ -183,6 +186,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   final RecordingService _recordingService;
   final TranscriptionService _transcriptionService;
   final AuthRepository _authRepository;
+  final SyncQueueService _syncQueueService;
 
   StreamSubscription<TranscriptSnapshot>? _snapshotSubscription;
   StreamSubscription<RecordedAudioChunk>? _chunkSubscription;
@@ -191,6 +195,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   Future<void> _pendingTranscriptSave = Future<void>.value();
   DateTime? _lastAudioLevelNotifyAt;
   double _lastNotifiedAudioLevel = 0;
+  final Set<String> _pendingTranscriptionChunkIds = <String>{};
 
   static const Duration _audioLevelNotifyInterval = Duration(milliseconds: 120);
 
@@ -308,6 +313,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       ),
     );
     unawaited(_saveTranscript(stopped));
+    _syncQueueService.scheduleSync();
   }
 
   Future<void> _onPauseToggled(
@@ -347,6 +353,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       _replaceTranscript(state.copyWith(currentTranscript: updated), updated),
     );
     unawaited(_saveTranscript(updated));
+    _syncQueueService.scheduleSync();
   }
 
   void _onSnapshotChanged(
@@ -403,6 +410,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       ),
     );
     unawaited(_saveChunkAndTranscript(chunk, updatedTranscript));
+    _pendingTranscriptionChunkIds.add(chunk.id);
     unawaited(_transcribe(chunk));
   }
 
@@ -457,6 +465,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     _RecordingTranscriptionSucceeded event,
     Emitter<RecordingState> emit,
   ) {
+    _pendingTranscriptionChunkIds.remove(event.chunkId);
     final chunk = state.allChunks.where((item) => item.id == event.chunkId);
     if (chunk.isEmpty) {
       return;
@@ -485,6 +494,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     _RecordingTranscriptionFailed event,
     Emitter<RecordingState> emit,
   ) {
+    _pendingTranscriptionChunkIds.remove(event.chunkId);
     final chunk = state.allChunks.where((item) => item.id == event.chunkId);
     if (chunk.isEmpty) {
       return;
@@ -542,6 +552,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     );
     unawaited(_transcriptRepository.saveChunk(updatedChunk));
     unawaited(_saveTranscript(updatedTranscript));
+    if (updatedTranscript.status != TranscriptStatus.transcribing) {
+      _syncQueueService.scheduleSync();
+    }
   }
 
   RecordingState _stateForSnapshot(
@@ -632,8 +645,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       return TranscriptStatus.empty;
     }
     final hasPending = chunks.any(
-      (chunk) =>
-          chunk.text.trim().isEmpty && (chunk.transcriptionError ?? '').isEmpty,
+      (chunk) => _pendingTranscriptionChunkIds.contains(chunk.id),
     );
     if (hasPending) {
       return TranscriptStatus.transcribing;
@@ -641,10 +653,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     if (chunks.any((chunk) => (chunk.transcriptionError ?? '').isNotEmpty)) {
       return TranscriptStatus.transcriptionError;
     }
-    if (chunks.any((chunk) => chunk.text.trim().isNotEmpty)) {
-      return TranscriptStatus.completed;
-    }
-    return TranscriptStatus.empty;
+    return TranscriptStatus.completed;
   }
 
   Future<void> _transcribe(TranscriptChunk chunk) async {

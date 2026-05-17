@@ -72,6 +72,7 @@ void main() {
         authRepository: FakeAuthRepository(
           session: FakeAuthRepository.defaultSession,
         ),
+        syncQueueService: FakeSyncQueueService(),
       ),
       act: (bloc) async {
         bloc.add(const RecordingSubscriptionRequested());
@@ -90,6 +91,55 @@ void main() {
       verify: (bloc) {
         expect(bloc.state.currentChunks, hasLength(1));
         expect(bloc.state.currentChunks.single.text, 'Merhaba dunya');
+        expect(
+          bloc.state.currentTranscript?.status,
+          TranscriptStatus.completed,
+        );
+      },
+    );
+
+    blocTest<RecordingBloc, RecordingState>(
+      'completed status is preserved when dedupe leaves a chunk text empty',
+      setUp: () {
+        audio = FakeRecordingService();
+      },
+      build: () => RecordingBloc(
+        transcriptRepository: FakeTranscriptRepository(),
+        recordingService: audio,
+        transcriptionService: FakeTranscriptionService(
+          responses: const {
+            '/tmp/chunk-1.wav': 'Ayni ifade',
+            '/tmp/chunk-2.wav': 'Ayni ifade',
+          },
+        ),
+        authRepository: FakeAuthRepository(
+          session: FakeAuthRepository.defaultSession,
+        ),
+        syncQueueService: FakeSyncQueueService(),
+      ),
+      act: (bloc) async {
+        bloc.add(const RecordingSubscriptionRequested());
+        bloc.add(const RecordingStarted('Demo'));
+        await Future<void>.delayed(Duration.zero);
+        audio.emitChunk(
+          const RecordedAudioChunk(
+            path: '/tmp/chunk-1.wav',
+            durationSeconds: 2,
+            index: 1,
+          ),
+        );
+        audio.emitChunk(
+          const RecordedAudioChunk(
+            path: '/tmp/chunk-2.wav',
+            durationSeconds: 2,
+            index: 2,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 40));
+      },
+      verify: (bloc) {
+        expect(bloc.state.currentChunks, hasLength(2));
+        expect(bloc.state.currentChunks[1].text, isEmpty);
         expect(
           bloc.state.currentTranscript?.status,
           TranscriptStatus.completed,
@@ -136,6 +186,7 @@ void main() {
           ),
         ),
         summaryService: const LocalSummaryService(),
+        syncQueueService: FakeSyncQueueService(),
       );
     },
     act: (bloc) async {

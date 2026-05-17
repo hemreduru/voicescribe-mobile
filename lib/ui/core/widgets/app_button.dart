@@ -14,6 +14,7 @@ class AppButton extends StatelessWidget {
     this.isLoading = false,
     this.expanded = false,
     this.semanticLabel,
+    this.foregroundColor,
   });
 
   final String label;
@@ -23,6 +24,7 @@ class AppButton extends StatelessWidget {
   final bool isLoading;
   final bool expanded;
   final String? semanticLabel;
+  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -49,13 +51,23 @@ class AppButton extends StatelessWidget {
         : icon == null
         ? null
         : Icon(icon);
+    final color = foregroundColor;
 
     return switch (variant) {
       AppButtonVariant.primary =>
         leading == null
-            ? FilledButton(onPressed: effectiveOnPressed, child: Text(label))
+            ? FilledButton(
+                onPressed: effectiveOnPressed,
+                style: color == null
+                    ? null
+                    : FilledButton.styleFrom(foregroundColor: color),
+                child: Text(label),
+              )
             : FilledButton.icon(
                 onPressed: effectiveOnPressed,
+                style: color == null
+                    ? null
+                    : FilledButton.styleFrom(foregroundColor: color),
                 icon: leading,
                 label: Text(label),
               ),
@@ -63,26 +75,56 @@ class AppButton extends StatelessWidget {
         leading == null
             ? FilledButton.tonal(
                 onPressed: effectiveOnPressed,
+                style: color == null
+                    ? null
+                    : FilledButton.styleFrom(foregroundColor: color),
                 child: Text(label),
               )
             : FilledButton.tonalIcon(
                 onPressed: effectiveOnPressed,
+                style: color == null
+                    ? null
+                    : FilledButton.styleFrom(foregroundColor: color),
                 icon: leading,
                 label: Text(label),
               ),
       AppButtonVariant.outline =>
         leading == null
-            ? OutlinedButton(onPressed: effectiveOnPressed, child: Text(label))
+            ? OutlinedButton(
+                onPressed: effectiveOnPressed,
+                style: color == null
+                    ? null
+                    : OutlinedButton.styleFrom(
+                        foregroundColor: color,
+                        side: BorderSide(color: color),
+                      ),
+                child: Text(label),
+              )
             : OutlinedButton.icon(
                 onPressed: effectiveOnPressed,
+                style: color == null
+                    ? null
+                    : OutlinedButton.styleFrom(
+                        foregroundColor: color,
+                        side: BorderSide(color: color),
+                      ),
                 icon: leading,
                 label: Text(label),
               ),
       AppButtonVariant.text =>
         leading == null
-            ? TextButton(onPressed: effectiveOnPressed, child: Text(label))
+            ? TextButton(
+                onPressed: effectiveOnPressed,
+                style: color == null
+                    ? null
+                    : TextButton.styleFrom(foregroundColor: color),
+                child: Text(label),
+              )
             : TextButton.icon(
                 onPressed: effectiveOnPressed,
+                style: color == null
+                    ? null
+                    : TextButton.styleFrom(foregroundColor: color),
                 icon: leading,
                 label: Text(label),
               ),

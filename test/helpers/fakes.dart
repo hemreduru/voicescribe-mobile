@@ -218,6 +218,18 @@ class FakeTranscriptionService implements TranscriptionService {
 
 class FakeSyncQueueService extends SyncQueueService {
   SyncCompletionCallback? onComplete;
+  final _events = StreamController<SyncEvent>.broadcast();
+  bool failManualSync = false;
+  int triggerSyncCallCount = 0;
+  int manualSyncCallCount = 0;
+  int scheduledSyncCallCount = 0;
+  SyncTrigger? lastTrigger;
+  SyncTrigger? lastManualTrigger;
+  SyncTrigger? lastScheduledTrigger;
+  DateTime? lastSuccessfulSyncAt;
+
+  @override
+  Stream<SyncEvent> get syncEvents => _events.stream;
 
   @override
   Future<void> start({
@@ -228,13 +240,65 @@ class FakeSyncQueueService extends SyncQueueService {
   }
 
   @override
-  Future<void> triggerSyncIfOnline() async {
+  Future<void> triggerSyncIfOnline({
+    SyncTrigger trigger = SyncTrigger.auto,
+    bool force = false,
+  }) async {
+    triggerSyncCallCount += 1;
+    lastTrigger = trigger;
     await onComplete?.call();
   }
 
   @override
-  void scheduleSync({Duration delay = const Duration(seconds: 2)}) {}
+  Future<void> runManualSync({SyncTrigger trigger = SyncTrigger.manual}) async {
+    manualSyncCallCount += 1;
+    lastManualTrigger = trigger;
+    _events.add(
+      SyncEvent(
+        type: SyncEventType.started,
+        trigger: trigger,
+        occurredAt: DateTime.now(),
+        metrics: const SyncMetrics.empty(),
+      ),
+    );
+    if (failManualSync) {
+      _events.add(
+        SyncEvent(
+          type: SyncEventType.failure,
+          trigger: trigger,
+          occurredAt: DateTime.now(),
+          metrics: const SyncMetrics.empty(),
+          error: 'manual_sync_failed',
+        ),
+      );
+      throw StateError('manual_sync_failed');
+    }
+    lastSuccessfulSyncAt = DateTime.now();
+    _events.add(
+      SyncEvent(
+        type: SyncEventType.success,
+        trigger: trigger,
+        occurredAt: lastSuccessfulSyncAt!,
+        metrics: const SyncMetrics.empty(),
+      ),
+    );
+    await onComplete?.call();
+  }
 
   @override
-  Future<void> dispose() async {}
+  void scheduleSync({
+    Duration delay = const Duration(seconds: 2),
+    SyncTrigger trigger = SyncTrigger.auto,
+  }) {
+    scheduledSyncCallCount += 1;
+    lastScheduledTrigger = trigger;
+  }
+
+  @override
+  Future<DateTime?> readLastSuccessfulSyncAt() async => lastSuccessfulSyncAt;
+
+  @override
+  Future<void> dispose() async {
+    await _events.close();
+  }
 }
