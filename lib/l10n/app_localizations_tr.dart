@@ -467,4 +467,7 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get transcriptionFailedRetry =>
       'Transkripsiyon başarısız oldu. Tekrar denemek için dokunun.';
+
+  @override
+  String get retrying => 'Tekrar deneniyor...';
 }

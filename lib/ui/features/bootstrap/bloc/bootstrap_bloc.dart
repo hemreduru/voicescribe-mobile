@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bloc/bloc.dart';
+// ignore_for_file: avoid_slow_async_io
+import 'package:path_provider/path_provider.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -173,6 +176,7 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
       ).execute(snapshot);
       await _transcriptionService.ensureModel();
       await _transcriptRepository.refresh();
+      await _cleanupOrphanChunkFiles(snapshot);
       emit(
         state.copyWith(
           modelState: ModelBootstrapState.ready,
@@ -191,6 +195,32 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
           errorMessage: error.toString(),
         ),
       );
+    }
+  }
+
+  Future<void> _cleanupOrphanChunkFiles(TranscriptSnapshot snapshot) async {
+    final knownPaths = <String>{
+      for (final chunk in snapshot.chunks)
+        if (chunk.audioPath != null && chunk.audioPath!.isNotEmpty)
+          chunk.audioPath!,
+    };
+    try {
+      final docsDir = await getApplicationDocumentsDirectory();
+      final chunksDir = Directory('${docsDir.path}/voicescribe_chunks');
+      if (!await chunksDir.exists()) {
+        return;
+      }
+      await for (final entity in chunksDir.list()) {
+        if (entity is File && !knownPaths.contains(entity.path)) {
+          try {
+            await entity.delete();
+          } catch (_) {
+            // Best-effort cleanup.
+          }
+        }
+      }
+    } catch (_) {
+      // Best-effort cleanup; do not fail bootstrap.
     }
   }
 

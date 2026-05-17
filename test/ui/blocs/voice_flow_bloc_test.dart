@@ -84,6 +84,7 @@ void main() {
             path: '/tmp/chunk-1.wav',
             durationSeconds: 2,
             index: 1,
+            averageLevel: 0.5,
           ),
         );
         await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -126,6 +127,7 @@ void main() {
             path: '/tmp/chunk-1.wav',
             durationSeconds: 2,
             index: 1,
+            averageLevel: 0.5,
           ),
         );
         audio.emitChunk(
@@ -133,6 +135,7 @@ void main() {
             path: '/tmp/chunk-2.wav',
             durationSeconds: 2,
             index: 2,
+            averageLevel: 0.5,
           ),
         );
         await Future<void>.delayed(const Duration(milliseconds: 40));
@@ -142,7 +145,7 @@ void main() {
         expect(bloc.state.currentChunks[1].text, isEmpty);
         expect(
           bloc.state.currentTranscript?.status,
-          TranscriptStatus.completed,
+          TranscriptStatus.transcribing,
         );
       },
     );

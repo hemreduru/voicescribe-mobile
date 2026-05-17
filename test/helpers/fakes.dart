@@ -186,7 +186,7 @@ class FakeTranscriptionService implements TranscriptionService {
 
   final Map<String, Object> responses;
   final _progress = StreamController<ModelDownloadProgress>.broadcast();
-  WhisperModel _currentModel;
+  final WhisperModel _currentModel;
 
   @override
   Stream<ModelDownloadProgress> get downloadProgress => _progress.stream;
@@ -199,7 +199,7 @@ class FakeTranscriptionService implements TranscriptionService {
 
   @override
   Future<void> selectModel(WhisperModel model) async {
-    _currentModel = model;
+    // Locked to base; parameter ignored.
   }
 
   @override
@@ -245,7 +245,10 @@ class FakeTranscriptionService implements TranscriptionService {
   }
 
   @override
-  Future<TranscriptionResult> transcribeChunk(String audioPath) async {
+  Future<TranscriptionResult> transcribeChunk(
+    String audioPath, {
+    double? audioLevel,
+  }) async {
     final response = responses[audioPath];
     if (response is Exception) {
       throw response;

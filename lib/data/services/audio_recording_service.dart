@@ -7,17 +7,20 @@ import 'package:record/record.dart';
 
 import 'package:voicescribe_mobile/data/services/pcm_chunker.dart';
 import 'package:voicescribe_mobile/data/services/wav_writer.dart';
+import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 
 class RecordedAudioChunk {
   const RecordedAudioChunk({
     required this.path,
     required this.durationSeconds,
     required this.index,
+    required this.averageLevel,
   });
 
   final String path;
   final double durationSeconds;
   final int index;
+  final double averageLevel;
 }
 
 abstract class RecordingService {
@@ -50,6 +53,7 @@ class AudioRecordingService implements RecordingService {
 
   StreamSubscription<List<int>>? _recordingSubscription;
   bool _isRecording = false;
+  Future<void> _emitTask = Future.value();
 
   @override
   Stream<RecordedAudioChunk> get chunks => _chunksController.stream;
@@ -76,12 +80,24 @@ class AudioRecordingService implements RecordingService {
       ),
     );
     _isRecording = true;
+    _emitTask = Future.value();
     _recordingSubscription = stream.listen((data) {
       final pcmBytes = Uint8List.fromList(data);
       _levelsController.add(_chunker.levelFor(pcmBytes));
       final chunks = _chunker.add(pcmBytes);
       for (final chunk in chunks) {
-        unawaited(_emitChunk(chunk));
+        // Isolate each chunk's failure so the emit pipeline never gets
+        // poisoned — otherwise a single IO error would silently stop all
+        // future chunks from reaching the transcription queue.
+        _emitTask = _emitTask
+            .then((_) => _emitChunk(chunk))
+            .catchError((Object error, StackTrace stack) {
+              AppLogger.error(
+                '[Recording] Emit chunk failed (index=${chunk.index})',
+                error,
+                stack,
+              );
+            });
       }
     }, onError: _levelsController.addError);
   }
@@ -112,6 +128,7 @@ class AudioRecordingService implements RecordingService {
     _recordingSubscription = null;
     _isRecording = false;
 
+    await _emitTask;
     for (final chunk in _chunker.finish()) {
       await _emitChunk(chunk);
     }
@@ -127,7 +144,7 @@ class AudioRecordingService implements RecordingService {
   }
 
   Future<void> _emitChunk(PcmChunk chunk) async {
-    final directory = await getTemporaryDirectory();
+    final directory = await getApplicationDocumentsDirectory();
     final file = File(
       '${directory.path}/voicescribe_chunks/chunk_${DateTime.now().microsecondsSinceEpoch}_${chunk.index}.wav',
     );
@@ -137,6 +154,7 @@ class AudioRecordingService implements RecordingService {
         path: file.path,
         durationSeconds: chunk.durationSeconds,
         index: chunk.index,
+        averageLevel: chunk.averageLevel,
       ),
     );
   }

@@ -17,7 +17,8 @@ class RepairStaleRecordingsUseCase {
     var changed = false;
     final repairedTranscripts = <Transcript>[];
     for (final transcript in snapshot.transcripts) {
-      if (transcript.status != TranscriptStatus.recording) {
+      if (transcript.status != TranscriptStatus.recording &&
+          transcript.status != TranscriptStatus.transcribing) {
         repairedTranscripts.add(transcript);
         continue;
       }

@@ -464,4 +464,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transcriptionFailedRetry => 'Transcription failed. Tap to retry.';
+
+  @override
+  String get retrying => 'Retrying...';
 }

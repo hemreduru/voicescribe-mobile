@@ -114,6 +114,15 @@ void main() {
               syncQueueService: fakes.sync,
             )..add(const TranscriptListSubscriptionRequested()),
           ),
+          BlocProvider<RecordingBloc>(
+            create: (_) => RecordingBloc(
+              transcriptRepository: fakes.transcripts,
+              recordingService: fakes.recording,
+              transcriptionService: fakes.transcription,
+              authRepository: fakes.auth,
+              syncQueueService: fakes.sync,
+            )..add(const RecordingSubscriptionRequested()),
+          ),
         ],
         child: const TranscriptScreen(),
       ),

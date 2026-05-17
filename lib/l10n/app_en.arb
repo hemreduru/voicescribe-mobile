@@ -199,5 +199,6 @@
   "modelWarningHeavy": "Heavier than recommended",
   "modelWarningSlow": "May be very slow",
   "retryTranscription": "Retry",
-  "transcriptionFailedRetry": "Transcription failed. Tap to retry."
+  "transcriptionFailedRetry": "Transcription failed. Tap to retry.",
+  "retrying": "Retrying..."
 }

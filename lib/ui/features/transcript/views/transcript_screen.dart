@@ -365,9 +365,10 @@ class _StatusHelpRow extends StatelessWidget {
 }
 
 class _TranscriptionErrorBanner extends StatelessWidget {
-  const _TranscriptionErrorBanner({this.onRetry});
+  const _TranscriptionErrorBanner({this.onRetry, this.isRetrying = false});
 
   final VoidCallback? onRetry;
+  final bool isRetrying;
 
   @override
   Widget build(BuildContext context) {
@@ -384,10 +385,7 @@ class _TranscriptionErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.error_outline,
-            color: theme.colorScheme.onErrorContainer,
-          ),
+          Icon(Icons.error_outline, color: theme.colorScheme.onErrorContainer),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
@@ -398,11 +396,13 @@ class _TranscriptionErrorBanner extends StatelessWidget {
               ),
             ),
           ),
-          if (onRetry != null)
+          if (onRetry != null || isRetrying)
             AppButton(
-              label: context.l10n.retryTranscription,
-              icon: Icons.refresh,
-              onPressed: onRetry,
+              label: isRetrying
+                  ? context.l10n.retrying
+                  : context.l10n.retryTranscription,
+              icon: isRetrying ? Icons.hourglass_empty : Icons.refresh,
+              onPressed: isRetrying ? null : onRetry,
               variant: AppButtonVariant.outline,
               foregroundColor: theme.colorScheme.onErrorContainer,
             ),
@@ -447,7 +447,9 @@ class _TranscriptionProgressBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(2),
                       child: LinearProgressIndicator(
                         value: percent,
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest
+                        backgroundColor: theme
+                            .colorScheme
+                            .surfaceContainerHighest
                             .withValues(alpha: 0.3),
                         valueColor: AlwaysStoppedAnimation(
                           statusColor(context, TranscriptStatus.transcribing),
@@ -485,131 +487,146 @@ class _TranscriptDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<TranscriptDetailBloc, TranscriptDetailState>(
-      listenWhen: (previous, current) =>
-          previous.errorMessage != current.errorMessage &&
-          current.errorMessage != null,
-      listener: (context, state) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
-      },
-      builder: (context, state) {
-        final l10n = context.l10n;
-        final transcript = state.transcript;
-        if (transcript == null) {
-          return AppModalBody(child: Text(l10n.noTranscriptAvailable));
-        }
+    return BlocBuilder<RecordingBloc, RecordingState>(
+      builder: (context, recordingState) {
+        return BlocConsumer<TranscriptDetailBloc, TranscriptDetailState>(
+          listenWhen: (previous, current) =>
+              previous.errorMessage != current.errorMessage &&
+              current.errorMessage != null,
+          listener: (context, state) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+          },
+          builder: (context, state) {
+            final l10n = context.l10n;
+            final transcript = state.transcript;
+            if (transcript == null) {
+              return AppModalBody(child: Text(l10n.noTranscriptAvailable));
+            }
 
-        final recordedAt = transcript.recordedAt ?? transcript.createdAt;
-        final isProcessing =
-            displayStatusFor(transcript.status) ==
-            TranscriptDisplayStatus.processing;
-        final isError =
-            transcript.status == TranscriptStatus.transcriptionError;
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.84,
-          minChildSize: 0.45,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return AppModalListView(
-              controller: scrollController,
-              children: [
-                AppEditableTitle(
-                  title: transcript.title,
-                  placeholder: l10n.unnamed,
-                  editTooltip: l10n.edit,
-                  onSubmitted: (value) => context
-                      .read<TranscriptDetailBloc>()
-                      .add(TranscriptDetailTitleSubmitted(value)),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
+            final recordedAt = transcript.recordedAt ?? transcript.createdAt;
+            final isProcessing =
+                displayStatusFor(transcript.status) ==
+                TranscriptDisplayStatus.processing;
+            final isError =
+                transcript.status == TranscriptStatus.transcriptionError;
+            final hasRetryingChunks = state.chunks.any(
+              (c) => recordingState.retryingChunkIds.contains(c.id),
+            );
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.84,
+              minChildSize: 0.45,
+              maxChildSize: 0.95,
+              builder: (context, scrollController) {
+                return AppModalListView(
+                  controller: scrollController,
                   children: [
-                    TranscriptStatusPill(
-                      status: transcript.status,
-                      compact: true,
+                    AppEditableTitle(
+                      title: transcript.title,
+                      placeholder: l10n.unnamed,
+                      editTooltip: l10n.edit,
+                      onSubmitted: (value) => context
+                          .read<TranscriptDetailBloc>()
+                          .add(TranscriptDetailTitleSubmitted(value)),
                     ),
-                    MetricPill(
-                      icon: Icons.calendar_today_outlined,
-                      value: DateFormat('MMM d, HH:mm').format(recordedAt),
-                      label: '',
+                    const SizedBox(height: AppSpacing.md),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: [
+                        TranscriptStatusPill(
+                          status: transcript.status,
+                          compact: true,
+                        ),
+                        MetricPill(
+                          icon: Icons.calendar_today_outlined,
+                          value: DateFormat('MMM d, HH:mm').format(recordedAt),
+                          label: '',
+                        ),
+                        MetricPill(
+                          icon: Icons.timer_outlined,
+                          value: formatCompactDuration(
+                            transcript.durationSeconds,
+                          ),
+                          label: l10n.duration,
+                        ),
+                        MetricPill(
+                          icon: Icons.graphic_eq,
+                          value: '${state.chunks.length}',
+                          label: l10n.chunks,
+                        ),
+                      ],
                     ),
-                    MetricPill(
-                      icon: Icons.timer_outlined,
-                      value: formatCompactDuration(transcript.durationSeconds),
-                      label: l10n.duration,
-                    ),
-                    MetricPill(
-                      icon: Icons.graphic_eq,
-                      value: '${state.chunks.length}',
-                      label: l10n.chunks,
-                    ),
-                  ],
-                ),
-                if (isProcessing) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  _TranscriptionProgressBar(
-                    completed: state.completedChunkCount,
-                    total: state.totalChunkCount,
-                    isVisible: isProcessing,
-                  ),
-                ],
-                if (isError) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  _TranscriptionErrorBanner(onRetry: () {
-                    final chunkIds = state.chunks
-                        .where((c) => c.transcriptionError != null)
-                        .map((c) => c.id)
-                        .toList();
-                    context.read<RecordingBloc>().add(
-                      RecordingChunkRetryRequested(
-                        transcriptId: transcript.id,
-                        chunkIds: chunkIds,
+                    if (isProcessing) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      _TranscriptionProgressBar(
+                        completed: state.completedChunkCount,
+                        total: state.totalChunkCount,
+                        isVisible: isProcessing,
                       ),
-                    );
-                  }),
-                ],
-                const SizedBox(height: AppSpacing.lg),
-                DefaultTabController(
-                  length: 2,
-                  child: TabBar(
-                    onTap: (value) => context.read<TranscriptDetailBloc>().add(
-                      TranscriptDetailTabChanged(value),
-                    ),
-                    tabs: [
-                      Tab(text: l10n.transcript),
-                      Tab(text: l10n.summary),
                     ],
-                  ),
-                ),
-                const PremiumDivider(),
-                if (state.tabIndex == 0)
-                  _TranscriptTextTab(
-                    mergedText: state.mergedText,
-                    canRetry: isError,
-                    onRetry: isError
-                        ? () {
-                            final chunkIds = state.chunks
-                                .where((c) => c.transcriptionError != null)
-                                .map((c) => c.id)
-                                .toList();
-                            context.read<RecordingBloc>().add(
-                              RecordingChunkRetryRequested(
-                                transcriptId: transcript.id,
-                                chunkIds: chunkIds,
-                              ),
-                            );
-                            Navigator.of(context).pop();
-                          }
-                        : null,
-                  )
-                else
-                  _SummaryTab(state: state),
-              ],
+                    if (isError) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      _TranscriptionErrorBanner(
+                        isRetrying: hasRetryingChunks,
+                        onRetry: hasRetryingChunks
+                            ? null
+                            : () {
+                                final chunkIds = state.chunks
+                                    .where((c) => c.transcriptionError != null)
+                                    .map((c) => c.id)
+                                    .toList();
+                                context.read<RecordingBloc>().add(
+                                  RecordingChunkRetryRequested(
+                                    transcriptId: transcript.id,
+                                    chunkIds: chunkIds,
+                                  ),
+                                );
+                              },
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.lg),
+                    DefaultTabController(
+                      length: 2,
+                      child: TabBar(
+                        onTap: (value) => context
+                            .read<TranscriptDetailBloc>()
+                            .add(TranscriptDetailTabChanged(value)),
+                        tabs: [
+                          Tab(text: l10n.transcript),
+                          Tab(text: l10n.summary),
+                        ],
+                      ),
+                    ),
+                    const PremiumDivider(),
+                    if (state.tabIndex == 0)
+                      _TranscriptTextTab(
+                        mergedText: state.mergedText,
+                        canRetry: isError,
+                        isRetrying: hasRetryingChunks,
+                        onRetry: isError && !hasRetryingChunks
+                            ? () {
+                                final chunkIds = state.chunks
+                                    .where((c) => c.transcriptionError != null)
+                                    .map((c) => c.id)
+                                    .toList();
+                                context.read<RecordingBloc>().add(
+                                  RecordingChunkRetryRequested(
+                                    transcriptId: transcript.id,
+                                    chunkIds: chunkIds,
+                                  ),
+                                );
+                                Navigator.of(context).pop();
+                              }
+                            : null,
+                      )
+                    else
+                      _SummaryTab(state: state),
+                  ],
+                );
+              },
             );
           },
         );
@@ -623,11 +640,13 @@ class _TranscriptTextTab extends StatelessWidget {
     required this.mergedText,
     required this.canRetry,
     required this.onRetry,
+    this.isRetrying = false,
   });
 
   final String mergedText;
   final bool canRetry;
   final VoidCallback? onRetry;
+  final bool isRetrying;
 
   @override
   Widget build(BuildContext context) {
@@ -635,7 +654,7 @@ class _TranscriptTextTab extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (mergedText.isEmpty && canRetry) {
-      return _TranscriptionRetryCta(onRetry: onRetry);
+      return _TranscriptionRetryCta(onRetry: onRetry, isRetrying: isRetrying);
     }
 
     return Column(
@@ -654,9 +673,10 @@ class _TranscriptTextTab extends StatelessWidget {
 }
 
 class _TranscriptionRetryCta extends StatelessWidget {
-  const _TranscriptionRetryCta({this.onRetry});
+  const _TranscriptionRetryCta({this.onRetry, this.isRetrying = false});
 
   final VoidCallback? onRetry;
+  final bool isRetrying;
 
   @override
   Widget build(BuildContext context) {
@@ -668,13 +688,13 @@ class _TranscriptionRetryCta extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.error_outline,
+            isRetrying ? Icons.hourglass_empty : Icons.error_outline,
             size: 48,
             color: theme.colorScheme.error,
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            l10n.transcriptionFailedRetry,
+            isRetrying ? l10n.retrying : l10n.transcriptionFailedRetry,
             textAlign: TextAlign.center,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
@@ -683,9 +703,9 @@ class _TranscriptionRetryCta extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           AppButton(
-            label: l10n.retryTranscription,
-            icon: Icons.refresh,
-            onPressed: onRetry,
+            label: isRetrying ? l10n.retrying : l10n.retryTranscription,
+            icon: isRetrying ? Icons.hourglass_empty : Icons.refresh,
+            onPressed: isRetrying ? null : onRetry,
             expanded: true,
           ),
         ],

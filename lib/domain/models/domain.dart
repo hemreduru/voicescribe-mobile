@@ -88,6 +88,7 @@ abstract class TranscriptChunk with _$TranscriptChunk {
     required double endTime,
     required double? confidence,
     required String? transcriptionError,
+    double? audioLevel,
     String? remoteId,
     @Default(SyncStatus.pending) SyncStatus syncStatus,
     DateTime? lastSyncedAt,

@@ -114,7 +114,10 @@ abstract class TranscriptionService {
   Future<List<TranscriptionModelCatalogEntry>> listModelCatalog();
 
   Future<WhisperBootstrapResult> ensureModel();
-  Future<TranscriptionResult> transcribeChunk(String audioPath);
+  Future<TranscriptionResult> transcribeChunk(
+    String audioPath, {
+    double? audioLevel,
+  });
   Future<void> dispose();
 }
 
@@ -122,17 +125,18 @@ class _TranscriptionRequest {
   const _TranscriptionRequest({
     required this.audioPath,
     required this.completer,
+    this.audioLevel,
   });
 
   final String audioPath;
   final Completer<TranscriptionResult> completer;
+  final double? audioLevel;
 }
 
 class WhisperTranscriptionService implements TranscriptionService {
-  WhisperTranscriptionService({
-    WhisperController? controller,
-  }) : _controller = controller ?? WhisperController(),
-       _model = WhisperModel.base;
+  WhisperTranscriptionService({WhisperController? controller})
+    : _controller = controller ?? WhisperController(),
+      _model = WhisperModel.base;
 
   final WhisperController _controller;
   final WhisperModel _model;
@@ -144,6 +148,7 @@ class WhisperTranscriptionService implements TranscriptionService {
   // Sequential transcription queue
   final List<_TranscriptionRequest> _pendingRequests = [];
   bool _isProcessingQueue = false;
+  int _consecutiveFailures = 0;
 
   @override
   Stream<ModelDownloadProgress> get downloadProgress =>
@@ -158,6 +163,7 @@ class WhisperTranscriptionService implements TranscriptionService {
   @override
   Future<void> selectModel(WhisperModel model) async {
     // Model selection is locked to base for stability on mobile devices.
+    // Parameter is ignored; only base model is used.
     await _controller.initModel(_model);
   }
 
@@ -228,10 +234,17 @@ class WhisperTranscriptionService implements TranscriptionService {
   }
 
   @override
-  Future<TranscriptionResult> transcribeChunk(String audioPath) async {
+  Future<TranscriptionResult> transcribeChunk(
+    String audioPath, {
+    double? audioLevel,
+  }) async {
     final completer = Completer<TranscriptionResult>();
     _pendingRequests.add(
-      _TranscriptionRequest(audioPath: audioPath, completer: completer),
+      _TranscriptionRequest(
+        audioPath: audioPath,
+        completer: completer,
+        audioLevel: audioLevel,
+      ),
     );
     unawaited(_processQueue());
     return completer.future;
@@ -243,63 +256,111 @@ class WhisperTranscriptionService implements TranscriptionService {
     }
     _isProcessingQueue = true;
 
-    while (_pendingRequests.isNotEmpty) {
-      final request = _pendingRequests.removeAt(0);
-      try {
-        final result = await _executeWithRetry(request.audioPath);
-        if (!request.completer.isCompleted) {
-          request.completer.complete(result);
-        }
-      } catch (error, stackTrace) {
-        if (!request.completer.isCompleted) {
-          request.completer.completeError(error, stackTrace);
+    try {
+      while (_pendingRequests.isNotEmpty) {
+        final request = _pendingRequests.removeAt(0);
+        try {
+          final result = await _executeWithRetry(
+            request.audioPath,
+            audioLevel: request.audioLevel,
+          );
+          _consecutiveFailures = 0;
+          if (!request.completer.isCompleted) {
+            request.completer.complete(result);
+          }
+        } catch (error, stackTrace) {
+          _consecutiveFailures++;
+          // Only re-init after several consecutive failures — re-initing on
+          // every error masks transient issues and can wedge the queue if
+          // initModel itself hangs.
+          if (_consecutiveFailures >= 3) {
+            AppLogger.info(
+              '[Transcription] $_consecutiveFailures consecutive failure(s), '
+              're-initializing model',
+            );
+            try {
+              await _controller
+                  .initModel(_model)
+                  .timeout(const Duration(seconds: 15));
+              _consecutiveFailures = 0;
+            } catch (initError) {
+              AppLogger.warning(
+                '[Transcription] Model re-initialization failed: $initError',
+              );
+            }
+          }
+          if (!request.completer.isCompleted) {
+            request.completer.completeError(error, stackTrace);
+          }
         }
       }
+    } finally {
+      _isProcessingQueue = false;
+      // If new requests landed while we were exiting, kick the pump again.
+      if (_pendingRequests.isNotEmpty) {
+        unawaited(_processQueue());
+      }
     }
-
-    _isProcessingQueue = false;
   }
 
-  Future<TranscriptionResult> _executeWithRetry(String audioPath) async {
+  static const double _silenceThreshold = 0.035;
+
+  Future<TranscriptionResult> _executeWithRetry(
+    String audioPath, {
+    double? audioLevel,
+  }) async {
     final selectedModel = _model;
     final threads = await _resolveThreads();
     final chunkId = _chunkIdFromPath(audioPath);
+    const maxAttempts = 2;
 
     AppLogger.info(
       '[Transcription] Starting chunk: $chunkId | '
-      'model: ${selectedModel.modelName} | threads: $threads',
+      'model: ${selectedModel.modelName} | threads: $threads | '
+      'audioLevel: $audioLevel',
     );
 
-    try {
-      final result = await _executeSingle(
-        audioPath: audioPath,
-        model: selectedModel,
-        threads: threads,
-        attempt: 1,
-      );
-      AppLogger.info('[Transcription] Completed chunk: $chunkId');
-      return result;
-    } catch (error) {
-      AppLogger.warning(
-        '[Transcription] First attempt failed for chunk: $chunkId | error: $error. Retrying...',
-      );
+    Exception? lastError;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         final result = await _executeSingle(
           audioPath: audioPath,
           model: selectedModel,
           threads: threads,
-          attempt: 2,
+          attempt: attempt,
         );
-        AppLogger.info('[Transcription] Retry succeeded for chunk: $chunkId');
+        if (result.text.trim().isEmpty) {
+          if (audioLevel == null || audioLevel < _silenceThreshold) {
+            AppLogger.info(
+              '[Transcription] Silent chunk detected for chunk: $chunkId'
+              '${audioLevel == null ? ' (audioLevel unknown)' : ''}',
+            );
+            return result;
+          }
+          throw const TranscriptionEmptyException(
+            'Transcription returned empty text for a non-silent chunk.',
+          );
+        }
+        AppLogger.info('[Transcription] Completed chunk: $chunkId');
         return result;
-      } catch (retryError) {
-        AppLogger.error(
-          '[Transcription] Retry also failed for chunk: $chunkId',
-          retryError,
-        );
-        rethrow;
+      } catch (error) {
+        lastError = error as Exception;
+        if (attempt < maxAttempts) {
+          AppLogger.warning(
+            '[Transcription] Attempt $attempt failed for chunk: $chunkId | '
+            'error: $error. Retrying (${attempt + 1}/$maxAttempts)...',
+          );
+        } else {
+          AppLogger.error(
+            '[Transcription] All $maxAttempts attempts failed for chunk: $chunkId',
+            error,
+          );
+        }
       }
     }
+
+    throw lastError!;
   }
 
   Future<TranscriptionResult> _executeSingle({
@@ -308,7 +369,7 @@ class WhisperTranscriptionService implements TranscriptionService {
     required int threads,
     required int attempt,
   }) async {
-    const timeoutDuration = Duration(seconds: 45);
+    final timeoutDuration = await _resolveTimeout();
 
     final future = _controller.transcribe(
       model: model,
@@ -347,13 +408,23 @@ class WhisperTranscriptionService implements TranscriptionService {
     );
   }
 
+  Future<Duration> _resolveTimeout() async {
+    final profile = await resolveDeviceProfile();
+    return switch (profile.tier) {
+      DevicePerformanceTier.entry => const Duration(seconds: 45),
+      DevicePerformanceTier.balanced => const Duration(seconds: 30),
+      DevicePerformanceTier.performance => const Duration(seconds: 20),
+      DevicePerformanceTier.premium => const Duration(seconds: 20),
+    };
+  }
+
   Future<int> _resolveThreads() async {
     final profile = await resolveDeviceProfile();
     return switch (profile.tier) {
       DevicePerformanceTier.entry => 1,
       DevicePerformanceTier.balanced => 2,
-      DevicePerformanceTier.performance => 3,
-      DevicePerformanceTier.premium => 4,
+      DevicePerformanceTier.performance => 2,
+      DevicePerformanceTier.premium => 2,
     };
   }
 
@@ -643,6 +714,15 @@ const List<WhisperModel> _supportedCatalogModels = <WhisperModel>[
   WhisperModel.large,
   WhisperModel.largeV3Turbo,
 ];
+
+class TranscriptionEmptyException implements Exception {
+  const TranscriptionEmptyException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'TranscriptionEmptyException: $message';
+}
 
 const Map<WhisperModel, _ModelMetadata> _metadataByModel = {
   WhisperModel.tiny: _ModelMetadata(

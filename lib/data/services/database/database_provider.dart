@@ -21,7 +21,7 @@ class DatabaseProvider {
 
     return openDatabase(
       path,
-      version: 4,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -60,6 +60,7 @@ class DatabaseProvider {
         endTime REAL,
         confidence REAL,
         transcriptionError TEXT,
+        audioLevel REAL,
         syncStatus TEXT DEFAULT 'pending',
         lastSyncedAt TEXT,
         syncError TEXT,
@@ -105,6 +106,20 @@ class DatabaseProvider {
     if (oldVersion < 4) {
       await _migrateV3ToV4(db);
     }
+    if (oldVersion < 5) {
+      await _migrateV4ToV5(db);
+    }
+    if (oldVersion < 6) {
+      await _migrateV5ToV6(db);
+    }
+  }
+
+  Future<void> _migrateV4ToV5(Database db) async {
+    await _addColumnIfMissing(db, 'transcript_chunks', 'audioLevel', 'REAL');
+  }
+
+  Future<void> _migrateV5ToV6(Database db) async {
+    await _addColumnIfMissing(db, 'transcript_chunks', 'audioLevel', 'REAL');
   }
 
   Future<void> _migrateV3ToV4(Database db) async {

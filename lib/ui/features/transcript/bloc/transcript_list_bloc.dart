@@ -119,10 +119,9 @@ class TranscriptListBloc
   TranscriptListBloc({
     required TranscriptRepository transcriptRepository,
     required SyncQueueService syncQueueService,
-  })
-    : _transcriptRepository = transcriptRepository,
-      _syncQueueService = syncQueueService,
-      super(const TranscriptListState()) {
+  }) : _transcriptRepository = transcriptRepository,
+       _syncQueueService = syncQueueService,
+       super(const TranscriptListState()) {
     on<TranscriptListSubscriptionRequested>(_onSubscriptionRequested);
     on<_TranscriptListSnapshotChanged>(_onSnapshotChanged);
     on<TranscriptListQueryChanged>(_onQueryChanged);

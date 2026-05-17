@@ -923,6 +923,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcription failed. Tap to retry.'**
   String get transcriptionFailedRetry;
+
+  /// No description provided for @retrying.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying...'**
+  String get retrying;
 }
 
 class _AppLocalizationsDelegate

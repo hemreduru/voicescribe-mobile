@@ -67,6 +67,7 @@ class SqliteTranscriptMapper {
       transcriptionError: _readString(
         row['transcriptionError'] ?? row['transcription_error'],
       ),
+      audioLevel: _readNullableDouble(row['audioLevel'] ?? row['audio_level']),
       remoteId: _readString(row['remoteId'] ?? row['remote_id']),
       syncStatus: SyncStatus.fromKey(
         _readString(row['syncStatus'] ?? row['sync_status']),
@@ -89,6 +90,7 @@ class SqliteTranscriptMapper {
       'endTime': chunk.endTime,
       'confidence': chunk.confidence,
       'transcriptionError': chunk.transcriptionError,
+      'audioLevel': chunk.audioLevel,
       'remoteId': chunk.remoteId,
       'syncStatus': chunk.syncStatus.key,
       'lastSyncedAt': chunk.lastSyncedAt?.toIso8601String(),

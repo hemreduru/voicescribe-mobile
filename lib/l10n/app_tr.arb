@@ -199,5 +199,6 @@
   "modelWarningHeavy": "Önerilenden ağır",
   "modelWarningSlow": "Çok yavaş olabilir",
   "retryTranscription": "Tekrar Dene",
-  "transcriptionFailedRetry": "Transkripsiyon başarısız oldu. Tekrar denemek için dokunun."
+  "transcriptionFailedRetry": "Transkripsiyon başarısız oldu. Tekrar denemek için dokunun.",
+  "retrying": "Tekrar deneniyor..."
 }

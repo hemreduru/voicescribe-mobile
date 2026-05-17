@@ -10,6 +10,7 @@ import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
+import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 
 sealed class RecordingEvent {
   const RecordingEvent();
@@ -105,6 +106,7 @@ class RecordingState {
     this.liveTranscriptPreview = '',
     this.errorMessage,
     this.userMessage,
+    this.retryingChunkIds = const {},
   });
 
   final List<Transcript> transcripts;
@@ -119,6 +121,7 @@ class RecordingState {
   final String liveTranscriptPreview;
   final String? errorMessage;
   final String? userMessage;
+  final Set<String> retryingChunkIds;
 
   RecordingState copyWith({
     List<Transcript>? transcripts,
@@ -136,6 +139,7 @@ class RecordingState {
     bool clearErrorMessage = false,
     String? userMessage,
     bool clearUserMessage = false,
+    Set<String>? retryingChunkIds,
   }) {
     return RecordingState(
       transcripts: transcripts ?? this.transcripts,
@@ -155,6 +159,7 @@ class RecordingState {
           ? null
           : errorMessage ?? this.errorMessage,
       userMessage: clearUserMessage ? null : userMessage ?? this.userMessage,
+      retryingChunkIds: retryingChunkIds ?? this.retryingChunkIds,
     );
   }
 }
@@ -219,6 +224,13 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     emit(_stateForSnapshot(state, snapshot));
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
       (snapshot) => add(_RecordingSnapshotChanged(snapshot)),
+      onError: (Object error, StackTrace stack) {
+        AppLogger.error(
+          '[RecordingBloc] Snapshot stream error',
+          error,
+          stack,
+        );
+      },
     );
 
     // Recover any chunks that were never transcribed (e.g. app was killed).
@@ -226,10 +238,14 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       (chunk) => chunk.text.isEmpty && chunk.transcriptionError == null,
     );
     for (final chunk in pendingChunks) {
-      if (chunk.audioPath != null && chunk.audioPath!.isNotEmpty) {
-        _pendingTranscriptionChunkIds.add(chunk.id);
-        unawaited(_transcribe(chunk));
+      if (chunk.audioPath == null || chunk.audioPath!.isEmpty) {
+        continue;
       }
+      if (_pendingTranscriptionChunkIds.contains(chunk.id)) {
+        continue;
+      }
+      _pendingTranscriptionChunkIds.add(chunk.id);
+      unawaited(_transcribe(chunk));
     }
   }
 
@@ -390,7 +406,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
               chunk.text.isEmpty &&
               chunk.transcriptionError != null &&
               chunk.audioPath != null &&
-              chunk.audioPath!.isNotEmpty,
+              chunk.audioPath!.isNotEmpty &&
+              !_pendingTranscriptionChunkIds.contains(chunk.id) &&
+              !state.retryingChunkIds.contains(chunk.id),
         )
         .toList();
 
@@ -398,10 +416,13 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       return;
     }
 
+    final retryingIds = <String>{...state.retryingChunkIds};
     for (final chunk in chunks) {
       _pendingTranscriptionChunkIds.add(chunk.id);
+      retryingIds.add(chunk.id);
       unawaited(_transcribe(chunk));
     }
+    emit(state.copyWith(retryingChunkIds: retryingIds));
 
     final transcript = state.transcripts
         .where((t) => t.id == event.transcriptId)
@@ -413,7 +434,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
         syncStatus: SyncStatus.pending,
         syncError: null,
       );
-      emit(_replaceTranscript(state.copyWith(currentTranscript: updated), updated));
+      emit(
+        _replaceTranscript(state.copyWith(currentTranscript: updated), updated),
+      );
       unawaited(_saveTranscript(updated));
       _syncQueueService.scheduleSync();
     }
@@ -450,6 +473,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       endTime: previousEnd + event.chunk.durationSeconds,
       confidence: null,
       transcriptionError: null,
+      audioLevel: event.chunk.averageLevel,
     );
     final chunks = [...state.currentChunks, chunk];
     final allChunks = [...state.allChunks, chunk];
@@ -529,6 +553,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     Emitter<RecordingState> emit,
   ) {
     _pendingTranscriptionChunkIds.remove(event.chunkId);
+    final retryingIds = <String>{...state.retryingChunkIds}
+      ..remove(event.chunkId);
+    emit(state.copyWith(retryingChunkIds: retryingIds));
     final chunk = state.allChunks.where((item) => item.id == event.chunkId);
     if (chunk.isEmpty) {
       return;
@@ -558,6 +585,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     Emitter<RecordingState> emit,
   ) {
     _pendingTranscriptionChunkIds.remove(event.chunkId);
+    final retryingIds = <String>{...state.retryingChunkIds}
+      ..remove(event.chunkId);
+    emit(state.copyWith(retryingChunkIds: retryingIds));
     final chunk = state.allChunks.where((item) => item.id == event.chunkId);
     if (chunk.isEmpty) {
       return;
@@ -613,8 +643,11 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
         updatedTranscript,
       ),
     );
-    unawaited(_transcriptRepository.saveChunk(updatedChunk));
-    unawaited(_saveTranscript(updatedTranscript));
+    // Funnel through the save chain so this chunk update can never be
+    // clobbered by an earlier in-flight write of the same chunk (which
+    // would re-write text='' and leave the transcript stuck in
+    // `transcribing` forever).
+    unawaited(_saveChunkAndTranscript(updatedChunk, updatedTranscript));
     if (updatedTranscript.status != TranscriptStatus.transcribing) {
       _syncQueueService.scheduleSync();
     }
@@ -724,6 +757,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     try {
       final transcription = await _transcriptionService.transcribeChunk(
         chunk.audioPath ?? '',
+        audioLevel: chunk.audioLevel,
       );
       add(
         _RecordingTranscriptionSucceeded(
@@ -737,9 +771,15 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   }
 
   Future<void> _saveTranscript(Transcript transcript) {
-    final next = _pendingTranscriptSave.catchError((_) {}).then((_) {
-      return _transcriptRepository.saveTranscript(transcript);
-    });
+    final next = _pendingTranscriptSave
+        .catchError((Object error, StackTrace stack) {
+          AppLogger.error(
+            '[RecordingBloc] Previous save in chain failed',
+            error,
+            stack,
+          );
+        })
+        .then((_) => _transcriptRepository.saveTranscript(transcript));
     _pendingTranscriptSave = next;
     return next;
   }
@@ -748,10 +788,18 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     TranscriptChunk chunk,
     Transcript transcript,
   ) {
-    final next = _pendingTranscriptSave.catchError((_) {}).then((_) async {
-      await _transcriptRepository.saveChunk(chunk);
-      await _transcriptRepository.saveTranscript(transcript);
-    });
+    final next = _pendingTranscriptSave
+        .catchError((Object error, StackTrace stack) {
+          AppLogger.error(
+            '[RecordingBloc] Previous save in chain failed',
+            error,
+            stack,
+          );
+        })
+        .then((_) async {
+          await _transcriptRepository.saveChunk(chunk);
+          await _transcriptRepository.saveTranscript(transcript);
+        });
     _pendingTranscriptSave = next;
     return next;
   }
