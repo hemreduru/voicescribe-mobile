@@ -20,6 +20,28 @@ enum TranscriptStatus {
       orElse: () => TranscriptStatus.empty,
     );
   }
+
+  /// Aggregates a transcript status from its chunks. Used by both the live
+  /// recording flow and stale-recording repair on app start so the two paths
+  /// never drift apart.
+  static TranscriptStatus deriveFromChunks(List<TranscriptChunk> chunks) {
+    if (chunks.isEmpty) {
+      return TranscriptStatus.empty;
+    }
+    final hasPending = chunks.any(
+      (chunk) => !chunk.isTranscribed && chunk.transcriptionError == null,
+    );
+    if (hasPending) {
+      return TranscriptStatus.transcribing;
+    }
+    final hasError = chunks.any(
+      (chunk) => (chunk.transcriptionError ?? '').isNotEmpty,
+    );
+    if (hasError) {
+      return TranscriptStatus.transcriptionError;
+    }
+    return TranscriptStatus.completed;
+  }
 }
 
 enum SyncStatus {
@@ -90,6 +112,7 @@ abstract class TranscriptChunk with _$TranscriptChunk {
     required String? transcriptionError,
     double? audioLevel,
     String? remoteId,
+    @Default(false) bool isTranscribed,
     @Default(SyncStatus.pending) SyncStatus syncStatus,
     DateTime? lastSyncedAt,
     String? syncError,

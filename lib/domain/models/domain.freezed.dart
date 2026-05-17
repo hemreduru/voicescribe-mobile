@@ -579,7 +579,7 @@ as DateTime?,
 /// @nodoc
 mixin _$TranscriptChunk {
 
- String get id; String get transcriptId; int get chunkIndex; String get text; String? get audioPath; DateTime? get recordedAt; double get startTime; double get endTime; double? get confidence; String? get transcriptionError; double? get audioLevel; String? get remoteId; SyncStatus get syncStatus; DateTime? get lastSyncedAt; String? get syncError; DateTime? get deletedAt;
+ String get id; String get transcriptId; int get chunkIndex; String get text; String? get audioPath; DateTime? get recordedAt; double get startTime; double get endTime; double? get confidence; String? get transcriptionError; double? get audioLevel; String? get remoteId; bool get isTranscribed; SyncStatus get syncStatus; DateTime? get lastSyncedAt; String? get syncError; DateTime? get deletedAt;
 /// Create a copy of TranscriptChunk
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -590,16 +590,16 @@ $TranscriptChunkCopyWith<TranscriptChunk> get copyWith => _$TranscriptChunkCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TranscriptChunk&&(identical(other.id, id) || other.id == id)&&(identical(other.transcriptId, transcriptId) || other.transcriptId == transcriptId)&&(identical(other.chunkIndex, chunkIndex) || other.chunkIndex == chunkIndex)&&(identical(other.text, text) || other.text == text)&&(identical(other.audioPath, audioPath) || other.audioPath == audioPath)&&(identical(other.recordedAt, recordedAt) || other.recordedAt == recordedAt)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.transcriptionError, transcriptionError) || other.transcriptionError == transcriptionError)&&(identical(other.audioLevel, audioLevel) || other.audioLevel == audioLevel)&&(identical(other.remoteId, remoteId) || other.remoteId == remoteId)&&(identical(other.syncStatus, syncStatus) || other.syncStatus == syncStatus)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt)&&(identical(other.syncError, syncError) || other.syncError == syncError)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TranscriptChunk&&(identical(other.id, id) || other.id == id)&&(identical(other.transcriptId, transcriptId) || other.transcriptId == transcriptId)&&(identical(other.chunkIndex, chunkIndex) || other.chunkIndex == chunkIndex)&&(identical(other.text, text) || other.text == text)&&(identical(other.audioPath, audioPath) || other.audioPath == audioPath)&&(identical(other.recordedAt, recordedAt) || other.recordedAt == recordedAt)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.transcriptionError, transcriptionError) || other.transcriptionError == transcriptionError)&&(identical(other.audioLevel, audioLevel) || other.audioLevel == audioLevel)&&(identical(other.remoteId, remoteId) || other.remoteId == remoteId)&&(identical(other.isTranscribed, isTranscribed) || other.isTranscribed == isTranscribed)&&(identical(other.syncStatus, syncStatus) || other.syncStatus == syncStatus)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt)&&(identical(other.syncError, syncError) || other.syncError == syncError)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,transcriptId,chunkIndex,text,audioPath,recordedAt,startTime,endTime,confidence,transcriptionError,audioLevel,remoteId,syncStatus,lastSyncedAt,syncError,deletedAt);
+int get hashCode => Object.hash(runtimeType,id,transcriptId,chunkIndex,text,audioPath,recordedAt,startTime,endTime,confidence,transcriptionError,audioLevel,remoteId,isTranscribed,syncStatus,lastSyncedAt,syncError,deletedAt);
 
 @override
 String toString() {
-  return 'TranscriptChunk(id: $id, transcriptId: $transcriptId, chunkIndex: $chunkIndex, text: $text, audioPath: $audioPath, recordedAt: $recordedAt, startTime: $startTime, endTime: $endTime, confidence: $confidence, transcriptionError: $transcriptionError, audioLevel: $audioLevel, remoteId: $remoteId, syncStatus: $syncStatus, lastSyncedAt: $lastSyncedAt, syncError: $syncError, deletedAt: $deletedAt)';
+  return 'TranscriptChunk(id: $id, transcriptId: $transcriptId, chunkIndex: $chunkIndex, text: $text, audioPath: $audioPath, recordedAt: $recordedAt, startTime: $startTime, endTime: $endTime, confidence: $confidence, transcriptionError: $transcriptionError, audioLevel: $audioLevel, remoteId: $remoteId, isTranscribed: $isTranscribed, syncStatus: $syncStatus, lastSyncedAt: $lastSyncedAt, syncError: $syncError, deletedAt: $deletedAt)';
 }
 
 
@@ -610,7 +610,7 @@ abstract mixin class $TranscriptChunkCopyWith<$Res>  {
   factory $TranscriptChunkCopyWith(TranscriptChunk value, $Res Function(TranscriptChunk) _then) = _$TranscriptChunkCopyWithImpl;
 @useResult
 $Res call({
- String id, String transcriptId, int chunkIndex, String text, String? audioPath, DateTime? recordedAt, double startTime, double endTime, double? confidence, String? transcriptionError, double? audioLevel, String? remoteId, SyncStatus syncStatus, DateTime? lastSyncedAt, String? syncError, DateTime? deletedAt
+ String id, String transcriptId, int chunkIndex, String text, String? audioPath, DateTime? recordedAt, double startTime, double endTime, double? confidence, String? transcriptionError, double? audioLevel, String? remoteId, bool isTranscribed, SyncStatus syncStatus, DateTime? lastSyncedAt, String? syncError, DateTime? deletedAt
 });
 
 
@@ -627,7 +627,7 @@ class _$TranscriptChunkCopyWithImpl<$Res>
 
 /// Create a copy of TranscriptChunk
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? transcriptId = null,Object? chunkIndex = null,Object? text = null,Object? audioPath = freezed,Object? recordedAt = freezed,Object? startTime = null,Object? endTime = null,Object? confidence = freezed,Object? transcriptionError = freezed,Object? audioLevel = freezed,Object? remoteId = freezed,Object? syncStatus = null,Object? lastSyncedAt = freezed,Object? syncError = freezed,Object? deletedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? transcriptId = null,Object? chunkIndex = null,Object? text = null,Object? audioPath = freezed,Object? recordedAt = freezed,Object? startTime = null,Object? endTime = null,Object? confidence = freezed,Object? transcriptionError = freezed,Object? audioLevel = freezed,Object? remoteId = freezed,Object? isTranscribed = null,Object? syncStatus = null,Object? lastSyncedAt = freezed,Object? syncError = freezed,Object? deletedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,transcriptId: null == transcriptId ? _self.transcriptId : transcriptId // ignore: cast_nullable_to_non_nullable
@@ -641,7 +641,8 @@ as double,confidence: freezed == confidence ? _self.confidence : confidence // i
 as double?,transcriptionError: freezed == transcriptionError ? _self.transcriptionError : transcriptionError // ignore: cast_nullable_to_non_nullable
 as String?,audioLevel: freezed == audioLevel ? _self.audioLevel : audioLevel // ignore: cast_nullable_to_non_nullable
 as double?,remoteId: freezed == remoteId ? _self.remoteId : remoteId // ignore: cast_nullable_to_non_nullable
-as String?,syncStatus: null == syncStatus ? _self.syncStatus : syncStatus // ignore: cast_nullable_to_non_nullable
+as String?,isTranscribed: null == isTranscribed ? _self.isTranscribed : isTranscribed // ignore: cast_nullable_to_non_nullable
+as bool,syncStatus: null == syncStatus ? _self.syncStatus : syncStatus // ignore: cast_nullable_to_non_nullable
 as SyncStatus,lastSyncedAt: freezed == lastSyncedAt ? _self.lastSyncedAt : lastSyncedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,syncError: freezed == syncError ? _self.syncError : syncError // ignore: cast_nullable_to_non_nullable
 as String?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
@@ -730,10 +731,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String transcriptId,  int chunkIndex,  String text,  String? audioPath,  DateTime? recordedAt,  double startTime,  double endTime,  double? confidence,  String? transcriptionError,  double? audioLevel,  String? remoteId,  SyncStatus syncStatus,  DateTime? lastSyncedAt,  String? syncError,  DateTime? deletedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String transcriptId,  int chunkIndex,  String text,  String? audioPath,  DateTime? recordedAt,  double startTime,  double endTime,  double? confidence,  String? transcriptionError,  double? audioLevel,  String? remoteId,  bool isTranscribed,  SyncStatus syncStatus,  DateTime? lastSyncedAt,  String? syncError,  DateTime? deletedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TranscriptChunk() when $default != null:
-return $default(_that.id,_that.transcriptId,_that.chunkIndex,_that.text,_that.audioPath,_that.recordedAt,_that.startTime,_that.endTime,_that.confidence,_that.transcriptionError,_that.audioLevel,_that.remoteId,_that.syncStatus,_that.lastSyncedAt,_that.syncError,_that.deletedAt);case _:
+return $default(_that.id,_that.transcriptId,_that.chunkIndex,_that.text,_that.audioPath,_that.recordedAt,_that.startTime,_that.endTime,_that.confidence,_that.transcriptionError,_that.audioLevel,_that.remoteId,_that.isTranscribed,_that.syncStatus,_that.lastSyncedAt,_that.syncError,_that.deletedAt);case _:
   return orElse();
 
 }
@@ -751,10 +752,10 @@ return $default(_that.id,_that.transcriptId,_that.chunkIndex,_that.text,_that.au
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String transcriptId,  int chunkIndex,  String text,  String? audioPath,  DateTime? recordedAt,  double startTime,  double endTime,  double? confidence,  String? transcriptionError,  double? audioLevel,  String? remoteId,  SyncStatus syncStatus,  DateTime? lastSyncedAt,  String? syncError,  DateTime? deletedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String transcriptId,  int chunkIndex,  String text,  String? audioPath,  DateTime? recordedAt,  double startTime,  double endTime,  double? confidence,  String? transcriptionError,  double? audioLevel,  String? remoteId,  bool isTranscribed,  SyncStatus syncStatus,  DateTime? lastSyncedAt,  String? syncError,  DateTime? deletedAt)  $default,) {final _that = this;
 switch (_that) {
 case _TranscriptChunk():
-return $default(_that.id,_that.transcriptId,_that.chunkIndex,_that.text,_that.audioPath,_that.recordedAt,_that.startTime,_that.endTime,_that.confidence,_that.transcriptionError,_that.audioLevel,_that.remoteId,_that.syncStatus,_that.lastSyncedAt,_that.syncError,_that.deletedAt);case _:
+return $default(_that.id,_that.transcriptId,_that.chunkIndex,_that.text,_that.audioPath,_that.recordedAt,_that.startTime,_that.endTime,_that.confidence,_that.transcriptionError,_that.audioLevel,_that.remoteId,_that.isTranscribed,_that.syncStatus,_that.lastSyncedAt,_that.syncError,_that.deletedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -771,10 +772,10 @@ return $default(_that.id,_that.transcriptId,_that.chunkIndex,_that.text,_that.au
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String transcriptId,  int chunkIndex,  String text,  String? audioPath,  DateTime? recordedAt,  double startTime,  double endTime,  double? confidence,  String? transcriptionError,  double? audioLevel,  String? remoteId,  SyncStatus syncStatus,  DateTime? lastSyncedAt,  String? syncError,  DateTime? deletedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String transcriptId,  int chunkIndex,  String text,  String? audioPath,  DateTime? recordedAt,  double startTime,  double endTime,  double? confidence,  String? transcriptionError,  double? audioLevel,  String? remoteId,  bool isTranscribed,  SyncStatus syncStatus,  DateTime? lastSyncedAt,  String? syncError,  DateTime? deletedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _TranscriptChunk() when $default != null:
-return $default(_that.id,_that.transcriptId,_that.chunkIndex,_that.text,_that.audioPath,_that.recordedAt,_that.startTime,_that.endTime,_that.confidence,_that.transcriptionError,_that.audioLevel,_that.remoteId,_that.syncStatus,_that.lastSyncedAt,_that.syncError,_that.deletedAt);case _:
+return $default(_that.id,_that.transcriptId,_that.chunkIndex,_that.text,_that.audioPath,_that.recordedAt,_that.startTime,_that.endTime,_that.confidence,_that.transcriptionError,_that.audioLevel,_that.remoteId,_that.isTranscribed,_that.syncStatus,_that.lastSyncedAt,_that.syncError,_that.deletedAt);case _:
   return null;
 
 }
@@ -786,7 +787,7 @@ return $default(_that.id,_that.transcriptId,_that.chunkIndex,_that.text,_that.au
 
 
 class _TranscriptChunk implements TranscriptChunk {
-  const _TranscriptChunk({required this.id, required this.transcriptId, required this.chunkIndex, required this.text, required this.audioPath, required this.recordedAt, required this.startTime, required this.endTime, required this.confidence, required this.transcriptionError, this.audioLevel, this.remoteId, this.syncStatus = SyncStatus.pending, this.lastSyncedAt, this.syncError, this.deletedAt});
+  const _TranscriptChunk({required this.id, required this.transcriptId, required this.chunkIndex, required this.text, required this.audioPath, required this.recordedAt, required this.startTime, required this.endTime, required this.confidence, required this.transcriptionError, this.audioLevel, this.remoteId, this.isTranscribed = false, this.syncStatus = SyncStatus.pending, this.lastSyncedAt, this.syncError, this.deletedAt});
   
 
 @override final  String id;
@@ -801,6 +802,7 @@ class _TranscriptChunk implements TranscriptChunk {
 @override final  String? transcriptionError;
 @override final  double? audioLevel;
 @override final  String? remoteId;
+@override@JsonKey() final  bool isTranscribed;
 @override@JsonKey() final  SyncStatus syncStatus;
 @override final  DateTime? lastSyncedAt;
 @override final  String? syncError;
@@ -816,16 +818,16 @@ _$TranscriptChunkCopyWith<_TranscriptChunk> get copyWith => __$TranscriptChunkCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TranscriptChunk&&(identical(other.id, id) || other.id == id)&&(identical(other.transcriptId, transcriptId) || other.transcriptId == transcriptId)&&(identical(other.chunkIndex, chunkIndex) || other.chunkIndex == chunkIndex)&&(identical(other.text, text) || other.text == text)&&(identical(other.audioPath, audioPath) || other.audioPath == audioPath)&&(identical(other.recordedAt, recordedAt) || other.recordedAt == recordedAt)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.transcriptionError, transcriptionError) || other.transcriptionError == transcriptionError)&&(identical(other.audioLevel, audioLevel) || other.audioLevel == audioLevel)&&(identical(other.remoteId, remoteId) || other.remoteId == remoteId)&&(identical(other.syncStatus, syncStatus) || other.syncStatus == syncStatus)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt)&&(identical(other.syncError, syncError) || other.syncError == syncError)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TranscriptChunk&&(identical(other.id, id) || other.id == id)&&(identical(other.transcriptId, transcriptId) || other.transcriptId == transcriptId)&&(identical(other.chunkIndex, chunkIndex) || other.chunkIndex == chunkIndex)&&(identical(other.text, text) || other.text == text)&&(identical(other.audioPath, audioPath) || other.audioPath == audioPath)&&(identical(other.recordedAt, recordedAt) || other.recordedAt == recordedAt)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.transcriptionError, transcriptionError) || other.transcriptionError == transcriptionError)&&(identical(other.audioLevel, audioLevel) || other.audioLevel == audioLevel)&&(identical(other.remoteId, remoteId) || other.remoteId == remoteId)&&(identical(other.isTranscribed, isTranscribed) || other.isTranscribed == isTranscribed)&&(identical(other.syncStatus, syncStatus) || other.syncStatus == syncStatus)&&(identical(other.lastSyncedAt, lastSyncedAt) || other.lastSyncedAt == lastSyncedAt)&&(identical(other.syncError, syncError) || other.syncError == syncError)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,transcriptId,chunkIndex,text,audioPath,recordedAt,startTime,endTime,confidence,transcriptionError,audioLevel,remoteId,syncStatus,lastSyncedAt,syncError,deletedAt);
+int get hashCode => Object.hash(runtimeType,id,transcriptId,chunkIndex,text,audioPath,recordedAt,startTime,endTime,confidence,transcriptionError,audioLevel,remoteId,isTranscribed,syncStatus,lastSyncedAt,syncError,deletedAt);
 
 @override
 String toString() {
-  return 'TranscriptChunk(id: $id, transcriptId: $transcriptId, chunkIndex: $chunkIndex, text: $text, audioPath: $audioPath, recordedAt: $recordedAt, startTime: $startTime, endTime: $endTime, confidence: $confidence, transcriptionError: $transcriptionError, audioLevel: $audioLevel, remoteId: $remoteId, syncStatus: $syncStatus, lastSyncedAt: $lastSyncedAt, syncError: $syncError, deletedAt: $deletedAt)';
+  return 'TranscriptChunk(id: $id, transcriptId: $transcriptId, chunkIndex: $chunkIndex, text: $text, audioPath: $audioPath, recordedAt: $recordedAt, startTime: $startTime, endTime: $endTime, confidence: $confidence, transcriptionError: $transcriptionError, audioLevel: $audioLevel, remoteId: $remoteId, isTranscribed: $isTranscribed, syncStatus: $syncStatus, lastSyncedAt: $lastSyncedAt, syncError: $syncError, deletedAt: $deletedAt)';
 }
 
 
@@ -836,7 +838,7 @@ abstract mixin class _$TranscriptChunkCopyWith<$Res> implements $TranscriptChunk
   factory _$TranscriptChunkCopyWith(_TranscriptChunk value, $Res Function(_TranscriptChunk) _then) = __$TranscriptChunkCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String transcriptId, int chunkIndex, String text, String? audioPath, DateTime? recordedAt, double startTime, double endTime, double? confidence, String? transcriptionError, double? audioLevel, String? remoteId, SyncStatus syncStatus, DateTime? lastSyncedAt, String? syncError, DateTime? deletedAt
+ String id, String transcriptId, int chunkIndex, String text, String? audioPath, DateTime? recordedAt, double startTime, double endTime, double? confidence, String? transcriptionError, double? audioLevel, String? remoteId, bool isTranscribed, SyncStatus syncStatus, DateTime? lastSyncedAt, String? syncError, DateTime? deletedAt
 });
 
 
@@ -853,7 +855,7 @@ class __$TranscriptChunkCopyWithImpl<$Res>
 
 /// Create a copy of TranscriptChunk
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? transcriptId = null,Object? chunkIndex = null,Object? text = null,Object? audioPath = freezed,Object? recordedAt = freezed,Object? startTime = null,Object? endTime = null,Object? confidence = freezed,Object? transcriptionError = freezed,Object? audioLevel = freezed,Object? remoteId = freezed,Object? syncStatus = null,Object? lastSyncedAt = freezed,Object? syncError = freezed,Object? deletedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? transcriptId = null,Object? chunkIndex = null,Object? text = null,Object? audioPath = freezed,Object? recordedAt = freezed,Object? startTime = null,Object? endTime = null,Object? confidence = freezed,Object? transcriptionError = freezed,Object? audioLevel = freezed,Object? remoteId = freezed,Object? isTranscribed = null,Object? syncStatus = null,Object? lastSyncedAt = freezed,Object? syncError = freezed,Object? deletedAt = freezed,}) {
   return _then(_TranscriptChunk(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,transcriptId: null == transcriptId ? _self.transcriptId : transcriptId // ignore: cast_nullable_to_non_nullable
@@ -867,7 +869,8 @@ as double,confidence: freezed == confidence ? _self.confidence : confidence // i
 as double?,transcriptionError: freezed == transcriptionError ? _self.transcriptionError : transcriptionError // ignore: cast_nullable_to_non_nullable
 as String?,audioLevel: freezed == audioLevel ? _self.audioLevel : audioLevel // ignore: cast_nullable_to_non_nullable
 as double?,remoteId: freezed == remoteId ? _self.remoteId : remoteId // ignore: cast_nullable_to_non_nullable
-as String?,syncStatus: null == syncStatus ? _self.syncStatus : syncStatus // ignore: cast_nullable_to_non_nullable
+as String?,isTranscribed: null == isTranscribed ? _self.isTranscribed : isTranscribed // ignore: cast_nullable_to_non_nullable
+as bool,syncStatus: null == syncStatus ? _self.syncStatus : syncStatus // ignore: cast_nullable_to_non_nullable
 as SyncStatus,lastSyncedAt: freezed == lastSyncedAt ? _self.lastSyncedAt : lastSyncedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,syncError: freezed == syncError ? _self.syncError : syncError // ignore: cast_nullable_to_non_nullable
 as String?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable

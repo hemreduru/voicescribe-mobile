@@ -3,14 +3,22 @@ import 'dart:math' as math;
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
+import 'package:voicescribe_mobile/domain/models/transcript_extensions.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
+
+part 'recording_bloc.freezed.dart';
+
+// =============================================================================
+// Events
+// =============================================================================
 
 sealed class RecordingEvent {
   const RecordingEvent();
@@ -92,77 +100,32 @@ final class _RecordingTranscriptionFailed extends RecordingEvent {
   final Object error;
 }
 
-class RecordingState {
-  const RecordingState({
-    this.transcripts = const [],
-    this.allChunks = const [],
-    this.currentTranscript,
-    this.currentChunks = const [],
-    this.isRecording = false,
-    this.isPaused = false,
-    this.durationSeconds = 0,
-    this.chunkCount = 0,
-    this.audioLevel = 0,
-    this.liveTranscriptPreview = '',
-    this.errorMessage,
-    this.userMessage,
-    this.retryingChunkIds = const {},
-  });
+// =============================================================================
+// State
+// =============================================================================
 
-  final List<Transcript> transcripts;
-  final List<TranscriptChunk> allChunks;
-  final Transcript? currentTranscript;
-  final List<TranscriptChunk> currentChunks;
-  final bool isRecording;
-  final bool isPaused;
-  final int durationSeconds;
-  final int chunkCount;
-  final double audioLevel;
-  final String liveTranscriptPreview;
-  final String? errorMessage;
-  final String? userMessage;
-  final Set<String> retryingChunkIds;
-
-  RecordingState copyWith({
-    List<Transcript>? transcripts,
-    List<TranscriptChunk>? allChunks,
+@freezed
+abstract class RecordingState with _$RecordingState {
+  const factory RecordingState({
+    @Default(<Transcript>[]) List<Transcript> transcripts,
+    @Default(<TranscriptChunk>[]) List<TranscriptChunk> allChunks,
     Transcript? currentTranscript,
-    bool clearCurrentTranscript = false,
-    List<TranscriptChunk>? currentChunks,
-    bool? isRecording,
-    bool? isPaused,
-    int? durationSeconds,
-    int? chunkCount,
-    double? audioLevel,
-    String? liveTranscriptPreview,
+    @Default(<TranscriptChunk>[]) List<TranscriptChunk> currentChunks,
+    @Default(false) bool isRecording,
+    @Default(false) bool isPaused,
+    @Default(0) int durationSeconds,
+    @Default(0) int chunkCount,
+    @Default(0.0) double audioLevel,
+    @Default('') String liveTranscriptPreview,
     String? errorMessage,
-    bool clearErrorMessage = false,
     String? userMessage,
-    bool clearUserMessage = false,
-    Set<String>? retryingChunkIds,
-  }) {
-    return RecordingState(
-      transcripts: transcripts ?? this.transcripts,
-      allChunks: allChunks ?? this.allChunks,
-      currentTranscript: clearCurrentTranscript
-          ? null
-          : currentTranscript ?? this.currentTranscript,
-      currentChunks: currentChunks ?? this.currentChunks,
-      isRecording: isRecording ?? this.isRecording,
-      isPaused: isPaused ?? this.isPaused,
-      durationSeconds: durationSeconds ?? this.durationSeconds,
-      chunkCount: chunkCount ?? this.chunkCount,
-      audioLevel: audioLevel ?? this.audioLevel,
-      liveTranscriptPreview:
-          liveTranscriptPreview ?? this.liveTranscriptPreview,
-      errorMessage: clearErrorMessage
-          ? null
-          : errorMessage ?? this.errorMessage,
-      userMessage: clearUserMessage ? null : userMessage ?? this.userMessage,
-      retryingChunkIds: retryingChunkIds ?? this.retryingChunkIds,
-    );
-  }
+    @Default(<String>{}) Set<String> retryingChunkIds,
+  }) = _RecordingState;
 }
+
+// =============================================================================
+// Bloc
+// =============================================================================
 
 class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   RecordingBloc({
@@ -208,12 +171,18 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   StreamSubscription<RecordedAudioChunk>? _chunkSubscription;
   StreamSubscription<double>? _levelSubscription;
   Timer? _durationTimer;
-  Future<void> _pendingTranscriptSave = Future<void>.value();
+  // Serialized DB-save queue so out-of-order writes for the same row never
+  // race (e.g. an "empty text" insert clobbering a "transcribed text" insert).
+  Future<void> _pendingSave = Future<void>.value();
   DateTime? _lastAudioLevelNotifyAt;
   double _lastNotifiedAudioLevel = 0;
-  final Set<String> _pendingTranscriptionChunkIds = <String>{};
 
   static const Duration _audioLevelNotifyInterval = Duration(milliseconds: 120);
+  static const int _maxLivePreviewChars = 500;
+
+  // ---------------------------------------------------------------------------
+  // Event handlers
+  // ---------------------------------------------------------------------------
 
   Future<void> _onSubscriptionRequested(
     RecordingSubscriptionRequested event,
@@ -225,27 +194,31 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
       (snapshot) => add(_RecordingSnapshotChanged(snapshot)),
       onError: (Object error, StackTrace stack) {
-        AppLogger.error(
-          '[RecordingBloc] Snapshot stream error',
-          error,
-          stack,
-        );
+        AppLogger.error('[Recording] Snapshot stream error', error, stack);
       },
     );
 
-    // Recover any chunks that were never transcribed (e.g. app was killed).
-    final pendingChunks = snapshot.chunks.where(
-      (chunk) => chunk.text.isEmpty && chunk.transcriptionError == null,
-    );
-    for (final chunk in pendingChunks) {
-      if (chunk.audioPath == null || chunk.audioPath!.isEmpty) {
+    // Recover chunks that were never transcribed (app killed mid-recording).
+    final inFlight = <String>{...state.retryingChunkIds};
+    for (final chunk in snapshot.chunks) {
+      if (chunk.isTranscribed || chunk.transcriptionError != null) {
         continue;
       }
-      if (_pendingTranscriptionChunkIds.contains(chunk.id)) {
+      final audioPath = chunk.audioPath;
+      if (audioPath == null || audioPath.isEmpty) {
         continue;
       }
-      _pendingTranscriptionChunkIds.add(chunk.id);
+      if (inFlight.contains(chunk.id)) {
+        continue;
+      }
+      inFlight.add(chunk.id);
+      AppLogger.info(
+        '[Recording] Recovering pending chunk | id=${chunk.id} | path=$audioPath',
+      );
       unawaited(_transcribe(chunk));
+    }
+    if (inFlight.length != state.retryingChunkIds.length) {
+      emit(state.copyWith(retryingChunkIds: inFlight));
     }
   }
 
@@ -262,7 +235,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       return;
     }
 
-    final transcript = _startSession(event.title, userId: session?.userId);
+    final transcript = _newSession(event.title, userId: session?.userId);
     emit(
       state.copyWith(
         transcripts: [transcript, ...state.transcripts],
@@ -274,29 +247,37 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
         chunkCount: 0,
         audioLevel: 0,
         liveTranscriptPreview: '',
-        clearErrorMessage: true,
-        clearUserMessage: true,
+        errorMessage: null,
+        userMessage: null,
       ),
     );
 
     try {
       await _recordingService.start();
       _startTimer();
-      await _saveTranscript(transcript);
-    } catch (error) {
+      await _enqueueSave(
+        () => _transcriptRepository.saveTranscript(transcript),
+      );
+      AppLogger.info('[Recording] Session started | id=${transcript.id}');
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        '[Recording] Failed to start session | id=${transcript.id}',
+        error,
+        stackTrace,
+      );
       emit(
         state.copyWith(
           transcripts: state.transcripts
               .where((item) => item.id != transcript.id)
               .toList(),
-          clearCurrentTranscript: true,
+          currentTranscript: null,
           currentChunks: const [],
           isRecording: false,
           isPaused: false,
           durationSeconds: 0,
           chunkCount: 0,
           audioLevel: 0,
-          userMessage: _messageFor(error),
+          userMessage: _userMessageFor(error),
           errorMessage: error.toString(),
         ),
       );
@@ -329,12 +310,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       return;
     }
 
-    final stopped = current.copyWith(
-      status: _aggregateStatus(state.currentChunks),
+    final stopped = current.markPendingSync(
+      status: TranscriptStatus.deriveFromChunks(state.currentChunks),
       durationSeconds: recordedDurationSeconds,
-      updatedAt: DateTime.now(),
-      syncStatus: SyncStatus.pending,
-      syncError: null,
     );
     emit(
       _replaceTranscript(
@@ -350,8 +328,13 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
         stopped,
       ),
     );
-    unawaited(_saveTranscript(stopped));
+    unawaited(_enqueueSave(() => _transcriptRepository.saveTranscript(stopped)));
     _syncQueueService.scheduleSync();
+    AppLogger.info(
+      '[Recording] Session stopped | id=${stopped.id} | '
+      'duration=${recordedDurationSeconds}s | chunks=${state.currentChunks.length} | '
+      'status=${stopped.status.key}',
+    );
   }
 
   Future<void> _onPauseToggled(
@@ -365,10 +348,29 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       await _recordingService.resume();
       emit(state.copyWith(isPaused: false));
       _startTimer();
+      AppLogger.info('[Recording] Resumed');
     } else {
       await _recordingService.pause();
       emit(state.copyWith(isPaused: true));
       _stopTimer();
+      // Persist the duration accumulated up to this pause so we don't lose
+      // it if the app dies while paused.
+      final transcript = state.currentTranscript;
+      if (transcript != null) {
+        final updated = transcript.markPendingSync(
+          durationSeconds: state.durationSeconds,
+        );
+        emit(
+          _replaceTranscript(
+            state.copyWith(currentTranscript: updated),
+            updated,
+          ),
+        );
+        unawaited(
+          _enqueueSave(() => _transcriptRepository.saveTranscript(updated)),
+        );
+      }
+      AppLogger.info('[Recording] Paused | duration=${state.durationSeconds}s');
     }
   }
 
@@ -381,16 +383,16 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       return;
     }
     final normalized = event.title.trim();
-    final updated = transcript.copyWith(
+    final updated = transcript.markPendingSync(
       title: normalized.isEmpty ? null : normalized,
-      updatedAt: DateTime.now(),
-      syncStatus: SyncStatus.pending,
-      syncError: null,
+      overrideTitle: true,
     );
     emit(
       _replaceTranscript(state.copyWith(currentTranscript: updated), updated),
     );
-    unawaited(_saveTranscript(updated));
+    unawaited(
+      _enqueueSave(() => _transcriptRepository.saveTranscript(updated)),
+    );
     _syncQueueService.scheduleSync();
   }
 
@@ -407,7 +409,6 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
               chunk.transcriptionError != null &&
               chunk.audioPath != null &&
               chunk.audioPath!.isNotEmpty &&
-              !_pendingTranscriptionChunkIds.contains(chunk.id) &&
               !state.retryingChunkIds.contains(chunk.id),
         )
         .toList();
@@ -418,8 +419,10 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
 
     final retryingIds = <String>{...state.retryingChunkIds};
     for (final chunk in chunks) {
-      _pendingTranscriptionChunkIds.add(chunk.id);
       retryingIds.add(chunk.id);
+      AppLogger.info(
+        '[Recording] Retrying chunk | id=${chunk.id} | path=${chunk.audioPath}',
+      );
       unawaited(_transcribe(chunk));
     }
     emit(state.copyWith(retryingChunkIds: retryingIds));
@@ -428,16 +431,15 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
         .where((t) => t.id == event.transcriptId)
         .firstOrNull;
     if (transcript != null) {
-      final updated = transcript.copyWith(
+      final updated = transcript.markPendingSync(
         status: TranscriptStatus.transcribing,
-        updatedAt: DateTime.now(),
-        syncStatus: SyncStatus.pending,
-        syncError: null,
       );
       emit(
         _replaceTranscript(state.copyWith(currentTranscript: updated), updated),
       );
-      unawaited(_saveTranscript(updated));
+      unawaited(
+        _enqueueSave(() => _transcriptRepository.saveTranscript(updated)),
+      );
       _syncQueueService.scheduleSync();
     }
   }
@@ -477,13 +479,11 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     );
     final chunks = [...state.currentChunks, chunk];
     final allChunks = [...state.allChunks, chunk];
-    final updatedTranscript = transcript.copyWith(
+    final updatedTranscript = transcript.markPendingSync(
       status: TranscriptStatus.transcribing,
       durationSeconds: chunk.endTime.round(),
-      updatedAt: now,
-      syncStatus: SyncStatus.pending,
-      syncError: null,
     );
+    final retryingIds = <String>{...state.retryingChunkIds, chunk.id};
     emit(
       _replaceTranscript(
         state.copyWith(
@@ -491,13 +491,22 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
           currentChunks: chunks,
           allChunks: allChunks,
           chunkCount: state.chunkCount + 1,
-          clearErrorMessage: true,
+          errorMessage: null,
+          retryingChunkIds: retryingIds,
         ),
         updatedTranscript,
       ),
     );
-    unawaited(_saveChunkAndTranscript(chunk, updatedTranscript));
-    _pendingTranscriptionChunkIds.add(chunk.id);
+    unawaited(
+      _enqueueSave(() async {
+        await _transcriptRepository.saveChunk(chunk);
+        await _transcriptRepository.saveTranscript(updatedTranscript);
+      }),
+    );
+    AppLogger.info(
+      '[Recording] Chunk received | id=${chunk.id} | '
+      'index=${chunk.chunkIndex} | duration=${event.chunk.durationSeconds.toStringAsFixed(2)}s',
+    );
     unawaited(_transcribe(chunk));
   }
 
@@ -528,39 +537,26 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     if (!state.isRecording || state.isPaused) {
       return;
     }
-    final transcript = state.currentTranscript;
-    if (transcript == null) {
-      return;
-    }
-    final duration = state.durationSeconds + 1;
-    final updated = transcript.copyWith(
-      durationSeconds: duration,
-      updatedAt: DateTime.now(),
-      syncStatus: SyncStatus.pending,
-      syncError: null,
-    );
-    emit(
-      _replaceTranscript(
-        state.copyWith(durationSeconds: duration, currentTranscript: updated),
-        updated,
-      ),
-    );
-    unawaited(_saveTranscript(updated));
+    // Only updates the in-memory counter for the UI; persistence happens on
+    // chunk receive, pause, and stop to keep DB writes off the per-second
+    // hot path.
+    emit(state.copyWith(durationSeconds: state.durationSeconds + 1));
   }
 
   void _onTranscriptionSucceeded(
     _RecordingTranscriptionSucceeded event,
     Emitter<RecordingState> emit,
   ) {
-    _pendingTranscriptionChunkIds.remove(event.chunkId);
     final retryingIds = <String>{...state.retryingChunkIds}
       ..remove(event.chunkId);
     emit(state.copyWith(retryingChunkIds: retryingIds));
-    final chunk = state.allChunks.where((item) => item.id == event.chunkId);
-    if (chunk.isEmpty) {
+
+    final current = state.allChunks
+        .where((item) => item.id == event.chunkId)
+        .firstOrNull;
+    if (current == null) {
       return;
     }
-    final current = chunk.first;
     final previousChunk = state.currentChunks
         .where((item) => item.chunkIndex == current.chunkIndex - 1)
         .firstOrNull;
@@ -568,11 +564,15 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     final deduped = previousChunk == null
         ? normalized
         : removeOverlap(previousChunk.text, normalized);
-    _updateChunkAndTranscript(
+    AppLogger.info(
+      '[Recording] Transcribe ok | id=${current.id} | chars=${deduped.length}',
+    );
+    _emitChunkUpdate(
       emit,
       current.copyWith(
         text: deduped,
         transcriptionError: null,
+        isTranscribed: true,
         syncStatus: SyncStatus.pending,
         syncError: null,
       ),
@@ -584,26 +584,34 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     _RecordingTranscriptionFailed event,
     Emitter<RecordingState> emit,
   ) {
-    _pendingTranscriptionChunkIds.remove(event.chunkId);
     final retryingIds = <String>{...state.retryingChunkIds}
       ..remove(event.chunkId);
     emit(state.copyWith(retryingChunkIds: retryingIds));
-    final chunk = state.allChunks.where((item) => item.id == event.chunkId);
-    if (chunk.isEmpty) {
+
+    final current = state.allChunks
+        .where((item) => item.id == event.chunkId)
+        .firstOrNull;
+    if (current == null) {
       return;
     }
-    _updateChunkAndTranscript(
+    final message = event.error.toString();
+    _emitChunkUpdate(
       emit,
-      chunk.first.copyWith(
-        transcriptionError: event.error.toString(),
+      current.copyWith(
+        transcriptionError: message,
+        isTranscribed: true,
         syncStatus: SyncStatus.pending,
         syncError: null,
       ),
-      errorMessage: event.error.toString(),
+      errorMessage: message,
     );
   }
 
-  void _updateChunkAndTranscript(
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  void _emitChunkUpdate(
     Emitter<RecordingState> emit,
     TranscriptChunk updatedChunk, {
     String? appendPreview,
@@ -621,11 +629,8 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     if (transcript == null) {
       return;
     }
-    final updatedTranscript = transcript.copyWith(
-      status: _aggregateStatus(currentChunks),
-      updatedAt: DateTime.now(),
-      syncStatus: SyncStatus.pending,
-      syncError: null,
+    final updatedTranscript = transcript.markPendingSync(
+      status: TranscriptStatus.deriveFromChunks(currentChunks),
     );
     final livePreview = appendPreview == null || appendPreview.trim().isEmpty
         ? state.liveTranscriptPreview
@@ -638,16 +643,19 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
           currentTranscript: updatedTranscript,
           liveTranscriptPreview: livePreview,
           errorMessage: errorMessage,
-          clearErrorMessage: errorMessage == null,
         ),
         updatedTranscript,
       ),
     );
-    // Funnel through the save chain so this chunk update can never be
-    // clobbered by an earlier in-flight write of the same chunk (which
-    // would re-write text='' and leave the transcript stuck in
-    // `transcribing` forever).
-    unawaited(_saveChunkAndTranscript(updatedChunk, updatedTranscript));
+    // Funnel through the save chain so an out-of-order earlier write of the
+    // same chunk can't clobber this update (which would re-write text='' and
+    // pin the transcript to `transcribing` forever).
+    unawaited(
+      _enqueueSave(() async {
+        await _transcriptRepository.saveChunk(updatedChunk);
+        await _transcriptRepository.saveTranscript(updatedTranscript);
+      }),
+    );
     if (updatedTranscript.status != TranscriptStatus.transcribing) {
       _syncQueueService.scheduleSync();
     }
@@ -665,6 +673,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       );
     }
 
+    // Preserve the in-memory active session, but fold in any sync metadata
+    // (remoteId, lastSyncedAt) the DB already knew about. Without this merge
+    // a sync that lands mid-recording would wipe our just-emitted chunks.
     final savedTranscript = snapshot.transcripts
         .where((item) => item.id == active.id)
         .firstOrNull;
@@ -702,13 +713,14 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     );
   }
 
-  Transcript _startSession(String? title, {String? userId}) {
+  Transcript _newSession(String? title, {String? userId}) {
     final now = DateTime.now();
     final id = 'local-${now.microsecondsSinceEpoch}';
+    final trimmed = title?.trim();
     return Transcript(
       id: id,
       localId: id,
-      title: title?.trim().isNotEmpty ?? false ? title!.trim() : null,
+      title: (trimmed == null || trimmed.isEmpty) ? null : trimmed,
       durationSeconds: 0,
       status: TranscriptStatus.recording,
       recordedAt: now,
@@ -736,23 +748,6 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     return base.copyWith(transcripts: transcripts);
   }
 
-  TranscriptStatus _aggregateStatus(List<TranscriptChunk> chunks) {
-    if (chunks.isEmpty) {
-      return TranscriptStatus.empty;
-    }
-    // Determine status purely from DB state so it survives app restarts.
-    final hasPending = chunks.any(
-      (chunk) => chunk.text.isEmpty && chunk.transcriptionError == null,
-    );
-    if (hasPending) {
-      return TranscriptStatus.transcribing;
-    }
-    if (chunks.any((chunk) => (chunk.transcriptionError ?? '').isNotEmpty)) {
-      return TranscriptStatus.transcriptionError;
-    }
-    return TranscriptStatus.completed;
-  }
-
   Future<void> _transcribe(TranscriptChunk chunk) async {
     try {
       final transcription = await _transcriptionService.transcribeChunk(
@@ -765,49 +760,34 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
           text: transcription.text,
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        '[Recording] Transcribe failed | id=${chunk.id} | path=${chunk.audioPath}',
+        error,
+        stackTrace,
+      );
       add(_RecordingTranscriptionFailed(chunkId: chunk.id, error: error));
     }
   }
 
-  Future<void> _saveTranscript(Transcript transcript) {
-    final next = _pendingTranscriptSave
+  /// Serializes DB writes so out-of-order completions of the same row don't
+  /// overwrite each other.
+  Future<void> _enqueueSave(Future<void> Function() task) {
+    final next = _pendingSave
         .catchError((Object error, StackTrace stack) {
-          AppLogger.error(
-            '[RecordingBloc] Previous save in chain failed',
-            error,
-            stack,
-          );
+          AppLogger.error('[Recording] DB save chain error', error, stack);
         })
-        .then((_) => _transcriptRepository.saveTranscript(transcript));
-    _pendingTranscriptSave = next;
-    return next;
-  }
-
-  Future<void> _saveChunkAndTranscript(
-    TranscriptChunk chunk,
-    Transcript transcript,
-  ) {
-    final next = _pendingTranscriptSave
-        .catchError((Object error, StackTrace stack) {
-          AppLogger.error(
-            '[RecordingBloc] Previous save in chain failed',
-            error,
-            stack,
-          );
-        })
-        .then((_) async {
-          await _transcriptRepository.saveChunk(chunk);
-          await _transcriptRepository.saveTranscript(transcript);
-        });
-    _pendingTranscriptSave = next;
+        .then((_) => task());
+    _pendingSave = next;
     return next;
   }
 
   String _appendPreview(String current, String value) {
     var preview = normalizeWhitespace('$current ${normalizeWhitespace(value)}');
-    if (preview.length > 500) {
-      preview = preview.substring(math.max(0, preview.length - 500));
+    if (preview.length > _maxLivePreviewChars) {
+      preview = preview.substring(
+        math.max(0, preview.length - _maxLivePreviewChars),
+      );
     }
     return preview;
   }
@@ -824,7 +804,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     _durationTimer = null;
   }
 
-  String _messageFor(Object error) {
+  String _userMessageFor(Object error) {
     if (error is RecordingPermissionException) {
       return 'Microphone permission is required.';
     }
@@ -838,15 +818,5 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     await _chunkSubscription?.cancel();
     await _levelSubscription?.cancel();
     return super.close();
-  }
-}
-
-extension _FirstOrNull<T> on Iterable<T> {
-  T? get firstOrNull {
-    final iterator = this.iterator;
-    if (iterator.moveNext()) {
-      return iterator.current;
-    }
-    return null;
   }
 }

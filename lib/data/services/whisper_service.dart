@@ -150,6 +150,8 @@ class WhisperTranscriptionService implements TranscriptionService {
   bool _isProcessingQueue = false;
   int _consecutiveFailures = 0;
 
+  static const Duration _transcribeTimeout = Duration(seconds: 240);
+
   @override
   Stream<ModelDownloadProgress> get downloadProgress =>
       _progressController.stream;
@@ -162,8 +164,14 @@ class WhisperTranscriptionService implements TranscriptionService {
 
   @override
   Future<void> selectModel(WhisperModel model) async {
-    // Model selection is locked to base for stability on mobile devices.
-    // Parameter is ignored; only base model is used.
+    // Model selection is locked to `base` for mobile stability. We accept the
+    // parameter to satisfy the interface (and to surface a log when callers
+    // try to switch) but always init the locked model.
+    if (model != _model) {
+      AppLogger.info(
+        '[Transcription] selectModel(${model.modelName}) ignored — locked to ${_model.modelName}',
+      );
+    }
     await _controller.initModel(_model);
   }
 
@@ -303,8 +311,6 @@ class WhisperTranscriptionService implements TranscriptionService {
     }
   }
 
-  static const double _silenceThreshold = 0.035;
-
   Future<TranscriptionResult> _executeWithRetry(
     String audioPath, {
     double? audioLevel,
@@ -331,16 +337,11 @@ class WhisperTranscriptionService implements TranscriptionService {
           attempt: attempt,
         );
         if (result.text.trim().isEmpty) {
-          if (audioLevel == null || audioLevel < _silenceThreshold) {
-            AppLogger.info(
-              '[Transcription] Silent chunk detected for chunk: $chunkId'
-              '${audioLevel == null ? ' (audioLevel unknown)' : ''}',
-            );
-            return result;
-          }
-          throw const TranscriptionEmptyException(
-            'Transcription returned empty text for a non-silent chunk.',
+          AppLogger.info(
+            '[Transcription] Empty result for chunk: $chunkId '
+            '(audioLevel: ${audioLevel ?? 'unknown'})',
           );
+          return result;
         }
         AppLogger.info('[Transcription] Completed chunk: $chunkId');
         return result;
@@ -369,8 +370,6 @@ class WhisperTranscriptionService implements TranscriptionService {
     required int threads,
     required int attempt,
   }) async {
-    final timeoutDuration = await _resolveTimeout();
-
     final future = _controller.transcribe(
       model: model,
       audioPath: audioPath,
@@ -380,9 +379,9 @@ class WhisperTranscriptionService implements TranscriptionService {
     );
 
     final result = await future.timeout(
-      timeoutDuration,
+      _transcribeTimeout,
       onTimeout: () => throw TimeoutException(
-        'Transcription timed out after ${timeoutDuration.inSeconds}s '
+        'Transcription timed out after ${_transcribeTimeout.inSeconds}s '
         '(attempt $attempt)',
       ),
     );
@@ -408,16 +407,6 @@ class WhisperTranscriptionService implements TranscriptionService {
     );
   }
 
-  Future<Duration> _resolveTimeout() async {
-    final profile = await resolveDeviceProfile();
-    return switch (profile.tier) {
-      DevicePerformanceTier.entry => const Duration(seconds: 45),
-      DevicePerformanceTier.balanced => const Duration(seconds: 30),
-      DevicePerformanceTier.performance => const Duration(seconds: 20),
-      DevicePerformanceTier.premium => const Duration(seconds: 20),
-    };
-  }
-
   Future<int> _resolveThreads() async {
     final profile = await resolveDeviceProfile();
     return switch (profile.tier) {
@@ -428,13 +417,7 @@ class WhisperTranscriptionService implements TranscriptionService {
     };
   }
 
-  String _chunkIdFromPath(String audioPath) {
-    try {
-      return audioPath.split('/').last;
-    } catch (_) {
-      return audioPath;
-    }
-  }
+  String _chunkIdFromPath(String audioPath) => audioPath.split('/').last;
 
   @override
   Future<void> dispose() async {
@@ -565,7 +548,10 @@ class WhisperTranscriptionService implements TranscriptionService {
         return contentLength;
       }
       return null;
-    } catch (_) {
+    } catch (error) {
+      AppLogger.warning(
+        '[Transcription] HEAD probe failed for ${model.modelName}: $error',
+      );
       return null;
     } finally {
       client.close(force: true);
@@ -714,15 +700,6 @@ const List<WhisperModel> _supportedCatalogModels = <WhisperModel>[
   WhisperModel.large,
   WhisperModel.largeV3Turbo,
 ];
-
-class TranscriptionEmptyException implements Exception {
-  const TranscriptionEmptyException(this.message);
-
-  final String message;
-
-  @override
-  String toString() => 'TranscriptionEmptyException: $message';
-}
 
 const Map<WhisperModel, _ModelMetadata> _metadataByModel = {
   WhisperModel.tiny: _ModelMetadata(

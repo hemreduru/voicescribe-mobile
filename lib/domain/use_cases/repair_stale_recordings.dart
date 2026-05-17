@@ -1,8 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:voicescribe_mobile/domain/models/domain.dart';
+import 'package:voicescribe_mobile/domain/models/transcript_extensions.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 
+/// On cold start, moves any transcript stuck in `recording` or `transcribing`
+/// status to a terminal status. Chunks that are still pending will be
+/// re-queued by the recording subscription once it wires up.
 class RepairStaleRecordingsUseCase {
   const RepairStaleRecordingsUseCase(this._repository);
 
@@ -25,15 +29,12 @@ class RepairStaleRecordingsUseCase {
 
       final chunks =
           chunksByTranscript[transcript.id] ?? const <TranscriptChunk>[];
-      final repaired = transcript.copyWith(
-        status: _statusFor(chunks),
+      final repaired = transcript.markPendingSync(
+        status: _coldStartStatus(chunks),
         durationSeconds: math.max(
           transcript.durationSeconds,
           _maxChunkEnd(chunks).round(),
         ),
-        updatedAt: DateTime.now(),
-        syncStatus: SyncStatus.pending,
-        syncError: null,
       );
       repairedTranscripts.add(repaired);
       changed = true;
@@ -47,7 +48,10 @@ class RepairStaleRecordingsUseCase {
     return snapshot.copyWith(transcripts: repairedTranscripts);
   }
 
-  TranscriptStatus _statusFor(List<TranscriptChunk> chunks) {
+  /// Cold-start aggregation differs from the live one: any chunk that already
+  /// produced text is enough to mark the transcript completed, since pending
+  /// chunks will be retried by the recording subscription on next launch.
+  TranscriptStatus _coldStartStatus(List<TranscriptChunk> chunks) {
     if (chunks.isEmpty) {
       return TranscriptStatus.empty;
     }
@@ -55,6 +59,9 @@ class RepairStaleRecordingsUseCase {
       return TranscriptStatus.transcriptionError;
     }
     if (chunks.any((chunk) => chunk.text.trim().isNotEmpty)) {
+      return TranscriptStatus.completed;
+    }
+    if (chunks.every((chunk) => chunk.isTranscribed)) {
       return TranscriptStatus.completed;
     }
     return TranscriptStatus.transcriptionError;

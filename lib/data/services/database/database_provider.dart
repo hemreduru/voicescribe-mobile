@@ -21,7 +21,7 @@ class DatabaseProvider {
 
     return openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -61,6 +61,7 @@ class DatabaseProvider {
         confidence REAL,
         transcriptionError TEXT,
         audioLevel REAL,
+        isTranscribed INTEGER DEFAULT 0,
         syncStatus TEXT DEFAULT 'pending',
         lastSyncedAt TEXT,
         syncError TEXT,
@@ -112,6 +113,27 @@ class DatabaseProvider {
     if (oldVersion < 6) {
       await _migrateV5ToV6(db);
     }
+    if (oldVersion < 7) {
+      await _migrateV6ToV7(db);
+    }
+  }
+
+  Future<void> _migrateV6ToV7(Database db) async {
+    await _addColumnIfMissing(
+      db,
+      'transcript_chunks',
+      'isTranscribed',
+      'INTEGER DEFAULT 0',
+    );
+    // Backfill: chunks that already have text or a transcriptionError were
+    // processed by the old code path — mark them as transcribed so the
+    // status aggregation doesn't pin completed transcripts to "transcribing".
+    await db.execute('''
+      UPDATE transcript_chunks
+      SET isTranscribed = 1
+      WHERE (text IS NOT NULL AND text != '')
+         OR (transcriptionError IS NOT NULL AND transcriptionError != '')
+    ''');
   }
 
   Future<void> _migrateV4ToV5(Database db) async {
@@ -119,6 +141,10 @@ class DatabaseProvider {
   }
 
   Future<void> _migrateV5ToV6(Database db) async {
+    // Historical no-op: `audioLevel` was already added in v5. The v6 bump was
+    // reserved for a separate change that landed elsewhere; the step is kept
+    // so devices that already ran v5 remain on a monotonic version number.
+    // (`_addColumnIfMissing` is idempotent, so re-running is harmless.)
     await _addColumnIfMissing(db, 'transcript_chunks', 'audioLevel', 'REAL');
   }
 

@@ -1,35 +1,27 @@
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 
+/// Maps between domain models and sqflite rows. DB schema uses camelCase
+/// (see `DatabaseProvider`); no snake_case fallback is needed.
 class SqliteTranscriptMapper {
   const SqliteTranscriptMapper._();
 
   static Transcript transcriptFromRow(Map<String, Object?> row) {
-    final createdAt =
-        _readDate(row['createdAt'] ?? row['created_at']) ?? DateTime.now();
+    final createdAt = _readDate(row['createdAt']) ?? DateTime.now();
     return Transcript(
       id: _readString(row['id']) ?? 'local-${createdAt.millisecondsSinceEpoch}',
-      localId:
-          _readString(row['localId'] ?? row['local_id']) ??
-          _readString(row['id']) ??
-          '',
+      localId: _readString(row['localId']) ?? _readString(row['id']) ?? '',
       title: _readString(row['title']),
-      durationSeconds: _readInt(
-        row['durationSeconds'] ?? row['duration_seconds'],
-      ),
-      status: TranscriptStatus.fromKey(
-        _readString(row['statusKey'] ?? row['status_key']),
-      ),
-      recordedAt: _readDate(row['recordedAt'] ?? row['recorded_at']),
+      durationSeconds: _readInt(row['durationSeconds']),
+      status: TranscriptStatus.fromKey(_readString(row['statusKey'])),
+      recordedAt: _readDate(row['recordedAt']),
       createdAt: createdAt,
-      updatedAt: _readDate(row['updatedAt'] ?? row['updated_at']) ?? createdAt,
-      userId: _readString(row['userId'] ?? row['user_id']),
-      remoteId: _readString(row['remoteId'] ?? row['remote_id']),
-      syncStatus: SyncStatus.fromKey(
-        _readString(row['syncStatus'] ?? row['sync_status']),
-      ),
-      lastSyncedAt: _readDate(row['lastSyncedAt'] ?? row['last_synced_at']),
-      syncError: _readString(row['syncError'] ?? row['sync_error']),
-      deletedAt: _readDate(row['deletedAt'] ?? row['deleted_at']),
+      updatedAt: _readDate(row['updatedAt']) ?? createdAt,
+      userId: _readString(row['userId']),
+      remoteId: _readString(row['remoteId']),
+      syncStatus: SyncStatus.fromKey(_readString(row['syncStatus'])),
+      lastSyncedAt: _readDate(row['lastSyncedAt']),
+      syncError: _readString(row['syncError']),
+      deletedAt: _readDate(row['deletedAt']),
     );
   }
 
@@ -55,26 +47,22 @@ class SqliteTranscriptMapper {
   static TranscriptChunk chunkFromRow(Map<String, Object?> row) {
     return TranscriptChunk(
       id: _readString(row['id']) ?? '',
-      transcriptId:
-          _readString(row['transcriptId'] ?? row['transcript_id']) ?? '',
-      chunkIndex: _readInt(row['chunkIndex'] ?? row['chunk_index']),
+      transcriptId: _readString(row['transcriptId']) ?? '',
+      chunkIndex: _readInt(row['chunkIndex']),
       text: _readString(row['text']) ?? '',
-      audioPath: _readString(row['audioPath'] ?? row['audio_path']),
-      recordedAt: _readDate(row['recordedAt'] ?? row['recorded_at']),
-      startTime: _readDouble(row['startTime'] ?? row['start_time']),
-      endTime: _readDouble(row['endTime'] ?? row['end_time']),
+      audioPath: _readString(row['audioPath']),
+      recordedAt: _readDate(row['recordedAt']),
+      startTime: _readDouble(row['startTime']),
+      endTime: _readDouble(row['endTime']),
       confidence: _readNullableDouble(row['confidence']),
-      transcriptionError: _readString(
-        row['transcriptionError'] ?? row['transcription_error'],
-      ),
-      audioLevel: _readNullableDouble(row['audioLevel'] ?? row['audio_level']),
-      remoteId: _readString(row['remoteId'] ?? row['remote_id']),
-      syncStatus: SyncStatus.fromKey(
-        _readString(row['syncStatus'] ?? row['sync_status']),
-      ),
-      lastSyncedAt: _readDate(row['lastSyncedAt'] ?? row['last_synced_at']),
-      syncError: _readString(row['syncError'] ?? row['sync_error']),
-      deletedAt: _readDate(row['deletedAt'] ?? row['deleted_at']),
+      transcriptionError: _readString(row['transcriptionError']),
+      audioLevel: _readNullableDouble(row['audioLevel']),
+      remoteId: _readString(row['remoteId']),
+      isTranscribed: _readBool(row['isTranscribed']),
+      syncStatus: SyncStatus.fromKey(_readString(row['syncStatus'])),
+      lastSyncedAt: _readDate(row['lastSyncedAt']),
+      syncError: _readString(row['syncError']),
+      deletedAt: _readDate(row['deletedAt']),
     );
   }
 
@@ -92,6 +80,7 @@ class SqliteTranscriptMapper {
       'transcriptionError': chunk.transcriptionError,
       'audioLevel': chunk.audioLevel,
       'remoteId': chunk.remoteId,
+      'isTranscribed': chunk.isTranscribed ? 1 : 0,
       'syncStatus': chunk.syncStatus.key,
       'lastSyncedAt': chunk.lastSyncedAt?.toIso8601String(),
       'syncError': chunk.syncError,
@@ -100,30 +89,23 @@ class SqliteTranscriptMapper {
   }
 
   static Summary summaryFromRow(Map<String, Object?> row) {
-    final createdAt =
-        _readDate(row['createdAt'] ?? row['created_at']) ?? DateTime.now();
+    final createdAt = _readDate(row['createdAt']) ?? DateTime.now();
     return Summary(
       id:
           _readString(row['id']) ??
           'summary-${createdAt.millisecondsSinceEpoch}',
-      transcriptId:
-          _readString(row['transcriptId'] ?? row['transcript_id']) ?? '',
-      providerKey:
-          _readString(row['providerKey'] ?? row['provider_key']) ?? 'local',
+      transcriptId: _readString(row['transcriptId']) ?? '',
+      providerKey: _readString(row['providerKey']) ?? 'local',
       model: _readString(row['model']) ?? 'local-default',
-      summaryText: _readString(row['summaryText'] ?? row['summary_text']) ?? '',
-      tokenCount: _readNullableInt(row['tokenCount'] ?? row['token_count']),
-      processingTimeMs: _readNullableInt(
-        row['processingTimeMs'] ?? row['processing_time_ms'],
-      ),
+      summaryText: _readString(row['summaryText']) ?? '',
+      tokenCount: _readNullableInt(row['tokenCount']),
+      processingTimeMs: _readNullableInt(row['processingTimeMs']),
       createdAt: createdAt,
-      remoteId: _readString(row['remoteId'] ?? row['remote_id']),
-      syncStatus: SyncStatus.fromKey(
-        _readString(row['syncStatus'] ?? row['sync_status']),
-      ),
-      lastSyncedAt: _readDate(row['lastSyncedAt'] ?? row['last_synced_at']),
-      syncError: _readString(row['syncError'] ?? row['sync_error']),
-      deletedAt: _readDate(row['deletedAt'] ?? row['deleted_at']),
+      remoteId: _readString(row['remoteId']),
+      syncStatus: SyncStatus.fromKey(_readString(row['syncStatus'])),
+      lastSyncedAt: _readDate(row['lastSyncedAt']),
+      syncError: _readString(row['syncError']),
+      deletedAt: _readDate(row['deletedAt']),
     );
   }
 
@@ -218,6 +200,17 @@ class SqliteTranscriptMapper {
       return value.toDouble();
     }
     return double.tryParse(value?.toString() ?? '');
+  }
+
+  static bool _readBool(Object? value) {
+    if (value is bool) {
+      return value;
+    }
+    if (value is num) {
+      return value != 0;
+    }
+    final text = value?.toString().toLowerCase();
+    return text == '1' || text == 'true';
   }
 
   static DateTime? _readDate(Object? value) {

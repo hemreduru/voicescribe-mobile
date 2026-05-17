@@ -143,9 +143,11 @@ void main() {
       verify: (bloc) {
         expect(bloc.state.currentChunks, hasLength(2));
         expect(bloc.state.currentChunks[1].text, isEmpty);
+        // Both chunks transcribed (even though chunk-2's text was wholly
+        // deduped away) — the transcript should land on `completed`.
         expect(
           bloc.state.currentTranscript?.status,
-          TranscriptStatus.transcribing,
+          TranscriptStatus.completed,
         );
       },
     );

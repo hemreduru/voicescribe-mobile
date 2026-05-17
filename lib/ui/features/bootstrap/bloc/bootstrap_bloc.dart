@@ -8,6 +8,7 @@ import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/use_cases/repair_stale_recordings.dart';
+import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 
 enum ModelBootstrapState { bootstrapping, ready, failed }
 
@@ -214,13 +215,21 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
         if (entity is File && !knownPaths.contains(entity.path)) {
           try {
             await entity.delete();
-          } catch (_) {
-            // Best-effort cleanup.
+          } catch (error, stackTrace) {
+            AppLogger.warning(
+              '[Bootstrap] Failed to delete orphan chunk file: ${entity.path}',
+              error,
+              stackTrace,
+            );
           }
         }
       }
-    } catch (_) {
-      // Best-effort cleanup; do not fail bootstrap.
+    } catch (error, stackTrace) {
+      AppLogger.warning(
+        '[Bootstrap] Orphan chunk cleanup failed',
+        error,
+        stackTrace,
+      );
     }
   }
 
