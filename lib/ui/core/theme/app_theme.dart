@@ -298,7 +298,7 @@ class AppTheme {
         thickness: 1,
       ),
       snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
+        behavior: SnackBarBehavior.fixed,
         insetPadding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
           0,

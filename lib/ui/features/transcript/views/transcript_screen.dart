@@ -29,6 +29,12 @@ class TranscriptScreen extends StatelessWidget {
     final l10n = context.l10n;
 
     return BlocBuilder<TranscriptListBloc, TranscriptListState>(
+      buildWhen: (previous, current) =>
+          previous.items != current.items ||
+          previous.selectedIds != current.selectedIds ||
+          previous.query != current.query ||
+          previous.sort != current.sort ||
+          previous.filter != current.filter,
       builder: (context, state) {
         final selected = state.selectedIds;
         return Scaffold(
@@ -488,6 +494,8 @@ class _TranscriptDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RecordingBloc, RecordingState>(
+      buildWhen: (previous, current) =>
+          previous.retryingChunkIds != current.retryingChunkIds,
       builder: (context, recordingState) {
         return BlocConsumer<TranscriptDetailBloc, TranscriptDetailState>(
           listenWhen: (previous, current) =>
@@ -498,6 +506,15 @@ class _TranscriptDetailSheet extends StatelessWidget {
               context,
             ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
           },
+          buildWhen: (previous, current) =>
+              previous.transcript != current.transcript ||
+              previous.chunks != current.chunks ||
+              previous.summary != current.summary ||
+              previous.mergedText != current.mergedText ||
+              previous.tabIndex != current.tabIndex ||
+              previous.generatingSummary != current.generatingSummary ||
+              previous.completedChunkCount != current.completedChunkCount ||
+              previous.totalChunkCount != current.totalChunkCount,
           builder: (context, state) {
             final l10n = context.l10n;
             final transcript = state.transcript;

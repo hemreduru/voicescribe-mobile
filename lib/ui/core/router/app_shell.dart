@@ -16,6 +16,9 @@ class BootstrapGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<BootstrapBloc, BootstrapState>(
+      buildWhen: (previous, current) =>
+          previous.initialized != current.initialized ||
+          previous.modelState != current.modelState,
       builder: (context, state) {
         if (state.initialized) {
           return const SizedBox.shrink();

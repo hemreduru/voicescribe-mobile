@@ -87,7 +87,7 @@ GoRouter createAppRouter({
 class RouterRefreshNotifier extends ChangeNotifier {
   RouterRefreshNotifier(List<Stream<dynamic>> streams) {
     _subscriptions = streams
-        .map((stream) => stream.listen((_) => notifyListeners()))
+        .map((stream) => stream.distinct().listen((_) => notifyListeners()))
         .toList(growable: false);
   }
 

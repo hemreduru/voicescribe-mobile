@@ -17,9 +17,21 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final bootstrapState = context.watch<BootstrapBloc>().state;
+    final modelState = context.select<BootstrapBloc, ModelBootstrapState>(
+      (bloc) => bloc.state.modelState,
+    );
 
     return BlocBuilder<SettingsBloc, SettingsState>(
+      buildWhen: (previous, current) =>
+          previous.preferences != current.preferences ||
+          previous.session != current.session ||
+          previous.loggingOut != current.loggingOut ||
+          previous.syncing != current.syncing ||
+          previous.lastSyncAt != current.lastSyncAt ||
+          previous.syncErrorMessage != current.syncErrorMessage ||
+          previous.errorMessage != current.errorMessage ||
+          previous.modelCatalog != current.modelCatalog ||
+          previous.deviceProfile != current.deviceProfile,
       builder: (context, state) {
         final session = state.session;
         final preferences = state.preferences;
@@ -259,13 +271,13 @@ class SettingsScreen extends StatelessWidget {
                   title: l10n.systemStatus,
                   children: [
                     ActionRow(
-                      icon: _modelStatusIcon(bootstrapState.modelState),
+                      icon: _modelStatusIcon(modelState),
                       title: _modelStatusLabel(
                         context,
-                        bootstrapState.modelState,
+                        modelState,
                       ),
                       trailing:
-                          bootstrapState.modelState ==
+                          modelState ==
                               ModelBootstrapState.failed
                           ? AppButton(
                               label: l10n.retrySetup,
@@ -276,15 +288,15 @@ class SettingsScreen extends StatelessWidget {
                               variant: AppButtonVariant.outline,
                             )
                           : StatusPill(
-                              icon: _modelStatusIcon(bootstrapState.modelState),
+                              icon: _modelStatusIcon(modelState),
                               label: _modelStatusLabel(
                                 context,
-                                bootstrapState.modelState,
+                                modelState,
                               ),
                               compact: true,
                               color: _modelStatusColor(
                                 context,
-                                bootstrapState.modelState,
+                                modelState,
                               ),
                             ),
                     ),

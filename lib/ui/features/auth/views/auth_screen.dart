@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/utils/model_download_formatters.dart';
@@ -48,6 +49,11 @@ class _AuthScreenState extends State<AuthScreen>
     final l10n = context.l10n;
 
     return BlocBuilder<AuthBloc, AuthState>(
+      buildWhen: (previous, current) =>
+          previous.status != current.status ||
+          previous.isAuthenticated != current.isAuthenticated ||
+          previous.errorMessage != current.errorMessage ||
+          previous.passwordlessDebugAuth != current.passwordlessDebugAuth,
       builder: (context, authState) {
         final submitting = authState.status == AuthStatus.submitting;
         return Scaffold(
@@ -207,12 +213,27 @@ class _AuthenticatedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final bootstrapState = context.watch<BootstrapBloc>().state;
+    final isReady = context.select<BootstrapBloc, bool>(
+      (bloc) => bloc.state.isReady,
+    );
+    final modelState = context.select<BootstrapBloc, ModelBootstrapState>(
+      (bloc) => bloc.state.modelState,
+    );
+    final downloadProgress = context.select<BootstrapBloc, ModelDownloadProgress?>(
+      (bloc) => bloc.state.downloadProgress,
+    );
+    final bootstrapError = context.select<BootstrapBloc, String?>(
+      (bloc) => bloc.state.errorMessage,
+    );
 
     return AppPageListView(
       children: [
-        if (!bootstrapState.isReady) _ModelSetupCard(state: bootstrapState),
-        if (!bootstrapState.isReady) const SizedBox(height: AppSpacing.md),
+        if (!isReady) _ModelSetupCard(
+          state: modelState,
+          progress: downloadProgress,
+          error: bootstrapError,
+        ),
+        if (!isReady) const SizedBox(height: AppSpacing.md),
         AppButton(
           label: l10n.logout,
           icon: Icons.logout,
@@ -227,16 +248,21 @@ class _AuthenticatedView extends StatelessWidget {
 }
 
 class _ModelSetupCard extends StatelessWidget {
-  const _ModelSetupCard({required this.state});
+  const _ModelSetupCard({
+    required this.state,
+    required this.progress,
+    this.error,
+  });
 
-  final BootstrapState state;
+  final ModelBootstrapState state;
+  final ModelDownloadProgress? progress;
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final progress = state.downloadProgress;
     final percent = progress?.percent;
-    final isFailed = state.modelState == ModelBootstrapState.failed;
+    final isFailed = state == ModelBootstrapState.failed;
 
     return AppSectionCard(
       title: l10n.modelSetupRequired,
@@ -250,7 +276,7 @@ class _ModelSetupCard extends StatelessWidget {
         Text(
           progress == null
               ? l10n.modelDownloading
-              : formatModelDownloadProgress(l10n, progress),
+              : formatModelDownloadProgress(l10n, progress!),
         ),
         if (isFailed) ...[
           const SizedBox(height: AppSpacing.md),
@@ -261,9 +287,9 @@ class _ModelSetupCard extends StatelessWidget {
                 context.read<BootstrapBloc>().add(const BootstrapRetried()),
           ),
         ],
-        if (state.errorMessage != null) ...[
+        if (error != null) ...[
           const SizedBox(height: AppSpacing.sm),
-          AppErrorText(message: state.errorMessage!),
+          AppErrorText(message: error!),
         ],
       ],
     );

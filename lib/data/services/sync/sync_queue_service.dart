@@ -637,7 +637,7 @@ class SyncQueueService {
     required DatabaseExecutor txn,
     required DateTime now,
   }) async {
-    final cutoff = now.toUtc().subtract(_cacheTtl).toIso8601String();
+    final cutoffDate = now.toUtc().subtract(_cacheTtl);
     final cleanedIds = <String, Set<String>>{
       for (final table in syncTables) table: <String>{},
     };
@@ -645,16 +645,31 @@ class SyncQueueService {
 
     for (final table in syncTables) {
       final columns = table == 'transcript_chunks'
-          ? const ['id', 'audioPath']
-          : const ['id'];
+          ? const ['id', 'audioPath', 'lastSyncedAt', 'deletedAt']
+          : const ['id', 'lastSyncedAt', 'deletedAt'];
       final rows = await txn.query(
         table,
         columns: columns,
         where:
-            'syncStatus = ? AND ((deletedAt IS NOT NULL) OR (lastSyncedAt IS NOT NULL AND julianday(lastSyncedAt) <= julianday(?)))',
-        whereArgs: [SyncStatus.synced.key, cutoff],
+            'syncStatus = ? AND (deletedAt IS NOT NULL OR lastSyncedAt IS NOT NULL)',
+        whereArgs: [SyncStatus.synced.key],
       );
-      final ids = rows
+      final expiredRows = rows.where((row) {
+        final deletedAt = _toText(row['deletedAt']);
+        if (deletedAt != null) {
+          return true;
+        }
+        final lastSyncedAtStr = _toText(row['lastSyncedAt']);
+        if (lastSyncedAtStr == null) {
+          return false;
+        }
+        final lastSyncedAt = DateTime.tryParse(lastSyncedAtStr);
+        if (lastSyncedAt == null) {
+          return false;
+        }
+        return lastSyncedAt.toUtc().isBefore(cutoffDate);
+      }).toList();
+      final ids = expiredRows
           .map((row) => _toText(row['id']))
           .whereType<String>()
           .where((id) => id.isNotEmpty)
@@ -664,7 +679,7 @@ class SyncQueueService {
       }
       final placeholders = List.filled(ids.length, '?').join(', ');
       if (table == 'transcript_chunks') {
-        for (final row in rows) {
+        for (final row in expiredRows) {
           final audioPath = _toText(row['audioPath']);
           if (audioPath != null && audioPath.isNotEmpty) {
             chunkAudioPaths.add(audioPath);

@@ -37,17 +37,29 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
     return BlocConsumer<RecordingBloc, RecordingState>(
       listenWhen: (previous, current) =>
-          previous.userMessage != current.userMessage &&
-          current.userMessage != null,
+          (previous.userMessage != current.userMessage &&
+              current.userMessage != null) ||
+          previous.currentTranscript?.id != current.currentTranscript?.id,
       listener: (context, state) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(state.userMessage!)));
+        if (state.userMessage != null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.userMessage!)));
+        }
+        _syncTitleController(state.currentTranscript);
       },
+      buildWhen: (previous, current) =>
+          previous.isRecording != current.isRecording ||
+          previous.isPaused != current.isPaused ||
+          previous.durationSeconds != current.durationSeconds ||
+          previous.errorMessage != current.errorMessage ||
+          previous.userMessage != current.userMessage ||
+          previous.transcripts != current.transcripts ||
+          previous.currentTranscript != current.currentTranscript ||
+          previous.currentChunks != current.currentChunks,
       builder: (context, state) {
         final theme = Theme.of(context);
         final recent = state.transcripts.take(3).toList();
-        _syncTitleController(state.currentTranscript);
 
         return Scaffold(
           appBar: AppBar(title: Text(l10n.recording)),
