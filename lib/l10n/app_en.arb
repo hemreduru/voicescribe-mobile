@@ -175,5 +175,29 @@
     "placeholders": {
       "count": {}
     }
-  }
+  },
+  "transcriptionProgressPercent": "{percent}%",
+  "@transcriptionProgressPercent": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "transcriptionProgressChunks": "{completed} of {total}",
+  "@transcriptionProgressChunks": {
+    "placeholders": {
+      "completed": {},
+      "total": {}
+    }
+  },
+  "recommendedModelLabel": "Recommended model: {model}",
+  "@recommendedModelLabel": {
+    "placeholders": {
+      "model": {}
+    }
+  },
+  "usingHeavierModelWarning": "You are using a heavier model than recommended. This may cause slow transcription.",
+  "modelWarningHeavy": "Heavier than recommended",
+  "modelWarningSlow": "May be very slow",
+  "retryTranscription": "Retry",
+  "transcriptionFailedRetry": "Transcription failed. Tap to retry."
 }

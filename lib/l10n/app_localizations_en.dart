@@ -433,4 +433,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String chunksCount(Object count) {
     return '$count chunks';
   }
+
+  @override
+  String transcriptionProgressPercent(Object percent) {
+    return '$percent%';
+  }
+
+  @override
+  String transcriptionProgressChunks(Object completed, Object total) {
+    return '$completed of $total';
+  }
+
+  @override
+  String recommendedModelLabel(Object model) {
+    return 'Recommended model: $model';
+  }
+
+  @override
+  String get usingHeavierModelWarning =>
+      'You are using a heavier model than recommended. This may cause slow transcription.';
+
+  @override
+  String get modelWarningHeavy => 'Heavier than recommended';
+
+  @override
+  String get modelWarningSlow => 'May be very slow';
+
+  @override
+  String get retryTranscription => 'Retry';
+
+  @override
+  String get transcriptionFailedRetry => 'Transcription failed. Tap to retry.';
 }

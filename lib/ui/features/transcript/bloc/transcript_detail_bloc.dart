@@ -50,6 +50,8 @@ class TranscriptDetailState {
     this.tabIndex = 0,
     this.generatingSummary = false,
     this.errorMessage,
+    this.completedChunkCount = 0,
+    this.totalChunkCount = 0,
   });
 
   final String transcriptId;
@@ -61,6 +63,8 @@ class TranscriptDetailState {
   final int tabIndex;
   final bool generatingSummary;
   final String? errorMessage;
+  final int completedChunkCount;
+  final int totalChunkCount;
 
   TranscriptDetailState copyWith({
     TranscriptSnapshot? snapshot,
@@ -74,6 +78,8 @@ class TranscriptDetailState {
     bool? generatingSummary,
     String? errorMessage,
     bool clearErrorMessage = false,
+    int? completedChunkCount,
+    int? totalChunkCount,
   }) {
     return TranscriptDetailState(
       transcriptId: transcriptId,
@@ -87,6 +93,8 @@ class TranscriptDetailState {
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
+      completedChunkCount: completedChunkCount ?? this.completedChunkCount,
+      totalChunkCount: totalChunkCount ?? this.totalChunkCount,
     );
   }
 }
@@ -206,6 +214,8 @@ class TranscriptDetailBloc
         .firstOrNull;
     final chunks = snapshot.chunksFor(state.transcriptId);
     final summary = snapshot.latestSummaryFor(state.transcriptId);
+    final totalChunkCount = chunks.length;
+    final completedChunkCount = chunks.where((c) => c.text.isNotEmpty).length;
     return state.copyWith(
       snapshot: snapshot,
       transcript: transcript,
@@ -214,6 +224,8 @@ class TranscriptDetailBloc
       summary: summary,
       clearSummary: summary == null,
       mergedText: mergeTranscriptChunks(chunks),
+      completedChunkCount: completedChunkCount,
+      totalChunkCount: totalChunkCount,
     );
   }
 

@@ -875,6 +875,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} chunks'**
   String chunksCount(Object count);
+
+  /// No description provided for @transcriptionProgressPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String transcriptionProgressPercent(Object percent);
+
+  /// No description provided for @transcriptionProgressChunks.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} of {total}'**
+  String transcriptionProgressChunks(Object completed, Object total);
+
+  /// No description provided for @recommendedModelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended model: {model}'**
+  String recommendedModelLabel(Object model);
+
+  /// No description provided for @usingHeavierModelWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'You are using a heavier model than recommended. This may cause slow transcription.'**
+  String get usingHeavierModelWarning;
+
+  /// No description provided for @modelWarningHeavy.
+  ///
+  /// In en, this message translates to:
+  /// **'Heavier than recommended'**
+  String get modelWarningHeavy;
+
+  /// No description provided for @modelWarningSlow.
+  ///
+  /// In en, this message translates to:
+  /// **'May be very slow'**
+  String get modelWarningSlow;
+
+  /// No description provided for @retryTranscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryTranscription;
+
+  /// No description provided for @transcriptionFailedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription failed. Tap to retry.'**
+  String get transcriptionFailedRetry;
 }
 
 class _AppLocalizationsDelegate

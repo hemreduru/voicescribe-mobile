@@ -17,6 +17,7 @@ import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_segmented_control.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_text_field.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/premium_widgets.dart';
+import 'package:voicescribe_mobile/ui/features/recording/bloc/recording_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/transcript/bloc/transcript_detail_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/transcript/bloc/transcript_list_bloc.dart';
 
@@ -172,6 +173,8 @@ class TranscriptScreen extends StatelessWidget {
                                 return _TranscriptCard(
                                   transcript: transcript,
                                   mergedText: item.mergedText,
+                                  completedChunkCount: item.completedChunkCount,
+                                  totalChunkCount: item.totalChunkCount,
                                   selected: isSelected,
                                   onTap: () {
                                     if (selected.isNotEmpty) {
@@ -361,6 +364,122 @@ class _StatusHelpRow extends StatelessWidget {
   }
 }
 
+class _TranscriptionErrorBanner extends StatelessWidget {
+  const _TranscriptionErrorBanner({this.onRetry});
+
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: theme.colorScheme.onErrorContainer,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              context.l10n.transcriptionFailedRetry,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+          if (onRetry != null)
+            AppButton(
+              label: context.l10n.retryTranscription,
+              icon: Icons.refresh,
+              onPressed: onRetry,
+              variant: AppButtonVariant.outline,
+              foregroundColor: theme.colorScheme.onErrorContainer,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TranscriptionProgressBar extends StatelessWidget {
+  const _TranscriptionProgressBar({
+    required this.completed,
+    required this.total,
+    required this.isVisible,
+  });
+
+  final int completed;
+  final int total;
+  final bool isVisible;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final percent = total == 0 ? 0.0 : (completed / total).clamp(0.0, 1.0);
+
+    return AnimatedOpacity(
+      opacity: isVisible ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 250),
+      curve: isVisible ? Curves.easeOut : Curves.easeIn,
+      child: IgnorePointer(
+        ignoring: !isVisible,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 4,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: percent,
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.3),
+                        valueColor: AlwaysStoppedAnimation(
+                          statusColor(context, TranscriptStatus.transcribing),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  l10n.transcriptionProgressPercent((percent * 100).round()),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.transcriptionProgressChunks(completed, total),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TranscriptDetailSheet extends StatelessWidget {
   const _TranscriptDetailSheet();
 
@@ -383,6 +502,11 @@ class _TranscriptDetailSheet extends StatelessWidget {
         }
 
         final recordedAt = transcript.recordedAt ?? transcript.createdAt;
+        final isProcessing =
+            displayStatusFor(transcript.status) ==
+            TranscriptDisplayStatus.processing;
+        final isError =
+            transcript.status == TranscriptStatus.transcriptionError;
         return DraggableScrollableSheet(
           expand: false,
           initialChildSize: 0.84,
@@ -426,6 +550,29 @@ class _TranscriptDetailSheet extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (isProcessing) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  _TranscriptionProgressBar(
+                    completed: state.completedChunkCount,
+                    total: state.totalChunkCount,
+                    isVisible: isProcessing,
+                  ),
+                ],
+                if (isError) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  _TranscriptionErrorBanner(onRetry: () {
+                    final chunkIds = state.chunks
+                        .where((c) => c.transcriptionError != null)
+                        .map((c) => c.id)
+                        .toList();
+                    context.read<RecordingBloc>().add(
+                      RecordingChunkRetryRequested(
+                        transcriptId: transcript.id,
+                        chunkIds: chunkIds,
+                      ),
+                    );
+                  }),
+                ],
                 const SizedBox(height: AppSpacing.lg),
                 DefaultTabController(
                   length: 2,
@@ -441,7 +588,25 @@ class _TranscriptDetailSheet extends StatelessWidget {
                 ),
                 const PremiumDivider(),
                 if (state.tabIndex == 0)
-                  _TranscriptTextTab(mergedText: state.mergedText)
+                  _TranscriptTextTab(
+                    mergedText: state.mergedText,
+                    canRetry: isError,
+                    onRetry: isError
+                        ? () {
+                            final chunkIds = state.chunks
+                                .where((c) => c.transcriptionError != null)
+                                .map((c) => c.id)
+                                .toList();
+                            context.read<RecordingBloc>().add(
+                              RecordingChunkRetryRequested(
+                                transcriptId: transcript.id,
+                                chunkIds: chunkIds,
+                              ),
+                            );
+                            Navigator.of(context).pop();
+                          }
+                        : null,
+                  )
                 else
                   _SummaryTab(state: state),
               ],
@@ -454,14 +619,24 @@ class _TranscriptDetailSheet extends StatelessWidget {
 }
 
 class _TranscriptTextTab extends StatelessWidget {
-  const _TranscriptTextTab({required this.mergedText});
+  const _TranscriptTextTab({
+    required this.mergedText,
+    required this.canRetry,
+    required this.onRetry,
+  });
 
   final String mergedText;
+  final bool canRetry;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+
+    if (mergedText.isEmpty && canRetry) {
+      return _TranscriptionRetryCta(onRetry: onRetry);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -474,6 +649,47 @@ class _TranscriptTextTab extends StatelessWidget {
         else
           SelectableText(mergedText, style: theme.textTheme.bodyLarge),
       ],
+    );
+  }
+}
+
+class _TranscriptionRetryCta extends StatelessWidget {
+  const _TranscriptionRetryCta({this.onRetry});
+
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: theme.colorScheme.error,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.transcriptionFailedRetry,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            label: l10n.retryTranscription,
+            icon: Icons.refresh,
+            onPressed: onRetry,
+            expanded: true,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -525,6 +741,8 @@ class _TranscriptCard extends StatelessWidget {
     required this.selected,
     required this.onTap,
     required this.onLongPress,
+    this.completedChunkCount = 0,
+    this.totalChunkCount = 0,
   });
 
   final Transcript transcript;
@@ -532,12 +750,17 @@ class _TranscriptCard extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+  final int completedChunkCount;
+  final int totalChunkCount;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final recordedAt = transcript.recordedAt ?? transcript.createdAt;
+    final isProcessing =
+        displayStatusFor(transcript.status) ==
+        TranscriptDisplayStatus.processing;
 
     return GestureDetector(
       onLongPress: onLongPress,
@@ -590,6 +813,14 @@ class _TranscriptCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (isProcessing) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    _TranscriptionProgressBar(
+                      completed: completedChunkCount,
+                      total: totalChunkCount,
+                      isVisible: isProcessing,
+                    ),
+                  ],
                   if (mergedText.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.sm + 2),
                     Text(

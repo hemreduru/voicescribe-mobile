@@ -68,10 +68,14 @@ class TranscriptListItem {
   const TranscriptListItem({
     required this.transcript,
     required this.mergedText,
+    this.completedChunkCount = 0,
+    this.totalChunkCount = 0,
   });
 
   final Transcript transcript;
   final String mergedText;
+  final int completedChunkCount;
+  final int totalChunkCount;
 }
 
 class TranscriptListState {
@@ -260,9 +264,10 @@ class TranscriptListBloc
       if (!_matchesFilter(transcript.status, filter)) {
         continue;
       }
-      final mergedText = mergeTranscriptChunks(
-        snapshot.chunksFor(transcript.id),
-      );
+      final chunks = snapshot.chunksFor(transcript.id);
+      final mergedText = mergeTranscriptChunks(chunks);
+      final totalChunkCount = chunks.length;
+      final completedChunkCount = chunks.where((c) => c.text.isNotEmpty).length;
       final title = (transcript.title ?? '').toLowerCase();
       final matchesQuery =
           normalizedQuery.isEmpty ||
@@ -272,7 +277,12 @@ class TranscriptListBloc
         continue;
       }
       items.add(
-        TranscriptListItem(transcript: transcript, mergedText: mergedText),
+        TranscriptListItem(
+          transcript: transcript,
+          mergedText: mergedText,
+          completedChunkCount: completedChunkCount,
+          totalChunkCount: totalChunkCount,
+        ),
       );
     }
 

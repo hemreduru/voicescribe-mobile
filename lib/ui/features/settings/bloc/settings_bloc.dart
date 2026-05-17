@@ -309,33 +309,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     SettingsTranscriptionModelChanged event,
     Emitter<SettingsState> emit,
   ) async {
-    final modelKey = AppPreferences.normalizeTranscriptionModel(event.value);
-    final previousPreferences = state.preferences;
-    final nextPreferences = previousPreferences.copyWith(
-      transcriptionModel: modelKey,
-    );
-
-    emit(
-      state.copyWith(
-        preferences: nextPreferences,
-        applyingTranscriptionModel: true,
-        clearErrorMessage: true,
-      ),
-    );
-
-    try {
-      await _transcriptRepository.savePreferences(nextPreferences);
-      await _loadModelCatalog(emit);
-      emit(state.copyWith(applyingTranscriptionModel: false));
-    } catch (error) {
-      emit(
-        state.copyWith(
-          preferences: previousPreferences,
-          applyingTranscriptionModel: false,
-          errorMessage: error.toString(),
-        ),
-      );
-    }
+    // Model selection is locked to base for stability.
+    // This handler is kept for API compatibility but does nothing.
+    return;
   }
 
   Future<void> _onLogoutRequested(

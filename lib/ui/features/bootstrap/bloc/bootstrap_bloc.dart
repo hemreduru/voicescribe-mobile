@@ -165,9 +165,8 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     );
     try {
       final snapshot = await _transcriptRepository.loadSnapshot();
-      final modelKey = AppPreferences.normalizeTranscriptionModel(
-        snapshot.preferences.transcriptionModel,
-      );
+      const modelKey = 'base';
+
       await _transcriptionService.selectModel(whisperModelFromKey(modelKey));
       await RepairStaleRecordingsUseCase(
         _transcriptRepository,

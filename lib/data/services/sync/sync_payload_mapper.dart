@@ -68,6 +68,8 @@ class SyncPayloadMapper {
       'end_time': _toDouble(row['endTime']),
       'endTime': _toDouble(row['endTime']),
       'confidence': row['confidence'],
+      'transcription_error': _toText(row['transcriptionError']),
+      'transcriptionError': _toText(row['transcriptionError']),
       'deleted_at': row['deletedAt'],
       'deletedAt': row['deletedAt'],
     };

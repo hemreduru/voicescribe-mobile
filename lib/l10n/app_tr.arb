@@ -175,5 +175,29 @@
     "placeholders": {
       "count": {}
     }
-  }
+  },
+  "transcriptionProgressPercent": "%{percent}",
+  "@transcriptionProgressPercent": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "transcriptionProgressChunks": "{completed}/{total}",
+  "@transcriptionProgressChunks": {
+    "placeholders": {
+      "completed": {},
+      "total": {}
+    }
+  },
+  "recommendedModelLabel": "Önerilen model: {model}",
+  "@recommendedModelLabel": {
+    "placeholders": {
+      "model": {}
+    }
+  },
+  "usingHeavierModelWarning": "Önerilenden daha ağır bir model kullanıyorsunuz. Bu yavaş transkripsiyona neden olabilir.",
+  "modelWarningHeavy": "Önerilenden ağır",
+  "modelWarningSlow": "Çok yavaş olabilir",
+  "retryTranscription": "Tekrar Dene",
+  "transcriptionFailedRetry": "Transkripsiyon başarısız oldu. Tekrar denemek için dokunun."
 }

@@ -435,4 +435,36 @@ class AppLocalizationsTr extends AppLocalizations {
   String chunksCount(Object count) {
     return '$count parça';
   }
+
+  @override
+  String transcriptionProgressPercent(Object percent) {
+    return '%$percent';
+  }
+
+  @override
+  String transcriptionProgressChunks(Object completed, Object total) {
+    return '$completed/$total';
+  }
+
+  @override
+  String recommendedModelLabel(Object model) {
+    return 'Önerilen model: $model';
+  }
+
+  @override
+  String get usingHeavierModelWarning =>
+      'Önerilenden daha ağır bir model kullanıyorsunuz. Bu yavaş transkripsiyona neden olabilir.';
+
+  @override
+  String get modelWarningHeavy => 'Önerilenden ağır';
+
+  @override
+  String get modelWarningSlow => 'Çok yavaş olabilir';
+
+  @override
+  String get retryTranscription => 'Tekrar Dene';
+
+  @override
+  String get transcriptionFailedRetry =>
+      'Transkripsiyon başarısız oldu. Tekrar denemek için dokunun.';
 }
