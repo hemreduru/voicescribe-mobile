@@ -69,6 +69,37 @@
   "summaryProvider": "Summary Provider",
   "summaryLength": "Summary Length",
   "summaryPreferences": "Manage where summaries run and how much detail they include.",
+  "transcriptionModelSettings": "Transcription Model",
+  "transcriptionModelPreferences": "Choose the on-device model used for speech transcription.",
+  "recommendedForYourDevice": "Recommended for your device",
+  "deviceProfileLabel": "Device profile: {tier}",
+  "@deviceProfileLabel": {
+    "placeholders": {
+      "tier": {}
+    }
+  },
+  "deviceTierEntry": "Entry",
+  "deviceTierBalanced": "Balanced",
+  "deviceTierPerformance": "Performance",
+  "deviceTierPremium": "Premium",
+  "modelDownloadRemaining": "Download: {size}",
+  "@modelDownloadRemaining": {
+    "placeholders": {
+      "size": {}
+    }
+  },
+  "modelAlreadyDownloaded": "Already downloaded",
+  "modelDownloadSizeUnknown": "Download size unavailable",
+  "modelCompatibilityRecommended": "Recommended",
+  "modelCompatibilitySupported": "Supported",
+  "modelCompatibilityLimited": "Can be slow on this device",
+  "modelApplyingSelection": "Applying selected model...",
+  "modelTinyDescription": "Fastest option for low-end phones and quick drafts.",
+  "modelBaseDescription": "Balanced default for everyday transcription.",
+  "modelSmallDescription": "Better accuracy with moderate device cost.",
+  "modelMediumDescription": "Higher accuracy for stronger phones.",
+  "modelLargeV3Description": "Best overall accuracy, but heavy on memory and battery.",
+  "modelLargeV3TurboDescription": "Large-class accuracy with faster throughput.",
   "userId": "User ID",
   "summarySettings": "Summary Settings",
   "latestTranscript": "Latest Transcript",

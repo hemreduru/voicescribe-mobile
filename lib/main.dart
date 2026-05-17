@@ -110,6 +110,7 @@ class VoiceScribeRoot extends StatelessWidget {
               transcriptRepository: context.read<TranscriptRepository>(),
               authRepository: context.read<AuthRepository>(),
               syncQueueService: context.read<SyncQueueService>(),
+              transcriptionService: context.read<TranscriptionService>(),
             )..add(const SettingsSubscriptionRequested()),
           ),
         ],

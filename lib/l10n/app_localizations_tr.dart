@@ -190,6 +190,80 @@ class AppLocalizationsTr extends AppLocalizations {
       'Özetlerin nerede çalışacağını ve ne kadar detay içereceğini yönetin.';
 
   @override
+  String get transcriptionModelSettings => 'Transkripsiyon Modeli';
+
+  @override
+  String get transcriptionModelPreferences =>
+      'Ses transkripsiyonu için cihaz içinde kullanılacak modeli seçin.';
+
+  @override
+  String get recommendedForYourDevice => 'Cihazınız için önerilen';
+
+  @override
+  String deviceProfileLabel(Object tier) {
+    return 'Cihaz profili: $tier';
+  }
+
+  @override
+  String get deviceTierEntry => 'Giriş';
+
+  @override
+  String get deviceTierBalanced => 'Dengeli';
+
+  @override
+  String get deviceTierPerformance => 'Performans';
+
+  @override
+  String get deviceTierPremium => 'Üst Seviye';
+
+  @override
+  String modelDownloadRemaining(Object size) {
+    return 'İndirme: $size';
+  }
+
+  @override
+  String get modelAlreadyDownloaded => 'Zaten indirildi';
+
+  @override
+  String get modelDownloadSizeUnknown => 'İndirme boyutu alınamadı';
+
+  @override
+  String get modelCompatibilityRecommended => 'Önerilen';
+
+  @override
+  String get modelCompatibilitySupported => 'Uyumlu';
+
+  @override
+  String get modelCompatibilityLimited => 'Bu cihazda yavaş olabilir';
+
+  @override
+  String get modelApplyingSelection => 'Seçilen model uygulanıyor...';
+
+  @override
+  String get modelTinyDescription =>
+      'Düşük seviye telefonlar ve hızlı taslaklar için en hızlı seçenek.';
+
+  @override
+  String get modelBaseDescription =>
+      'Günlük transkripsiyon için dengeli varsayılan.';
+
+  @override
+  String get modelSmallDescription =>
+      'Orta düzey cihaz maliyetiyle daha iyi doğruluk.';
+
+  @override
+  String get modelMediumDescription =>
+      'Daha güçlü telefonlar için daha yüksek doğruluk.';
+
+  @override
+  String get modelLargeV3Description =>
+      'En yüksek genel doğruluk, ancak bellek ve pil kullanımı yüksektir.';
+
+  @override
+  String get modelLargeV3TurboDescription =>
+      'Daha hızlı işlemle büyük sınıf doğruluğu.';
+
+  @override
   String get userId => 'Kullanıcı ID';
 
   @override

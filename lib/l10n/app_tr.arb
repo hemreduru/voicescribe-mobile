@@ -69,6 +69,37 @@
   "summaryProvider": "Özet Sağlayıcısı",
   "summaryLength": "Özet Uzunluğu",
   "summaryPreferences": "Özetlerin nerede çalışacağını ve ne kadar detay içereceğini yönetin.",
+  "transcriptionModelSettings": "Transkripsiyon Modeli",
+  "transcriptionModelPreferences": "Ses transkripsiyonu için cihaz içinde kullanılacak modeli seçin.",
+  "recommendedForYourDevice": "Cihazınız için önerilen",
+  "deviceProfileLabel": "Cihaz profili: {tier}",
+  "@deviceProfileLabel": {
+    "placeholders": {
+      "tier": {}
+    }
+  },
+  "deviceTierEntry": "Giriş",
+  "deviceTierBalanced": "Dengeli",
+  "deviceTierPerformance": "Performans",
+  "deviceTierPremium": "Üst Seviye",
+  "modelDownloadRemaining": "İndirme: {size}",
+  "@modelDownloadRemaining": {
+    "placeholders": {
+      "size": {}
+    }
+  },
+  "modelAlreadyDownloaded": "Zaten indirildi",
+  "modelDownloadSizeUnknown": "İndirme boyutu alınamadı",
+  "modelCompatibilityRecommended": "Önerilen",
+  "modelCompatibilitySupported": "Uyumlu",
+  "modelCompatibilityLimited": "Bu cihazda yavaş olabilir",
+  "modelApplyingSelection": "Seçilen model uygulanıyor...",
+  "modelTinyDescription": "Düşük seviye telefonlar ve hızlı taslaklar için en hızlı seçenek.",
+  "modelBaseDescription": "Günlük transkripsiyon için dengeli varsayılan.",
+  "modelSmallDescription": "Orta düzey cihaz maliyetiyle daha iyi doğruluk.",
+  "modelMediumDescription": "Daha güçlü telefonlar için daha yüksek doğruluk.",
+  "modelLargeV3Description": "En yüksek genel doğruluk, ancak bellek ve pil kullanımı yüksektir.",
+  "modelLargeV3TurboDescription": "Daha hızlı işlemle büyük sınıf doğruluğu.",
   "userId": "Kullanıcı ID",
   "summarySettings": "Özet Ayarları",
   "latestTranscript": "Son Transkript",

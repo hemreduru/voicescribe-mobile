@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
+import 'package:voicescribe_mobile/ui/core/utils/model_download_formatters.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
@@ -247,9 +248,9 @@ class _ModelSetupCard extends StatelessWidget {
         LinearProgressIndicator(value: percent == null ? null : percent / 100),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          percent == null
+          progress == null
               ? l10n.modelDownloading
-              : l10n.modelDownloadingPercent(percent.floor()),
+              : formatModelDownloadProgress(l10n, progress),
         ),
         if (isFailed) ...[
           const SizedBox(height: AppSpacing.md),

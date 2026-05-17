@@ -190,6 +190,79 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage where summaries run and how much detail they include.';
 
   @override
+  String get transcriptionModelSettings => 'Transcription Model';
+
+  @override
+  String get transcriptionModelPreferences =>
+      'Choose the on-device model used for speech transcription.';
+
+  @override
+  String get recommendedForYourDevice => 'Recommended for your device';
+
+  @override
+  String deviceProfileLabel(Object tier) {
+    return 'Device profile: $tier';
+  }
+
+  @override
+  String get deviceTierEntry => 'Entry';
+
+  @override
+  String get deviceTierBalanced => 'Balanced';
+
+  @override
+  String get deviceTierPerformance => 'Performance';
+
+  @override
+  String get deviceTierPremium => 'Premium';
+
+  @override
+  String modelDownloadRemaining(Object size) {
+    return 'Download: $size';
+  }
+
+  @override
+  String get modelAlreadyDownloaded => 'Already downloaded';
+
+  @override
+  String get modelDownloadSizeUnknown => 'Download size unavailable';
+
+  @override
+  String get modelCompatibilityRecommended => 'Recommended';
+
+  @override
+  String get modelCompatibilitySupported => 'Supported';
+
+  @override
+  String get modelCompatibilityLimited => 'Can be slow on this device';
+
+  @override
+  String get modelApplyingSelection => 'Applying selected model...';
+
+  @override
+  String get modelTinyDescription =>
+      'Fastest option for low-end phones and quick drafts.';
+
+  @override
+  String get modelBaseDescription =>
+      'Balanced default for everyday transcription.';
+
+  @override
+  String get modelSmallDescription =>
+      'Better accuracy with moderate device cost.';
+
+  @override
+  String get modelMediumDescription => 'Higher accuracy for stronger phones.';
+
+  @override
+  String get modelLargeV3Description =>
+      'Best overall accuracy, but heavy on memory and battery.';
+
+  @override
+  String get modelLargeV3TurboDescription =>
+      'Large-class accuracy with faster throughput.';
+
+  @override
   String get userId => 'User ID';
 
   @override

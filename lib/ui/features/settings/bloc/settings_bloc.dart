@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
+import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -34,6 +35,12 @@ final class SettingsThemeModeChanged extends SettingsEvent {
 
 final class SettingsLocalePreferenceChanged extends SettingsEvent {
   const SettingsLocalePreferenceChanged(this.value);
+
+  final String value;
+}
+
+final class SettingsTranscriptionModelChanged extends SettingsEvent {
+  const SettingsTranscriptionModelChanged(this.value);
 
   final String value;
 }
@@ -73,6 +80,11 @@ class SettingsState {
     this.lastSyncAt,
     this.syncErrorMessage,
     this.errorMessage,
+    this.modelCatalog = const [],
+    this.modelCatalogLoading = false,
+    this.modelCatalogErrorMessage,
+    this.deviceProfile,
+    this.applyingTranscriptionModel = false,
   });
 
   final AppPreferences preferences;
@@ -82,6 +94,11 @@ class SettingsState {
   final DateTime? lastSyncAt;
   final String? syncErrorMessage;
   final String? errorMessage;
+  final List<TranscriptionModelCatalogEntry> modelCatalog;
+  final bool modelCatalogLoading;
+  final String? modelCatalogErrorMessage;
+  final DevicePerformanceProfile? deviceProfile;
+  final bool applyingTranscriptionModel;
 
   SettingsState copyWith({
     AppPreferences? preferences,
@@ -95,6 +112,13 @@ class SettingsState {
     bool clearSyncErrorMessage = false,
     String? errorMessage,
     bool clearErrorMessage = false,
+    List<TranscriptionModelCatalogEntry>? modelCatalog,
+    bool? modelCatalogLoading,
+    String? modelCatalogErrorMessage,
+    bool clearModelCatalogErrorMessage = false,
+    DevicePerformanceProfile? deviceProfile,
+    bool clearDeviceProfile = false,
+    bool? applyingTranscriptionModel,
   }) {
     return SettingsState(
       preferences: preferences ?? this.preferences,
@@ -108,6 +132,16 @@ class SettingsState {
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
+      modelCatalog: modelCatalog ?? this.modelCatalog,
+      modelCatalogLoading: modelCatalogLoading ?? this.modelCatalogLoading,
+      modelCatalogErrorMessage: clearModelCatalogErrorMessage
+          ? null
+          : modelCatalogErrorMessage ?? this.modelCatalogErrorMessage,
+      deviceProfile: clearDeviceProfile
+          ? null
+          : deviceProfile ?? this.deviceProfile,
+      applyingTranscriptionModel:
+          applyingTranscriptionModel ?? this.applyingTranscriptionModel,
     );
   }
 }
@@ -117,9 +151,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     required TranscriptRepository transcriptRepository,
     required AuthRepository authRepository,
     required SyncQueueService syncQueueService,
+    required TranscriptionService transcriptionService,
   }) : _transcriptRepository = transcriptRepository,
        _authRepository = authRepository,
        _syncQueueService = syncQueueService,
+       _transcriptionService = transcriptionService,
        super(const SettingsState()) {
     on<SettingsSubscriptionRequested>(_onSubscriptionRequested);
     on<_SettingsSnapshotChanged>(_onSnapshotChanged);
@@ -129,6 +165,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<SettingsSummaryLengthChanged>(_onSummaryLengthChanged);
     on<SettingsThemeModeChanged>(_onThemeModeChanged);
     on<SettingsLocalePreferenceChanged>(_onLocalePreferenceChanged);
+    on<SettingsTranscriptionModelChanged>(_onTranscriptionModelChanged);
     on<SettingsManualSyncRequested>(_onManualSyncRequested);
     on<SettingsLogoutRequested>(_onLogoutRequested);
   }
@@ -136,6 +173,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final TranscriptRepository _transcriptRepository;
   final AuthRepository _authRepository;
   final SyncQueueService _syncQueueService;
+  final TranscriptionService _transcriptionService;
   StreamSubscription<TranscriptSnapshot>? _snapshotSubscription;
   StreamSubscription<AuthSessionState?>? _sessionSubscription;
   StreamSubscription<SyncEvent>? _syncSubscription;
@@ -157,6 +195,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         lastSyncAt: lastSyncAt,
       ),
     );
+    await _loadModelCatalog(emit);
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
       (snapshot) => add(_SettingsSnapshotChanged(snapshot)),
     );
@@ -266,6 +305,39 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     );
   }
 
+  Future<void> _onTranscriptionModelChanged(
+    SettingsTranscriptionModelChanged event,
+    Emitter<SettingsState> emit,
+  ) async {
+    final modelKey = AppPreferences.normalizeTranscriptionModel(event.value);
+    final previousPreferences = state.preferences;
+    final nextPreferences = previousPreferences.copyWith(
+      transcriptionModel: modelKey,
+    );
+
+    emit(
+      state.copyWith(
+        preferences: nextPreferences,
+        applyingTranscriptionModel: true,
+        clearErrorMessage: true,
+      ),
+    );
+
+    try {
+      await _transcriptRepository.savePreferences(nextPreferences);
+      await _loadModelCatalog(emit);
+      emit(state.copyWith(applyingTranscriptionModel: false));
+    } catch (error) {
+      emit(
+        state.copyWith(
+          preferences: previousPreferences,
+          applyingTranscriptionModel: false,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
   Future<void> _onLogoutRequested(
     SettingsLogoutRequested event,
     Emitter<SettingsState> emit,
@@ -314,6 +386,34 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       await _transcriptRepository.savePreferences(preferences);
     } catch (error) {
       emit(state.copyWith(errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _loadModelCatalog(Emitter<SettingsState> emit) async {
+    emit(
+      state.copyWith(
+        modelCatalogLoading: true,
+        clearModelCatalogErrorMessage: true,
+      ),
+    );
+    try {
+      final profile = await _transcriptionService.resolveDeviceProfile();
+      final catalog = await _transcriptionService.listModelCatalog();
+      emit(
+        state.copyWith(
+          modelCatalogLoading: false,
+          deviceProfile: profile,
+          modelCatalog: catalog,
+          clearModelCatalogErrorMessage: true,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          modelCatalogLoading: false,
+          modelCatalogErrorMessage: error.toString(),
+        ),
+      );
     }
   }
 

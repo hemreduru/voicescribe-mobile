@@ -444,6 +444,132 @@ abstract class AppLocalizations {
   /// **'Manage where summaries run and how much detail they include.'**
   String get summaryPreferences;
 
+  /// No description provided for @transcriptionModelSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription Model'**
+  String get transcriptionModelSettings;
+
+  /// No description provided for @transcriptionModelPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the on-device model used for speech transcription.'**
+  String get transcriptionModelPreferences;
+
+  /// No description provided for @recommendedForYourDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended for your device'**
+  String get recommendedForYourDevice;
+
+  /// No description provided for @deviceProfileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Device profile: {tier}'**
+  String deviceProfileLabel(Object tier);
+
+  /// No description provided for @deviceTierEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry'**
+  String get deviceTierEntry;
+
+  /// No description provided for @deviceTierBalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced'**
+  String get deviceTierBalanced;
+
+  /// No description provided for @deviceTierPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get deviceTierPerformance;
+
+  /// No description provided for @deviceTierPremium.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get deviceTierPremium;
+
+  /// No description provided for @modelDownloadRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Download: {size}'**
+  String modelDownloadRemaining(Object size);
+
+  /// No description provided for @modelAlreadyDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Already downloaded'**
+  String get modelAlreadyDownloaded;
+
+  /// No description provided for @modelDownloadSizeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Download size unavailable'**
+  String get modelDownloadSizeUnknown;
+
+  /// No description provided for @modelCompatibilityRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get modelCompatibilityRecommended;
+
+  /// No description provided for @modelCompatibilitySupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Supported'**
+  String get modelCompatibilitySupported;
+
+  /// No description provided for @modelCompatibilityLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Can be slow on this device'**
+  String get modelCompatibilityLimited;
+
+  /// No description provided for @modelApplyingSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Applying selected model...'**
+  String get modelApplyingSelection;
+
+  /// No description provided for @modelTinyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Fastest option for low-end phones and quick drafts.'**
+  String get modelTinyDescription;
+
+  /// No description provided for @modelBaseDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced default for everyday transcription.'**
+  String get modelBaseDescription;
+
+  /// No description provided for @modelSmallDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Better accuracy with moderate device cost.'**
+  String get modelSmallDescription;
+
+  /// No description provided for @modelMediumDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Higher accuracy for stronger phones.'**
+  String get modelMediumDescription;
+
+  /// No description provided for @modelLargeV3Description.
+  ///
+  /// In en, this message translates to:
+  /// **'Best overall accuracy, but heavy on memory and battery.'**
+  String get modelLargeV3Description;
+
+  /// No description provided for @modelLargeV3TurboDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Large-class accuracy with faster throughput.'**
+  String get modelLargeV3TurboDescription;
+
   /// No description provided for @userId.
   ///
   /// In en, this message translates to:

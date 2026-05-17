@@ -37,8 +37,46 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Account'), findsOneWidget);
     expect(find.text('Authenticated User'), findsOneWidget);
-
     expect(find.widgetWithText(AppButton, 'Logout'), findsOneWidget);
+
+    await tester.dragUntilVisible(
+      find.text('Transcription Model'),
+      find.byType(Scrollable).first,
+      const Offset(0, -260),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Transcription Model'), findsOneWidget);
+    expect(find.text('Recommended for your device'), findsWidgets);
+    expect(find.text('Tiny (EN)'), findsNothing);
+  });
+
+  testWidgets('model descriptions follow the active locale', (tester) async {
+    final fakes = _Fakes();
+
+    await tester.pumpWidget(
+      _wrapWithApp(
+        fakes: fakes,
+        child: const SettingsScreen(),
+        locale: const Locale('tr'),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.dragUntilVisible(
+      find.text('Transkripsiyon Modeli'),
+      find.byType(Scrollable).first,
+      const Offset(0, -260),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Düşük seviye telefonlar ve hızlı taslaklar için en hızlı seçenek.',
+      ),
+      findsWidgets,
+    );
+    expect(find.textContaining('(EN)'), findsNothing);
   });
 
   testWidgets('shell navigation exposes settings as the last destination', (
@@ -85,7 +123,11 @@ void main() {
   );
 }
 
-Widget _wrapWithApp({required _Fakes fakes, required Widget child}) {
+Widget _wrapWithApp({
+  required _Fakes fakes,
+  required Widget child,
+  Locale locale = const Locale('en'),
+}) {
   return _RepositoryHarness(
     fakes: fakes,
     child: MultiBlocProvider(
@@ -93,7 +135,7 @@ Widget _wrapWithApp({required _Fakes fakes, required Widget child}) {
       child: MaterialApp(
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
-        locale: const Locale('en'),
+        locale: locale,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -152,6 +194,7 @@ List<BlocProvider<dynamic>> _createBlocProviders(_Fakes fakes) {
         transcriptRepository: fakes.transcripts,
         authRepository: fakes.auth,
         syncQueueService: fakes.sync,
+        transcriptionService: fakes.transcription,
       )..add(const SettingsSubscriptionRequested()),
     ),
   ];

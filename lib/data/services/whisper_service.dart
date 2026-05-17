@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:whisper_ggml_plus/whisper_ggml_plus.dart';
 
 // Model bootstrap needs file metadata checks and cleanup around downloaded
 // assets. These calls run outside frame-critical UI paths.
 // ignore_for_file: avoid_slow_async_io
+
+const _minimumUsableModelBytes = 1024 * 1024;
 
 class ModelDownloadProgress {
   const ModelDownloadProgress({
@@ -56,8 +59,58 @@ class TranscriptionResult {
   final List<TranscriptionSegment> segments;
 }
 
+enum DevicePerformanceTier { entry, balanced, performance, premium }
+
+class DevicePerformanceProfile {
+  const DevicePerformanceProfile({
+    required this.cpuCores,
+    required this.memoryBytes,
+    required this.tier,
+  });
+
+  final int cpuCores;
+  final int? memoryBytes;
+  final DevicePerformanceTier tier;
+}
+
+enum TranscriptionModelCompatibility { recommended, supported, limited }
+
+class TranscriptionModelCatalogEntry {
+  const TranscriptionModelCatalogEntry({
+    required this.model,
+    required this.compatibility,
+    required this.isRecommended,
+    required this.totalBytes,
+    required this.localBytes,
+  });
+
+  final WhisperModel model;
+  final TranscriptionModelCompatibility compatibility;
+  final bool isRecommended;
+  final int? totalBytes;
+  final int localBytes;
+
+  int? get remainingBytes {
+    final total = totalBytes;
+    if (total == null) {
+      return null;
+    }
+    final remaining = total - localBytes;
+    return remaining > 0 ? remaining : 0;
+  }
+
+  bool get isDownloaded => localBytes >= _minimumUsableModelBytes;
+}
+
 abstract class TranscriptionService {
   Stream<ModelDownloadProgress> get downloadProgress;
+
+  WhisperModel get currentModel;
+  String get currentModelKey;
+
+  Future<void> selectModel(WhisperModel model);
+  Future<DevicePerformanceProfile> resolveDeviceProfile();
+  Future<List<TranscriptionModelCatalogEntry>> listModelCatalog();
 
   Future<WhisperBootstrapResult> ensureModel();
   Future<TranscriptionResult> transcribeChunk(String audioPath);
@@ -67,30 +120,92 @@ abstract class TranscriptionService {
 class WhisperTranscriptionService implements TranscriptionService {
   WhisperTranscriptionService({
     WhisperController? controller,
-    this.model = WhisperModel.base,
-  }) : _controller = controller ?? WhisperController();
+    WhisperModel model = WhisperModel.base,
+  }) : _controller = controller ?? WhisperController(),
+       _model = model;
 
   final WhisperController _controller;
-  final WhisperModel model;
+  WhisperModel _model;
   final _progressController =
       StreamController<ModelDownloadProgress>.broadcast();
+  final Map<WhisperModel, int?> _remoteSizeCache = {};
+  DevicePerformanceProfile? _deviceProfile;
 
   @override
   Stream<ModelDownloadProgress> get downloadProgress =>
       _progressController.stream;
 
   @override
+  WhisperModel get currentModel => _model;
+
+  @override
+  String get currentModelKey => modelKeyFromWhisperModel(_model);
+
+  @override
+  Future<void> selectModel(WhisperModel model) async {
+    _model = model;
+    await _controller.initModel(model);
+  }
+
+  @override
+  Future<DevicePerformanceProfile> resolveDeviceProfile() async {
+    final cached = _deviceProfile;
+    if (cached != null) {
+      return cached;
+    }
+
+    final cpuCores = Platform.numberOfProcessors;
+    final memoryBytes = await _readTotalMemoryBytes();
+    final tier = _resolveTier(cpuCores: cpuCores, memoryBytes: memoryBytes);
+    final profile = DevicePerformanceProfile(
+      cpuCores: cpuCores,
+      memoryBytes: memoryBytes,
+      tier: tier,
+    );
+    _deviceProfile = profile;
+    return profile;
+  }
+
+  @override
+  Future<List<TranscriptionModelCatalogEntry>> listModelCatalog() async {
+    final profile = await resolveDeviceProfile();
+    final recommendedModel = _recommendedModelForTier(profile.tier);
+
+    final entries = await Future.wait(
+      _supportedCatalogModels.map((model) async {
+        final localBytes = await _localBytesForModel(model);
+        final totalBytes = await _resolveRemoteModelBytes(model);
+        final compatibility = _resolveCompatibility(
+          model: model,
+          recommendedModel: recommendedModel,
+          deviceTier: profile.tier,
+        );
+        return TranscriptionModelCatalogEntry(
+          model: model,
+          compatibility: compatibility,
+          isRecommended: model == recommendedModel,
+          totalBytes: totalBytes,
+          localBytes: localBytes,
+        );
+      }),
+    );
+
+    return entries;
+  }
+
+  @override
   Future<WhisperBootstrapResult> ensureModel() async {
-    final modelPath = await _controller.getPath(model);
+    final selectedModel = _model;
+    final modelPath = await _controller.getPath(selectedModel);
     final file = File(modelPath);
     var downloaded = false;
 
     if (!await _isUsableModel(file)) {
-      await _downloadModel(file);
+      await _downloadModel(model: selectedModel, outputFile: file);
       downloaded = true;
     }
 
-    await _controller.initModel(model);
+    await _controller.initModel(selectedModel);
     return WhisperBootstrapResult(
       path: modelPath,
       downloaded: downloaded,
@@ -100,8 +215,9 @@ class WhisperTranscriptionService implements TranscriptionService {
 
   @override
   Future<TranscriptionResult> transcribeChunk(String audioPath) async {
+    final selectedModel = _model;
     final result = await _controller.transcribe(
-      model: model,
+      model: selectedModel,
       audioPath: audioPath,
       lang: 'auto',
       convert: false,
@@ -130,7 +246,7 @@ class WhisperTranscriptionService implements TranscriptionService {
 
   @override
   Future<void> dispose() async {
-    await _controller.dispose(model: model);
+    await _controller.dispose(model: _model);
     await _progressController.close();
   }
 
@@ -139,10 +255,13 @@ class WhisperTranscriptionService implements TranscriptionService {
       return false;
     }
     final length = await file.length();
-    return length >= 1024 * 1024;
+    return length >= _minimumUsableModelBytes;
   }
 
-  Future<void> _downloadModel(File outputFile) async {
+  Future<void> _downloadModel({
+    required WhisperModel model,
+    required File outputFile,
+  }) async {
     final tempFile = File('${outputFile.path}.part');
     if (await tempFile.exists()) {
       await tempFile.delete();
@@ -204,4 +323,220 @@ class WhisperTranscriptionService implements TranscriptionService {
       }
     }
   }
+
+  Future<int?> _resolveRemoteModelBytes(WhisperModel model) async {
+    final cached = _remoteSizeCache[model];
+    if (cached != null) {
+      return cached;
+    }
+
+    final resolved = await _probeRemoteModelBytes(model);
+    if (resolved != null) {
+      _remoteSizeCache[model] = resolved;
+      return resolved;
+    }
+
+    final fallback = _metadataByModel[model]?.fallbackSizeBytes;
+    _remoteSizeCache[model] = fallback;
+    return fallback;
+  }
+
+  Future<int?> _probeRemoteModelBytes(WhisperModel model) async {
+    final client = HttpClient();
+    try {
+      final request = await client
+          .openUrl('HEAD', model.modelUri)
+          .timeout(const Duration(seconds: 4));
+      request.followRedirects = true;
+      request.maxRedirects = 5;
+      request.headers.set(
+        HttpHeaders.userAgentHeader,
+        'VoiceScribe-Flutter/1.0',
+      );
+
+      final response = await request.close().timeout(
+        const Duration(seconds: 6),
+      );
+      final statusCode = response.statusCode;
+      final contentLength = response.contentLength;
+      await response.drain<void>();
+
+      if (statusCode >= 200 && statusCode < 400 && contentLength > 0) {
+        return contentLength;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<int> _localBytesForModel(WhisperModel model) async {
+    final path = await _controller.getPath(model);
+    final file = File(path);
+    if (!await file.exists()) {
+      return 0;
+    }
+    return file.length();
+  }
+
+  Future<int?> _readTotalMemoryBytes() async {
+    if (!Platform.isAndroid && !Platform.isLinux) {
+      return null;
+    }
+
+    final memInfo = File('/proc/meminfo');
+    if (!await memInfo.exists()) {
+      return null;
+    }
+
+    try {
+      final lines = await memInfo.readAsLines();
+      final memTotalLine = lines.firstWhere(
+        (line) => line.startsWith('MemTotal:'),
+        orElse: () => '',
+      );
+      if (memTotalLine.isEmpty) {
+        return null;
+      }
+      final match = RegExp(r'(\d+)').firstMatch(memTotalLine);
+      final kb = int.tryParse(match?.group(1) ?? '');
+      if (kb == null || kb <= 0) {
+        return null;
+      }
+      return kb * 1024;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  DevicePerformanceTier _resolveTier({
+    required int cpuCores,
+    required int? memoryBytes,
+  }) {
+    final ramGiB = memoryBytes == null
+        ? null
+        : memoryBytes / (1024 * 1024 * 1024);
+
+    if (ramGiB != null) {
+      if (ramGiB >= 8 && cpuCores >= 8) {
+        return DevicePerformanceTier.premium;
+      }
+      if (ramGiB >= 6 && cpuCores >= 6) {
+        return DevicePerformanceTier.performance;
+      }
+      if (ramGiB >= 4 && cpuCores >= 4) {
+        return DevicePerformanceTier.balanced;
+      }
+      return DevicePerformanceTier.entry;
+    }
+
+    if (cpuCores >= 8) {
+      return DevicePerformanceTier.performance;
+    }
+    if (cpuCores >= 6) {
+      return DevicePerformanceTier.balanced;
+    }
+    return DevicePerformanceTier.entry;
+  }
+
+  TranscriptionModelCompatibility _resolveCompatibility({
+    required WhisperModel model,
+    required WhisperModel recommendedModel,
+    required DevicePerformanceTier deviceTier,
+  }) {
+    if (model == recommendedModel) {
+      return TranscriptionModelCompatibility.recommended;
+    }
+
+    final requiredTier =
+        _metadataByModel[model]?.minimumTier ?? DevicePerformanceTier.entry;
+    if (_tierRank(deviceTier) >= _tierRank(requiredTier)) {
+      return TranscriptionModelCompatibility.supported;
+    }
+    return TranscriptionModelCompatibility.limited;
+  }
+
+  int _tierRank(DevicePerformanceTier tier) {
+    return switch (tier) {
+      DevicePerformanceTier.entry => 0,
+      DevicePerformanceTier.balanced => 1,
+      DevicePerformanceTier.performance => 2,
+      DevicePerformanceTier.premium => 3,
+    };
+  }
 }
+
+WhisperModel whisperModelFromKey(String value) {
+  return switch (AppPreferences.normalizeTranscriptionModel(value)) {
+    'tiny' => WhisperModel.tiny,
+    'base' => WhisperModel.base,
+    'small' => WhisperModel.small,
+    'medium' => WhisperModel.medium,
+    'large-v3' => WhisperModel.large,
+    'large-v3-turbo' => WhisperModel.largeV3Turbo,
+    _ => WhisperModel.base,
+  };
+}
+
+String modelKeyFromWhisperModel(WhisperModel model) {
+  return model.modelName;
+}
+
+WhisperModel _recommendedModelForTier(DevicePerformanceTier tier) {
+  return switch (tier) {
+    DevicePerformanceTier.entry => WhisperModel.tiny,
+    DevicePerformanceTier.balanced => WhisperModel.base,
+    DevicePerformanceTier.performance => WhisperModel.small,
+    DevicePerformanceTier.premium => WhisperModel.medium,
+  };
+}
+
+class _ModelMetadata {
+  const _ModelMetadata({
+    required this.minimumTier,
+    required this.fallbackSizeBytes,
+  });
+
+  final DevicePerformanceTier minimumTier;
+  final int fallbackSizeBytes;
+}
+
+const _mb = 1024 * 1024;
+
+const List<WhisperModel> _supportedCatalogModels = <WhisperModel>[
+  WhisperModel.tiny,
+  WhisperModel.base,
+  WhisperModel.small,
+  WhisperModel.medium,
+  WhisperModel.large,
+  WhisperModel.largeV3Turbo,
+];
+
+const Map<WhisperModel, _ModelMetadata> _metadataByModel = {
+  WhisperModel.tiny: _ModelMetadata(
+    minimumTier: DevicePerformanceTier.entry,
+    fallbackSizeBytes: 75 * _mb,
+  ),
+  WhisperModel.base: _ModelMetadata(
+    minimumTier: DevicePerformanceTier.balanced,
+    fallbackSizeBytes: 142 * _mb,
+  ),
+  WhisperModel.small: _ModelMetadata(
+    minimumTier: DevicePerformanceTier.performance,
+    fallbackSizeBytes: 466 * _mb,
+  ),
+  WhisperModel.medium: _ModelMetadata(
+    minimumTier: DevicePerformanceTier.premium,
+    fallbackSizeBytes: 1530 * _mb,
+  ),
+  WhisperModel.large: _ModelMetadata(
+    minimumTier: DevicePerformanceTier.premium,
+    fallbackSizeBytes: 3020 * _mb,
+  ),
+  WhisperModel.largeV3Turbo: _ModelMetadata(
+    minimumTier: DevicePerformanceTier.premium,
+    fallbackSizeBytes: 1620 * _mb,
+  ),
+};

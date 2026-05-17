@@ -10,6 +10,8 @@ import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
+import 'package:voicescribe_mobile/ui/core/router/app_shell.dart';
+import 'package:voicescribe_mobile/ui/features/bootstrap/bloc/bootstrap_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/recording/bloc/recording_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/recording/views/recording_screen.dart';
 import 'package:voicescribe_mobile/ui/features/transcript/bloc/transcript_list_bloc.dart';
@@ -18,6 +20,27 @@ import 'package:voicescribe_mobile/ui/features/transcript/views/transcript_scree
 import '../helpers/fakes.dart';
 
 void main() {
+  testWidgets('bootstrap screen shows percent and byte totals', (tester) async {
+    await tester.pumpWidget(
+      _wrapWithApp(
+        fakes: _Fakes(),
+        blocs: const <BlocProvider<dynamic>>[],
+        child: const BootstrapScreen(
+          state: BootstrapState(
+            downloadProgress: ModelDownloadProgress(
+              bytesDownloaded: 150 * 1024 * 1024,
+              totalBytes: 300 * 1024 * 1024,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.textContaining('Downloading model 50%'), findsOneWidget);
+    expect(find.textContaining('150 MB / 300 MB'), findsOneWidget);
+  });
+
   testWidgets('recording screen shows localized title', (tester) async {
     final fakes = _Fakes();
     await tester.pumpWidget(
@@ -125,19 +148,30 @@ Widget _wrapWithApp({
       RepositoryProvider<SummaryService>.value(value: fakes.summary),
       RepositoryProvider<SyncQueueService>.value(value: fakes.sync),
     ],
-    child: MultiBlocProvider(
-      providers: blocs,
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [Locale('en'), Locale('tr')],
-        home: child,
-      ),
-    ),
+    child: blocs.isEmpty
+        ? MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en'), Locale('tr')],
+            home: child,
+          )
+        : MultiBlocProvider(
+            providers: blocs,
+            child: MaterialApp(
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [Locale('en'), Locale('tr')],
+              home: child,
+            ),
+          ),
   );
 }
 

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
+import 'package:voicescribe_mobile/ui/core/utils/model_download_formatters.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_navigation.dart';
@@ -76,9 +77,7 @@ class BootstrapScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      percent == null
-                          ? _formatBytes(progress.bytesDownloaded)
-                          : '${l10n.downloadingModel} ${percent.floor()}%',
+                      formatModelDownloadProgress(l10n, progress),
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
@@ -108,14 +107,6 @@ class BootstrapScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatBytes(int bytes) {
-    final mb = bytes / (1024 * 1024);
-    if (mb < 1) {
-      return '${(bytes / 1024).round()} KB';
-    }
-    return '${mb.toStringAsFixed(1)} MB';
   }
 }
 

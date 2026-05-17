@@ -6,6 +6,7 @@ import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
+import 'package:whisper_ggml_plus/whisper_ggml_plus.dart';
 
 class FakeTranscriptRepository implements TranscriptRepository {
   FakeTranscriptRepository({TranscriptSnapshot? initial})
@@ -177,19 +178,67 @@ class FakeRecordingService implements RecordingService {
 }
 
 class FakeTranscriptionService implements TranscriptionService {
-  FakeTranscriptionService({Map<String, Object>? responses})
-    : responses = responses ?? const {};
+  FakeTranscriptionService({
+    Map<String, Object>? responses,
+    WhisperModel initialModel = WhisperModel.base,
+  }) : responses = responses ?? const {},
+       _currentModel = initialModel;
 
   final Map<String, Object> responses;
   final _progress = StreamController<ModelDownloadProgress>.broadcast();
+  WhisperModel _currentModel;
 
   @override
   Stream<ModelDownloadProgress> get downloadProgress => _progress.stream;
 
   @override
+  WhisperModel get currentModel => _currentModel;
+
+  @override
+  String get currentModelKey => modelKeyFromWhisperModel(_currentModel);
+
+  @override
+  Future<void> selectModel(WhisperModel model) async {
+    _currentModel = model;
+  }
+
+  @override
+  Future<DevicePerformanceProfile> resolveDeviceProfile() async {
+    return const DevicePerformanceProfile(
+      cpuCores: 8,
+      memoryBytes: 8 * 1024 * 1024 * 1024,
+      tier: DevicePerformanceTier.performance,
+    );
+  }
+
+  @override
+  Future<List<TranscriptionModelCatalogEntry>> listModelCatalog() async {
+    return const <WhisperModel>[
+          WhisperModel.tiny,
+          WhisperModel.base,
+          WhisperModel.small,
+          WhisperModel.medium,
+          WhisperModel.large,
+          WhisperModel.largeV3Turbo,
+        ]
+        .map(
+          (model) => TranscriptionModelCatalogEntry(
+            model: model,
+            compatibility: model == WhisperModel.base
+                ? TranscriptionModelCompatibility.recommended
+                : TranscriptionModelCompatibility.supported,
+            isRecommended: model == WhisperModel.base,
+            totalBytes: 100 * 1024 * 1024,
+            localBytes: model == _currentModel ? 100 * 1024 * 1024 : 0,
+          ),
+        )
+        .toList();
+  }
+
+  @override
   Future<WhisperBootstrapResult> ensureModel() async {
-    return const WhisperBootstrapResult(
-      path: '/tmp/model.bin',
+    return WhisperBootstrapResult(
+      path: '/tmp/ggml-${_currentModel.modelName}.bin',
       downloaded: false,
       loaded: true,
     );

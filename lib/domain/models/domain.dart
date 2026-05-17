@@ -122,6 +122,7 @@ abstract class AppPreferences with _$AppPreferences {
     @Default('medium') String summaryLength,
     @Default('system') String themeMode,
     @Default('system') String localePreference,
+    @Default('base') String transcriptionModel,
   }) = _AppPreferences;
 
   const AppPreferences._();
@@ -154,6 +155,22 @@ abstract class AppPreferences with _$AppPreferences {
       'en' => 'en',
       'tr' => 'tr',
       _ => 'system',
+    };
+  }
+
+  static String normalizeTranscriptionModel(String value) {
+    return switch (value) {
+      'tiny' => 'tiny',
+      'base' => 'base',
+      'small' => 'small',
+      'medium' => 'medium',
+      'large-v3' => 'large-v3',
+      'large-v3-turbo' => 'large-v3-turbo',
+      'tiny.en' => 'tiny',
+      'base.en' => 'base',
+      'small.en' => 'small',
+      'medium.en' => 'medium',
+      _ => 'base',
     };
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/use_cases/repair_stale_recordings.dart';
 
@@ -19,6 +20,12 @@ final class BootstrapRetried extends BootstrapEvent {
   const BootstrapRetried();
 }
 
+final class BootstrapTranscriptionModelChanged extends BootstrapEvent {
+  const BootstrapTranscriptionModelChanged(this.modelKey);
+
+  final String modelKey;
+}
+
 final class _BootstrapProgressChanged extends BootstrapEvent {
   const _BootstrapProgressChanged(this.progress);
 
@@ -28,12 +35,14 @@ final class _BootstrapProgressChanged extends BootstrapEvent {
 class BootstrapState {
   const BootstrapState({
     this.modelState = ModelBootstrapState.bootstrapping,
+    this.selectedModelKey = 'base',
     this.downloadProgress,
     this.errorMessage,
     this.initialized = false,
   });
 
   final ModelBootstrapState modelState;
+  final String selectedModelKey;
   final ModelDownloadProgress? downloadProgress;
   final String? errorMessage;
   final bool initialized;
@@ -42,6 +51,7 @@ class BootstrapState {
 
   BootstrapState copyWith({
     ModelBootstrapState? modelState,
+    String? selectedModelKey,
     ModelDownloadProgress? downloadProgress,
     bool clearDownloadProgress = false,
     String? errorMessage,
@@ -50,6 +60,7 @@ class BootstrapState {
   }) {
     return BootstrapState(
       modelState: modelState ?? this.modelState,
+      selectedModelKey: selectedModelKey ?? this.selectedModelKey,
       downloadProgress: clearDownloadProgress
           ? null
           : downloadProgress ?? this.downloadProgress,
@@ -70,6 +81,7 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
        super(const BootstrapState()) {
     on<BootstrapStarted>(_onStarted);
     on<BootstrapRetried>(_onRetried);
+    on<BootstrapTranscriptionModelChanged>(_onTranscriptionModelChanged);
     on<_BootstrapProgressChanged>(_onProgressChanged);
     _progressSubscription = _transcriptionService.downloadProgress.listen(
       (progress) => add(_BootstrapProgressChanged(progress)),
@@ -94,6 +106,48 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     await _bootstrap(emit);
   }
 
+  Future<void> _onTranscriptionModelChanged(
+    BootstrapTranscriptionModelChanged event,
+    Emitter<BootstrapState> emit,
+  ) async {
+    final normalizedModelKey = AppPreferences.normalizeTranscriptionModel(
+      event.modelKey,
+    );
+    emit(
+      state.copyWith(
+        modelState: ModelBootstrapState.bootstrapping,
+        selectedModelKey: normalizedModelKey,
+        clearErrorMessage: true,
+      ),
+    );
+
+    try {
+      await _transcriptionService.selectModel(
+        whisperModelFromKey(normalizedModelKey),
+      );
+      await _transcriptionService.ensureModel();
+      emit(
+        state.copyWith(
+          modelState: ModelBootstrapState.ready,
+          selectedModelKey: normalizedModelKey,
+          initialized: true,
+          clearDownloadProgress: true,
+          clearErrorMessage: true,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          modelState: ModelBootstrapState.failed,
+          selectedModelKey: normalizedModelKey,
+          initialized: true,
+          clearDownloadProgress: true,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
   void _onProgressChanged(
     _BootstrapProgressChanged event,
     Emitter<BootstrapState> emit,
@@ -105,11 +159,16 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     emit(
       state.copyWith(
         modelState: ModelBootstrapState.bootstrapping,
+        clearDownloadProgress: true,
         clearErrorMessage: true,
       ),
     );
     try {
       final snapshot = await _transcriptRepository.loadSnapshot();
+      final modelKey = AppPreferences.normalizeTranscriptionModel(
+        snapshot.preferences.transcriptionModel,
+      );
+      await _transcriptionService.selectModel(whisperModelFromKey(modelKey));
       await RepairStaleRecordingsUseCase(
         _transcriptRepository,
       ).execute(snapshot);
@@ -118,7 +177,9 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
       emit(
         state.copyWith(
           modelState: ModelBootstrapState.ready,
+          selectedModelKey: modelKey,
           initialized: true,
+          clearDownloadProgress: true,
           clearErrorMessage: true,
         ),
       );
@@ -127,6 +188,7 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
         state.copyWith(
           modelState: ModelBootstrapState.failed,
           initialized: true,
+          clearDownloadProgress: true,
           errorMessage: error.toString(),
         ),
       );
