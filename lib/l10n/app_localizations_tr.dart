@@ -478,6 +478,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get transcriptionLanguage => 'Transkripsiyon dili';
 
   @override
+  String get transcriptionModelSize => 'Model boyutu';
+
+  @override
   String get automatic => 'Otomatik';
 
   @override

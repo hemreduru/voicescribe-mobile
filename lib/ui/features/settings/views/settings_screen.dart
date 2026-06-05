@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
@@ -124,18 +125,10 @@ class SettingsScreen extends StatelessWidget {
                   title: l10n.transcriptionModelSettings,
                   subtitle: l10n.transcriptionModelPreferences,
                   children: [
-                    ActionRow(
-                      icon: Icons.model_training,
-                      title: 'Base',
-                      subtitle: l10n.recommendedForYourDevice,
-                      trailing: const SizedBox.shrink(),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      l10n.modelBaseDescription,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    _TranscriptionModelSelector(
+                      catalog: state.modelCatalog,
+                      selectedKey: preferences.transcriptionModel,
+                      applying: state.applyingTranscriptionModel,
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     AppSegmentedField<String>(
@@ -375,4 +368,107 @@ class SettingsScreen extends StatelessWidget {
       ).colorScheme.secondary,
     };
   }
+}
+
+/// Lets a capable device opt into a heavier Whisper model. Entry-level devices
+/// (where the catalog only allows `base`/`tiny`) just see an informative row.
+/// Selecting a model the device can't run is impossible — the catalog filters
+/// those out and `selectModel` falls back to the current model anyway.
+class _TranscriptionModelSelector extends StatelessWidget {
+  const _TranscriptionModelSelector({
+    required this.catalog,
+    required this.selectedKey,
+    required this.applying,
+  });
+
+  final List<TranscriptionModelCatalogEntry> catalog;
+  final String selectedKey;
+  final bool applying;
+
+  // Cap the mobile choice at `small`; heavier models are impractical on phones.
+  static const _mobileModels = ['tiny', 'base', 'small'];
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final allowed =
+        catalog
+            .where(
+              (entry) =>
+                  entry.compatibility !=
+                      TranscriptionModelCompatibility.limited &&
+                  _mobileModels.contains(modelKeyFromWhisperModel(entry.model)),
+            )
+            .toList()
+          ..sort(
+            (a, b) => _mobileModels
+                .indexOf(modelKeyFromWhisperModel(a.model))
+                .compareTo(_mobileModels.indexOf(modelKeyFromWhisperModel(b.model))),
+          );
+
+    final descriptionText = switch (selectedKey) {
+      'tiny' => l10n.modelTinyDescription,
+      'small' => l10n.modelSmallDescription,
+      _ => l10n.modelBaseDescription,
+    };
+    final description = Text(
+      descriptionText,
+      style: Theme.of(
+        context,
+      ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+    );
+
+    if (allowed.length <= 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ActionRow(
+            icon: Icons.model_training,
+            title: _labelFor(selectedKey),
+            subtitle: l10n.recommendedForYourDevice,
+            trailing: const SizedBox.shrink(),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          description,
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppSegmentedField<String>(
+          label: l10n.transcriptionModelSize,
+          value: _mobileModels.contains(selectedKey) ? selectedKey : 'base',
+          segments: [
+            for (final entry in allowed)
+              AppSegment(
+                value: modelKeyFromWhisperModel(entry.model),
+                label: _labelFor(modelKeyFromWhisperModel(entry.model)),
+                icon: Icons.model_training,
+              ),
+          ],
+          onChanged: (value) {
+            if (!applying) {
+              context.read<SettingsBloc>().add(
+                SettingsTranscriptionModelChanged(value),
+              );
+            }
+          },
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (applying) ...[
+          const LinearProgressIndicator(),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        description,
+      ],
+    );
+  }
+
+  String _labelFor(String key) => switch (key) {
+    'tiny' => 'Tiny',
+    'small' => 'Small',
+    _ => 'Base',
+  };
 }

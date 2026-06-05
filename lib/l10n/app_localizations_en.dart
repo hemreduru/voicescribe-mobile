@@ -475,6 +475,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transcriptionLanguage => 'Transcription language';
 
   @override
+  String get transcriptionModelSize => 'Model size';
+
+  @override
   String get automatic => 'Automatic';
 
   @override

@@ -942,6 +942,12 @@ abstract class AppLocalizations {
   /// **'Transcription language'**
   String get transcriptionLanguage;
 
+  /// No description provided for @transcriptionModelSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Model size'**
+  String get transcriptionModelSize;
+
   /// No description provided for @automatic.
   ///
   /// In en, this message translates to:

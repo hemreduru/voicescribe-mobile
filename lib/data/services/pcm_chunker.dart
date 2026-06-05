@@ -73,19 +73,18 @@ class PcmChunker {
     if (_buffer.isEmpty) {
       return const [];
     }
-    final pcm = Uint8List.fromList(_buffer);
-    final nonOverlapBytes = (_sampleCount - _overlapSamples) * bytesPerSample;
-    final avgLevel = nonOverlapBytes > 0
-        ? _averageLevelFor(
-            Uint8List.fromList(
-              pcm.sublist(nonOverlapBytes.clamp(0, pcm.length)),
-            ),
-          )
+    final pcm = _trimTrailingSilence(Uint8List.fromList(_buffer));
+    final trimmedSamples = pcm.length ~/ bytesPerSample;
+    final nonOverlapBytes =
+        (trimmedSamples - _overlapSamples).clamp(0, trimmedSamples) *
+        bytesPerSample;
+    final avgLevel = nonOverlapBytes > 0 && nonOverlapBytes < pcm.length
+        ? _averageLevelFor(Uint8List.fromList(pcm.sublist(nonOverlapBytes)))
         : _averageLevelFor(pcm);
     final chunk = PcmChunk(
       index: ++_chunkIndex,
       pcm16Data: pcm,
-      durationSeconds: _sampleCount / sampleRate,
+      durationSeconds: trimmedSamples / sampleRate,
       reason: PcmChunkCloseReason.flush,
       averageLevel: avgLevel,
     );
@@ -122,9 +121,36 @@ class PcmChunker {
 
   int get _sampleCount => _buffer.length ~/ bytesPerSample;
 
+  /// Drops the trailing silence that triggered a chunk close so Whisper doesn't
+  /// waste inference on it, while keeping a ~250 ms guard so a word ending is
+  /// never clipped and never shrinking the chunk below ~1 s. Based on the
+  /// existing `_silentSamples` trailing-silence counter; speech resets it.
+  Uint8List _trimTrailingSilence(Uint8List pcm) {
+    if (_silentSamples <= 0) {
+      return pcm;
+    }
+    final guardSamples = _durationToSamples(const Duration(milliseconds: 250));
+    final trimSamples = _silentSamples - guardSamples;
+    if (trimSamples <= 0) {
+      return pcm;
+    }
+    final keepBytes = pcm.length - trimSamples * bytesPerSample;
+    final minKeepBytes =
+        _durationToSamples(const Duration(seconds: 1)) * bytesPerSample;
+    if (keepBytes < minKeepBytes || keepBytes >= pcm.length) {
+      return pcm;
+    }
+    return Uint8List.fromList(pcm.sublist(0, keepBytes));
+  }
+
   PcmChunk _close(PcmChunkCloseReason reason) {
-    final pcm = Uint8List.fromList(_buffer);
-    final durationSeconds = _sampleCount / sampleRate;
+    final raw = Uint8List.fromList(_buffer);
+    // Only trim when the chunk closed *because* of trailing silence; a
+    // max-duration close happens mid-speech and must keep its audio intact.
+    final pcm = reason == PcmChunkCloseReason.silence
+        ? _trimTrailingSilence(raw)
+        : raw;
+    final durationSeconds = (pcm.length ~/ bytesPerSample) / sampleRate;
 
     final overlapBytes = _durationToSamples(overlapDuration) * bytesPerSample;
     final nonOverlapBytes = (pcm.length - overlapBytes).clamp(0, pcm.length);
@@ -140,8 +166,11 @@ class PcmChunker {
       averageLevel: avgLevel,
     );
 
-    if (overlapBytes > 0 && _buffer.length > overlapBytes) {
-      final tail = _buffer.sublist(_buffer.length - overlapBytes);
+    // Carry the overlap from the *emitted* (trimmed) audio so the next chunk's
+    // context is the trailing speech, not the silence we just dropped — and so
+    // _silentSamples resets from speech instead of pre-loading a silent tail.
+    if (overlapBytes > 0 && pcm.length > overlapBytes) {
+      final tail = pcm.sublist(pcm.length - overlapBytes);
       _buffer
         ..clear()
         ..addAll(tail);

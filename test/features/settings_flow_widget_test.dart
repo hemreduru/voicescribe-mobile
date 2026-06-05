@@ -70,8 +70,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // The fake device reports a `performance` tier, so the model selector
+    // offers a real choice (Base + Small) rather than the single-model row.
     expect(find.text('Transcription Model'), findsOneWidget);
-    expect(find.text('Recommended for your device'), findsWidgets);
+    expect(find.text('Model size'), findsWidgets);
+    expect(find.text('Base'), findsWidgets);
+    expect(find.text('Small'), findsWidgets);
     expect(find.text('Tiny (EN)'), findsNothing);
   });
 

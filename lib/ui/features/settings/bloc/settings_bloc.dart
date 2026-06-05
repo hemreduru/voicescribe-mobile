@@ -342,9 +342,50 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     SettingsTranscriptionModelChanged event,
     Emitter<SettingsState> emit,
   ) async {
-    // Model selection is locked to base for stability.
-    // This handler is kept for API compatibility but does nothing.
-    return;
+    final normalized = AppPreferences.normalizeTranscriptionModel(event.value);
+    if (normalized == state.preferences.transcriptionModel) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        applyingTranscriptionModel: true,
+        clearErrorMessage: true,
+      ),
+    );
+    try {
+      await _transcriptionService.selectModel(whisperModelFromKey(normalized));
+      await _transcriptionService.ensureModel();
+      // selectModel may reject a model that's too heavy for the device and stay
+      // on the current one, so persist what was actually applied.
+      final applied = AppPreferences.normalizeTranscriptionModel(
+        _transcriptionService.currentModelKey,
+      );
+      await _savePreferences(
+        emit,
+        state.preferences.copyWith(transcriptionModel: applied),
+      );
+      emit(state.copyWith(applyingTranscriptionModel: false));
+      await _loadModelCatalog(emit);
+    } catch (error) {
+      // A failed switch (e.g. the new model's download failed) must not leave
+      // the service pointing at a model with no file on disk. Roll it back to
+      // the last persisted (known-good, already-downloaded) model so recording
+      // keeps working and the service matches the saved preference.
+      try {
+        await _transcriptionService.selectModel(
+          whisperModelFromKey(state.preferences.transcriptionModel),
+        );
+        await _transcriptionService.ensureModel();
+      } catch (_) {
+        // Best effort; nothing more we can safely do here.
+      }
+      emit(
+        state.copyWith(
+          applyingTranscriptionModel: false,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
   }
 
   Future<void> _onTranscriptionLanguageChanged(

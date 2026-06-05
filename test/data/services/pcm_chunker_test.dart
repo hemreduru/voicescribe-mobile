@@ -140,6 +140,46 @@ void main() {
     expect(flushed, hasLength(1));
     expect(flushed.single.averageLevel, greaterThan(0));
   });
+
+  test('trims trailing silence on a silence-closed chunk (keeps 250ms guard)', () {
+    final chunker = PcmChunker(
+      sampleRate: 100,
+      maxDuration: const Duration(seconds: 10),
+      overlapDuration: Duration.zero,
+      minDuration: const Duration(seconds: 1),
+      silenceDuration: const Duration(seconds: 1),
+    );
+
+    // 100 speech samples (1s) then 150 silence samples (1.5s) → closes on
+    // silence. Raw = 250 samples (2.5s); trim removes 150-25(guard)=125
+    // samples → 125 samples (1.25s) kept.
+    expect(chunker.add(_pcm(samples: 100, value: 12000)), isEmpty);
+    final chunks = chunker.add(_pcm(samples: 150, value: 0));
+
+    expect(chunks, hasLength(1));
+    expect(chunks.single.reason, PcmChunkCloseReason.silence);
+    expect(chunks.single.durationSeconds, closeTo(1.25, 0.001));
+    expect(chunks.single.pcm16Data.length, 250); // 125 samples * 2 bytes
+  });
+
+  test('does not trim a max-duration chunk even with trailing silence', () {
+    final chunker = PcmChunker(
+      sampleRate: 100,
+      maxDuration: const Duration(seconds: 2),
+      overlapDuration: Duration.zero,
+      minDuration: const Duration(milliseconds: 500),
+      silenceDuration: const Duration(seconds: 5),
+    );
+
+    // 100 speech + 100 silence = 200 samples → closes at maxDuration (2s).
+    // Silence-trim must NOT apply to a mid-speech max-duration close.
+    chunker.add(_pcm(samples: 100, value: 12000));
+    final chunks = chunker.add(_pcm(samples: 100, value: 0));
+
+    expect(chunks, hasLength(1));
+    expect(chunks.single.reason, PcmChunkCloseReason.maxDuration);
+    expect(chunks.single.durationSeconds, 2);
+  });
 }
 
 Uint8List _pcm({required int samples, required int value}) {

@@ -143,7 +143,10 @@ class WhisperTranscriptionService implements TranscriptionService {
       _model = WhisperModel.base;
 
   final WhisperController _controller;
-  final WhisperModel _model;
+  // Defaults to `base` (the safe choice for low-end devices). Capable devices
+  // may opt into a heavier model via [selectModel]; models that exceed the
+  // device tier are rejected so we never OOM an entry-level phone.
+  WhisperModel _model;
   // `auto` lets Whisper detect the language per 30s window, which is the right
   // default for bilingual (e.g. EN/TR) meetings; `tr`/`en` force one language.
   String _language = 'auto';
@@ -181,15 +184,31 @@ class WhisperTranscriptionService implements TranscriptionService {
 
   @override
   Future<void> selectModel(WhisperModel model) async {
-    // Model selection is locked to `base` for mobile stability. We accept the
-    // parameter to satisfy the interface (and to surface a log when callers
-    // try to switch) but always init the locked model.
     if (model != _model) {
-      AppLogger.info(
-        '[Transcription] selectModel(${model.modelName}) ignored — locked to ${_model.modelName}',
-      );
+      if (await isModelAllowedForDevice(model)) {
+        _model = model;
+        AppLogger.info('[Transcription] Model switched to ${model.modelName}');
+      } else {
+        AppLogger.info(
+          '[Transcription] selectModel(${model.modelName}) rejected — '
+          'exceeds device capability; staying on ${_model.modelName}',
+        );
+      }
     }
     await _controller.initModel(_model);
+  }
+
+  /// A model is allowed when it is at most as heavy as what the device tier can
+  /// reasonably run (i.e. not flagged `limited` by the catalog logic). This is
+  /// the storage/OOM gate that keeps heavy models off entry-level phones.
+  Future<bool> isModelAllowedForDevice(WhisperModel model) async {
+    final profile = await resolveDeviceProfile();
+    final compatibility = _resolveCompatibility(
+      model: model,
+      recommendedModel: recommendedModelForTier(profile.tier),
+      deviceTier: profile.tier,
+    );
+    return compatibility != TranscriptionModelCompatibility.limited;
   }
 
   @override

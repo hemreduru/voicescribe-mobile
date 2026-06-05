@@ -169,14 +169,17 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     );
     try {
       final snapshot = await _transcriptRepository.loadSnapshot();
-      const modelKey = 'base';
 
       // Apply the persisted transcription language before the model loads so
       // the very first recording already uses the user's choice.
       _transcriptionService.setTranscriptionLanguage(
         snapshot.preferences.transcriptionLanguage,
       );
-      await _transcriptionService.selectModel(whisperModelFromKey(modelKey));
+      // Honor the persisted model; selectModel safely falls back to base when
+      // the chosen model is too heavy for this device.
+      await _transcriptionService.selectModel(
+        whisperModelFromKey(snapshot.preferences.transcriptionModel),
+      );
       await RepairStaleRecordingsUseCase(
         _transcriptRepository,
       ).execute(snapshot);
@@ -187,7 +190,7 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
       emit(
         state.copyWith(
           modelState: ModelBootstrapState.ready,
-          selectedModelKey: modelKey,
+          selectedModelKey: _transcriptionService.currentModelKey,
           initialized: true,
           clearDownloadProgress: true,
           clearErrorMessage: true,

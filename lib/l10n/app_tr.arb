@@ -203,6 +203,7 @@
   "retrying": "Tekrar deneniyor...",
   "statusIconsTitle": "Statü ikonları",
   "transcriptionLanguage": "Transkripsiyon dili",
+  "transcriptionModelSize": "Model boyutu",
   "automatic": "Otomatik",
   "unsyncedCount": "{count, plural, =1{1 kayıt henüz yedeklenmedi} other{{count} kayıt henüz yedeklenmedi}}",
   "@unsyncedCount": {
