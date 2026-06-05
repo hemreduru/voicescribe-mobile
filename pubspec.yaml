@@ -89,6 +89,12 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Test-only fixture: a 16 kHz mono Turkish speech sample used by
+  # integration_test/whisper_turkish_test.dart to validate on-device
+  # transcription (the emulator does not forward host mic audio).
+  assets:
+    - test_assets/turkish16k.wav
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
