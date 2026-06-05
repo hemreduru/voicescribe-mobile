@@ -1,16 +1,34 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:voicescribe_mobile/data/mappers/sqlite_transcript_mapper.dart';
 import 'package:voicescribe_mobile/data/services/database/database_provider.dart';
+import 'package:voicescribe_mobile/data/services/sync/sync_merge_policy.dart';
+import 'package:voicescribe_mobile/data/services/transcript_api_client.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
+import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
+import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 
 class SqfliteTranscriptRepository implements TranscriptRepository {
-  SqfliteTranscriptRepository({DatabaseProvider? databaseProvider})
-    : _dbProvider = databaseProvider ?? DatabaseProvider();
+  SqfliteTranscriptRepository({
+    DatabaseProvider? databaseProvider,
+    AuthRepository? authRepository,
+    TranscriptApiClient? apiClient,
+    Connectivity? connectivity,
+    SyncMergePolicy? mergePolicy,
+  }) : _dbProvider = databaseProvider ?? DatabaseProvider(),
+       _authRepository = authRepository,
+       _apiClient = apiClient ?? const TranscriptApiClient(),
+       _connectivity = connectivity ?? Connectivity(),
+       _mergePolicy = mergePolicy ?? const SyncMergePolicy();
 
   final DatabaseProvider _dbProvider;
+  final AuthRepository? _authRepository;
+  final TranscriptApiClient _apiClient;
+  final Connectivity _connectivity;
+  final SyncMergePolicy _mergePolicy;
   final _snapshotController = StreamController<TranscriptSnapshot>.broadcast();
 
   @override
@@ -55,7 +73,47 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
   }
 
   @override
-  Future<void> refresh() => _emitSnapshot();
+  Future<void> refresh() async {
+    await _fetchFromServerIfOnline();
+    await _emitSnapshot();
+  }
+
+  @override
+  Future<bool> fetchFromServer({required String token}) async {
+    try {
+      final serverTranscripts = await _apiClient.fetchTranscripts(
+        token: token,
+      );
+      await _writeServerTranscriptsToCache(serverTranscripts);
+      return true;
+    } on TranscriptFetchException catch (error) {
+      AppLogger.warning(
+        '[TranscriptRepository] Server fetch failed: ${error.message}',
+      );
+      return false;
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        '[TranscriptRepository] Unexpected error during server fetch',
+        error,
+        stackTrace,
+      );
+      return false;
+    }
+  }
+
+  @override
+  Future<void> clearCache() async {
+    final db = await _dbProvider.database;
+    // Only drop rows that are safely on the server. Never delete
+    // pending/failed/syncing rows — doing so (e.g. on logout while offline)
+    // would permanently lose recordings that were never backed up.
+    const where = 'syncStatus = ?';
+    final whereArgs = [SyncStatus.synced.key];
+    await db.delete('transcript_chunks', where: where, whereArgs: whereArgs);
+    await db.delete('summaries', where: where, whereArgs: whereArgs);
+    await db.delete('transcripts', where: where, whereArgs: whereArgs);
+    await _emitSnapshot();
+  }
 
   @override
   Future<void> saveTranscript(Transcript transcript) async {
@@ -152,10 +210,270 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
     await _snapshotController.close();
   }
 
+  // --------------------------------------------------------------------------
+  // Private helpers
+  // --------------------------------------------------------------------------
+
+  Future<void> _fetchFromServerIfOnline() async {
+    if (_authRepository == null) {
+      return;
+    }
+    final session = _authRepository.currentSession();
+    if (session == null || !session.isAuthenticated) {
+      return;
+    }
+
+    try {
+      final result = await _connectivity.checkConnectivity();
+      // connectivity_plus v7 returns a List<ConnectivityResult>; treat the
+      // device as offline only when every reported interface is `none`.
+      final offline = result.every(
+        (status) => status == ConnectivityResult.none,
+      );
+      if (offline) {
+        return;
+      }
+    } catch (_) {
+      // Connectivity check may fail on some platforms; assume offline.
+      return;
+    }
+
+    await fetchFromServer(token: session.accessToken);
+  }
+
+  Future<void> _writeServerTranscriptsToCache(
+    List<Map<String, Object?>> serverTranscripts,
+  ) async {
+    final db = await _dbProvider.database;
+    final now = DateTime.now().toIso8601String();
+
+    await db.transaction((txn) async {
+      for (final transcriptData in serverTranscripts) {
+        final remoteId = _toText(transcriptData['remote_id']);
+        final localId =
+            _toText(transcriptData['local_id']) ??
+            _toText(transcriptData['client_local_id']) ??
+            remoteId;
+        if (localId == null || remoteId == null) {
+          continue;
+        }
+
+        final statusKey = _toText(transcriptData['status_key']);
+        final durationSeconds = _toInt(transcriptData['duration_seconds']);
+        final title = _toText(transcriptData['title']);
+        final recordedAt = _toText(transcriptData['recorded_at']);
+        final createdAt = _toText(transcriptData['created_at']) ?? now;
+        final updatedAt = _toText(transcriptData['updated_at']) ?? now;
+        final deletedAt = _toText(transcriptData['deleted_at']);
+
+        // Respect local edits: never let the server copy overwrite an
+        // unsynced (pending/failed/syncing) local row.
+        final writeTranscript = await _shouldWriteServerRow(
+          txn,
+          'transcripts',
+          transcriptData,
+        );
+
+        // Write transcript row (cache as synced).
+        if (writeTranscript) {
+          await txn.insert(
+          'transcripts',
+          {
+            'id': localId,
+            'localId': localId,
+            'userId': _toText(transcriptData['user_id']),
+            'remoteId': remoteId,
+            'title': title,
+            'durationSeconds': durationSeconds,
+            'statusKey': statusKey ?? 'completed',
+            'recordedAt': recordedAt,
+            'createdAt': createdAt,
+            'updatedAt': updatedAt,
+            'syncStatus': SyncStatus.synced.key,
+            'lastSyncedAt': now,
+            'syncError': null,
+            'deletedAt': deletedAt,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        }
+
+        // Write nested chunks.
+        final chunks = _toListOfMaps(transcriptData['chunks']);
+        for (final chunkData in chunks) {
+          final chunkRemoteId = _toText(chunkData['remote_id']);
+          final chunkLocalId =
+              _toText(chunkData['client_local_id']) ??
+              _toText(chunkData['id']) ??
+              chunkRemoteId;
+          if (chunkLocalId == null) {
+            continue;
+          }
+          if (!await _shouldWriteServerRow(
+            txn,
+            'transcript_chunks',
+            chunkData,
+          )) {
+            continue;
+          }
+
+          await txn.insert(
+            'transcript_chunks',
+            {
+              'id': chunkLocalId,
+              'transcriptId': localId,
+              'remoteId': chunkRemoteId,
+              'chunkIndex': _toInt(chunkData['chunk_index']),
+              'text': _toText(chunkData['text']) ?? '',
+              'audioPath': null,
+              'recordedAt': null,
+              'startTime': _toDouble(chunkData['start_time']),
+              'endTime': _toDouble(chunkData['end_time']),
+              'confidence': _toNullableDouble(chunkData['confidence']),
+              'transcriptionError': null,
+              'audioLevel': null,
+              'isTranscribed': 1,
+              'syncStatus': SyncStatus.synced.key,
+              'lastSyncedAt': now,
+              'syncError': null,
+              'deletedAt': _toText(chunkData['deleted_at']),
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+
+        // Write nested summaries.
+        final summaries = _toListOfMaps(transcriptData['summaries']);
+        for (final summaryData in summaries) {
+          final summaryRemoteId = _toText(summaryData['remote_id']);
+          final summaryLocalId =
+              _toText(summaryData['client_local_id']) ??
+              _toText(summaryData['id']) ??
+              summaryRemoteId;
+          if (summaryLocalId == null) {
+            continue;
+          }
+          if (!await _shouldWriteServerRow(txn, 'summaries', summaryData)) {
+            continue;
+          }
+
+          await txn.insert(
+            'summaries',
+            {
+              'id': summaryLocalId,
+              'transcriptId': localId,
+              'remoteId': summaryRemoteId,
+              'providerKey': _toText(summaryData['provider_key']) ?? 'local',
+              'model': _toText(summaryData['model']) ?? 'local-default',
+              'summaryText': _toText(summaryData['summary_text']) ?? '',
+              'tokenCount': _toNullableInt(summaryData['token_count']),
+              'processingTimeMs': _toNullableInt(
+                summaryData['processing_time_ms'],
+              ),
+              'createdAt': _toText(summaryData['created_at']) ?? now,
+              'syncStatus': SyncStatus.synced.key,
+              'lastSyncedAt': now,
+              'syncError': null,
+              'deletedAt': _toText(summaryData['deleted_at']),
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+    });
+  }
+
+  /// Returns true when a server row should overwrite the local cache.
+  /// Delegates to [SyncMergePolicy] so the `GET /transcripts` hydrate path
+  /// shares the exact conflict semantics of the `/sync/pull` path and never
+  /// clobbers an unsynced local edit.
+  Future<bool> _shouldWriteServerRow(
+    DatabaseExecutor db,
+    String table,
+    Map<String, Object?> serverRow,
+  ) async {
+    final decision = await _mergePolicy.decideMergeForRow(
+      db: db,
+      table: table,
+      serverRow: serverRow,
+    );
+    return decision != MergeDecision.keepLocal;
+  }
+
   Future<void> _emitSnapshot() async {
     if (_snapshotController.isClosed) {
       return;
     }
     _snapshotController.add(await loadSnapshot());
+  }
+
+  // --------------------------------------------------------------------------
+  // JSON helpers for server responses
+  // --------------------------------------------------------------------------
+
+  static String? _toText(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  static int _toInt(Object? value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static int? _toNullableInt(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value.toString());
+  }
+
+  static double _toDouble(Object? value) {
+    if (value is double) {
+      return value;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static double? _toNullableDouble(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is double) {
+      return value;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value.toString());
+  }
+
+  static List<Map<String, Object?>> _toListOfMaps(Object? value) {
+    if (value is! List) {
+      return const [];
+    }
+    return value
+        .whereType<Map<Object?, Object?>>()
+        .map(
+          (item) => item.map((key, val) => MapEntry(key.toString(), val)),
+        )
+        .toList(growable: false);
   }
 }

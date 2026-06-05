@@ -109,6 +109,10 @@ abstract class TranscriptionService {
   WhisperModel get currentModel;
   String get currentModelKey;
 
+  /// Sets the transcription language: `auto` (detect per window, best for
+  /// bilingual/code-switching audio), or an ISO code like `tr`/`en`.
+  void setTranscriptionLanguage(String language);
+
   Future<void> selectModel(WhisperModel model);
   Future<DevicePerformanceProfile> resolveDeviceProfile();
   Future<List<TranscriptionModelCatalogEntry>> listModelCatalog();
@@ -140,6 +144,9 @@ class WhisperTranscriptionService implements TranscriptionService {
 
   final WhisperController _controller;
   final WhisperModel _model;
+  // `auto` lets Whisper detect the language per 30s window, which is the right
+  // default for bilingual (e.g. EN/TR) meetings; `tr`/`en` force one language.
+  String _language = 'auto';
   final _progressController =
       StreamController<ModelDownloadProgress>.broadcast();
   final Map<WhisperModel, int?> _remoteSizeCache = {};
@@ -161,6 +168,16 @@ class WhisperTranscriptionService implements TranscriptionService {
 
   @override
   String get currentModelKey => modelKeyFromWhisperModel(_model);
+
+  @override
+  void setTranscriptionLanguage(String language) {
+    final normalized = AppPreferences.normalizeTranscriptionLanguage(language);
+    if (normalized == _language) {
+      return;
+    }
+    _language = normalized;
+    AppLogger.info('[Transcription] Language set to $_language');
+  }
 
   @override
   Future<void> selectModel(WhisperModel model) async {
@@ -373,7 +390,7 @@ class WhisperTranscriptionService implements TranscriptionService {
     final future = _controller.transcribe(
       model: model,
       audioPath: audioPath,
-      lang: 'auto',
+      lang: _language,
       convert: false,
       threads: threads,
     );
@@ -409,12 +426,21 @@ class WhisperTranscriptionService implements TranscriptionService {
 
   Future<int> _resolveThreads() async {
     final profile = await resolveDeviceProfile();
+    final cores = profile.cpuCores;
+    // Always leave at least one core for the UI/audio-capture threads so the
+    // app stays responsive, and cap the count to limit sustained thermal load.
     return switch (profile.tier) {
       DevicePerformanceTier.entry => 1,
       DevicePerformanceTier.balanced => 2,
-      DevicePerformanceTier.performance => 2,
-      DevicePerformanceTier.premium => 2,
+      DevicePerformanceTier.performance => _clampThreads(cores >= 8 ? 4 : 3),
+      DevicePerformanceTier.premium => _clampThreads(4),
     };
+  }
+
+  int _clampThreads(int desired) {
+    final cores = _deviceProfile?.cpuCores ?? desired;
+    final headroom = cores > 1 ? cores - 1 : 1;
+    return desired.clamp(1, headroom);
   }
 
   String _chunkIdFromPath(String audioPath) => audioPath.split('/').last;

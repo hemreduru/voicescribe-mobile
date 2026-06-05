@@ -171,13 +171,19 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
       final snapshot = await _transcriptRepository.loadSnapshot();
       const modelKey = 'base';
 
+      // Apply the persisted transcription language before the model loads so
+      // the very first recording already uses the user's choice.
+      _transcriptionService.setTranscriptionLanguage(
+        snapshot.preferences.transcriptionLanguage,
+      );
       await _transcriptionService.selectModel(whisperModelFromKey(modelKey));
       await RepairStaleRecordingsUseCase(
         _transcriptRepository,
       ).execute(snapshot);
       await _transcriptionService.ensureModel();
+      // After local bootstrap, fetch the latest server data into cache.
+      // This is a no-op when offline because refresh() falls back gracefully.
       await _transcriptRepository.refresh();
-      await _cleanupOrphanChunkFiles(snapshot);
       emit(
         state.copyWith(
           modelState: ModelBootstrapState.ready,
@@ -187,6 +193,10 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
           clearErrorMessage: true,
         ),
       );
+      // Best-effort housekeeping: deleting orphaned chunk audio must never
+      // gate the app becoming usable, so run it after the app is ready and
+      // don't await it (a slow/stuck filesystem can't wedge startup).
+      unawaited(_cleanupOrphanChunkFiles(snapshot));
     } catch (error) {
       emit(
         state.copyWith(

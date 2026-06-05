@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -167,6 +170,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
   void _toggleRecording(BuildContext context, RecordingState state) {
     final bloc = context.read<RecordingBloc>();
+    // Tactile confirmation for the app's primary action.
+    unawaited(HapticFeedback.mediumImpact());
     if (state.isRecording) {
       bloc.add(const RecordingStopped());
     } else {

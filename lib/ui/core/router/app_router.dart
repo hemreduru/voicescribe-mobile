@@ -47,8 +47,15 @@ GoRouter createAppRouter({
       return null;
     },
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const BootstrapGate()),
-      GoRoute(path: '/auth', builder: (context, state) => const AuthScreen()),
+      GoRoute(
+        path: '/',
+        pageBuilder: (context, state) =>
+            _fadePage(const BootstrapGate(), state),
+      ),
+      GoRoute(
+        path: '/auth',
+        pageBuilder: (context, state) => _fadePage(const AuthScreen(), state),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return AppShell(navigationShell: navigationShell);
@@ -81,6 +88,21 @@ GoRouter createAppRouter({
         ],
       ),
     ],
+  );
+}
+
+CustomTransitionPage<void> _fadePage(Widget child, GoRouterState state) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    transitionDuration: const Duration(milliseconds: 240),
+    reverseTransitionDuration: const Duration(milliseconds: 180),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      );
+    },
+    child: child,
   );
 }
 

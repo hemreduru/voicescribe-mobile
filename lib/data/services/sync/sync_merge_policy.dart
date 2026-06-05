@@ -46,10 +46,14 @@ class SyncMergePolicy {
       return MergeDecision.insertNew;
     }
 
+    // Only a row that is already synced may be overwritten by the server.
+    // Any unsynced local state (pending edits, an in-flight push, or a failed
+    // push awaiting retry) represents local work that must never be clobbered
+    // by a server copy.
     final localSyncStatus = SyncStatus.fromKey(
       localRow['syncStatus']?.toString(),
     );
-    if (localSyncStatus == SyncStatus.syncing) {
+    if (localSyncStatus != SyncStatus.synced) {
       return MergeDecision.keepLocal;
     }
 

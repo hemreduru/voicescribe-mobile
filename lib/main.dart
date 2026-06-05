@@ -54,7 +54,9 @@ class VoiceScribeRoot extends StatelessWidget {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<TranscriptRepository>(
-          create: (_) => SqfliteTranscriptRepository(),
+          create: (context) => SqfliteTranscriptRepository(
+            authRepository: context.read<AuthRepository>(),
+          ),
         ),
         RepositoryProvider<AuthRepository>(
           create: (_) => VoiceScribeAuthRepository(),

@@ -929,6 +929,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retrying...'**
   String get retrying;
+
+  /// No description provided for @statusIconsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status icons'**
+  String get statusIconsTitle;
+
+  /// No description provided for @transcriptionLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription language'**
+  String get transcriptionLanguage;
+
+  /// No description provided for @automatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get automatic;
+
+  /// No description provided for @unsyncedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 recording not backed up yet} other{{count} recordings not backed up yet}}'**
+  String unsyncedCount(int count);
 }
 
 class _AppLocalizationsDelegate

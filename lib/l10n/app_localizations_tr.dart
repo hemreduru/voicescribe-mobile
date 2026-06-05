@@ -470,4 +470,24 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get retrying => 'Tekrar deneniyor...';
+
+  @override
+  String get statusIconsTitle => 'Statü ikonları';
+
+  @override
+  String get transcriptionLanguage => 'Transkripsiyon dili';
+
+  @override
+  String get automatic => 'Otomatik';
+
+  @override
+  String unsyncedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kayıt henüz yedeklenmedi',
+      one: '1 kayıt henüz yedeklenmedi',
+    );
+    return '$_temp0';
+  }
 }

@@ -144,6 +144,9 @@ class SqliteTranscriptMapper {
       transcriptionModel: AppPreferences.normalizeTranscriptionModel(
         settings['transcriptionModel'] ?? 'base',
       ),
+      transcriptionLanguage: AppPreferences.normalizeTranscriptionLanguage(
+        settings['transcriptionLanguage'] ?? 'auto',
+      ),
     );
   }
 
@@ -154,6 +157,7 @@ class SqliteTranscriptMapper {
       'themeMode': preferences.themeMode,
       'localePreference': preferences.localePreference,
       'transcriptionModel': preferences.transcriptionModel,
+      'transcriptionLanguage': preferences.transcriptionLanguage,
     };
   }
 

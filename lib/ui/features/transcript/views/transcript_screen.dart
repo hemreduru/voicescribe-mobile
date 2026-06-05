@@ -30,6 +30,7 @@ class TranscriptScreen extends StatelessWidget {
 
     return BlocBuilder<TranscriptListBloc, TranscriptListState>(
       buildWhen: (previous, current) =>
+          (previous.snapshot == null) != (current.snapshot == null) ||
           previous.items != current.items ||
           previous.selectedIds != current.selectedIds ||
           previous.query != current.query ||
@@ -45,9 +46,7 @@ class TranscriptScreen extends StatelessWidget {
                 IconButton(
                   onPressed: () => _showStatusHelp(context),
                   icon: const Icon(Icons.help_outline),
-                  tooltip: _isTurkish(context)
-                      ? 'Statu ikonlari'
-                      : 'Status icons',
+                  tooltip: l10n.statusIconsTitle,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 )
               else ...[
@@ -154,7 +153,9 @@ class TranscriptScreen extends StatelessWidget {
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: () => _refreshFromBackend(context),
-                      child: state.items.isEmpty
+                      child: state.snapshot == null
+                          ? const _TranscriptListSkeleton()
+                          : state.items.isEmpty
                           ? ListView(
                               physics: const AlwaysScrollableScrollPhysics(),
                               children: [
@@ -315,7 +316,7 @@ class _StatusHelpSheet extends StatelessWidget {
     return AppModalListView(
       children: [
         Text(
-          _isTurkish(context) ? 'Statu ikonlari' : 'Status icons',
+          context.l10n.statusIconsTitle,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -943,4 +944,84 @@ String _statusHelpDescription(BuildContext context, TranscriptStatus status) {
 
 bool _isTurkish(BuildContext context) {
   return context.l10n.localeName.toLowerCase().startsWith('tr');
+}
+
+/// A lightweight shimmer placeholder shown while the first transcript snapshot
+/// loads, so the list fades in instead of popping from blank to content.
+class _TranscriptListSkeleton extends StatefulWidget {
+  const _TranscriptListSkeleton();
+
+  @override
+  State<_TranscriptListSkeleton> createState() =>
+      _TranscriptListSkeletonState();
+}
+
+class _TranscriptListSkeletonState extends State<_TranscriptListSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 6,
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm + 2),
+      itemBuilder: (context, index) => FadeTransition(
+        opacity: Tween<double>(begin: 0.4, end: 0.9).animate(
+          CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+        ),
+        child: const _SkeletonCard(),
+      ),
+    );
+  }
+}
+
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(
+      context,
+    ).colorScheme.onSurface.withValues(alpha: 0.08);
+    Widget bar(double widthFactor, double height) => FractionallySizedBox(
+      alignment: Alignment.centerLeft,
+      widthFactor: widthFactor,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(AppRadii.sm),
+        ),
+      ),
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest
+            .withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          bar(0.6, 16),
+          const SizedBox(height: AppSpacing.sm),
+          bar(0.9, 12),
+          const SizedBox(height: AppSpacing.xs),
+          bar(0.75, 12),
+        ],
+      ),
+    );
+  }
 }

@@ -80,6 +80,18 @@ class FakeTranscriptRepository implements TranscriptRepository {
     emit();
   }
 
+  @override
+  Future<bool> fetchFromServer({required String token}) async {
+    // Fake implementation: always returns false (no server data).
+    return false;
+  }
+
+  @override
+  Future<void> clearCache() async {
+    snapshot = TranscriptSnapshot.empty();
+    emit();
+  }
+
   void emit() {
     if (!_controller.isClosed) {
       _controller.add(snapshot);
@@ -196,6 +208,13 @@ class FakeTranscriptionService implements TranscriptionService {
 
   @override
   String get currentModelKey => modelKeyFromWhisperModel(_currentModel);
+
+  String language = 'auto';
+
+  @override
+  void setTranscriptionLanguage(String value) {
+    language = value;
+  }
 
   @override
   Future<void> selectModel(WhisperModel model) async {

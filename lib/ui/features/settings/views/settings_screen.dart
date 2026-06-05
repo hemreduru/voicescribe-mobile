@@ -31,7 +31,8 @@ class SettingsScreen extends StatelessWidget {
           previous.syncErrorMessage != current.syncErrorMessage ||
           previous.errorMessage != current.errorMessage ||
           previous.modelCatalog != current.modelCatalog ||
-          previous.deviceProfile != current.deviceProfile,
+          previous.deviceProfile != current.deviceProfile ||
+          previous.pendingSyncCount != current.pendingSyncCount,
       builder: (context, state) {
         final session = state.session;
         final preferences = state.preferences;
@@ -126,7 +127,7 @@ class SettingsScreen extends StatelessWidget {
                     ActionRow(
                       icon: Icons.model_training,
                       title: 'Base',
-                      subtitle: l10n.transcriptionModelSettings,
+                      subtitle: l10n.recommendedForYourDevice,
                       trailing: const SizedBox.shrink(),
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -134,6 +135,23 @@ class SettingsScreen extends StatelessWidget {
                       l10n.modelBaseDescription,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    AppSegmentedField<String>(
+                      label: l10n.transcriptionLanguage,
+                      value: preferences.transcriptionLanguage,
+                      segments: [
+                        AppSegment(
+                          value: 'auto',
+                          label: l10n.automatic,
+                          icon: Icons.auto_awesome_outlined,
+                        ),
+                        AppSegment(value: 'tr', label: l10n.turkish),
+                        AppSegment(value: 'en', label: l10n.english),
+                      ],
+                      onChanged: (value) => context.read<SettingsBloc>().add(
+                        SettingsTranscriptionLanguageChanged(value),
                       ),
                     ),
                   ],
@@ -240,6 +258,21 @@ class SettingsScreen extends StatelessWidget {
                                           ).colorScheme.onSurfaceVariant,
                                         ),
                                   ),
+                                  if (state.pendingSyncCount > 0) ...[
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      l10n.unsyncedCount(state.pendingSyncCount),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.error,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

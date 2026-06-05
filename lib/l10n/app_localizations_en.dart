@@ -467,4 +467,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get retrying => 'Retrying...';
+
+  @override
+  String get statusIconsTitle => 'Status icons';
+
+  @override
+  String get transcriptionLanguage => 'Transcription language';
+
+  @override
+  String get automatic => 'Automatic';
+
+  @override
+  String unsyncedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recordings not backed up yet',
+      one: '1 recording not backed up yet',
+    );
+    return '$_temp0';
+  }
 }

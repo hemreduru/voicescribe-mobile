@@ -128,7 +128,7 @@ void main() {
   });
 
   test(
-    'ttl cleanup removes only expired synced rows and preserves failed rows',
+    'ttl cleanup removes only soft-deleted expired synced rows; active synced rows are preserved as cache',
     () async {
       final expired = DateTime.now()
           .toUtc()
@@ -143,53 +143,76 @@ void main() {
         p.join(Directory.systemTemp.path, 'voicescribe-sync-test-audio.wav'),
       )..writeAsStringSync('audio');
 
+      // 1. Soft-deleted + expired lastSyncedAt -> SHOULD be cleaned up.
       await db.insert('transcript_chunks', {
-        'id': 'chunk-expired',
+        'id': 'chunk-deleted-expired',
         'transcriptId': 'local-a',
         'chunkIndex': 1,
-        'text': 'Old',
+        'text': 'Old deleted',
         'audioPath': audioFile.path,
         'startTime': 0,
         'endTime': 1,
         'syncStatus': SyncStatus.synced.key,
         'lastSyncedAt': expired,
+        'deletedAt': expired,
       });
 
+      // 2. Active synced + expired lastSyncedAt -> PRESERVED as offline cache.
       await db.insert('transcript_chunks', {
-        'id': 'chunk-fresh',
+        'id': 'chunk-active-expired',
         'transcriptId': 'local-a',
         'chunkIndex': 2,
-        'text': 'Fresh',
+        'text': 'Old active',
         'audioPath': null,
         'startTime': 1,
         'endTime': 2,
         'syncStatus': SyncStatus.synced.key,
-        'lastSyncedAt': fresh,
+        'lastSyncedAt': expired,
       });
 
+      // 3. Soft-deleted + fresh lastSyncedAt -> PRESERVED.
       await db.insert('transcript_chunks', {
-        'id': 'chunk-failed',
+        'id': 'chunk-deleted-fresh',
         'transcriptId': 'local-a',
         'chunkIndex': 3,
-        'text': 'Failed',
+        'text': 'Fresh deleted',
         'audioPath': null,
         'startTime': 2,
         'endTime': 3,
+        'syncStatus': SyncStatus.synced.key,
+        'lastSyncedAt': fresh,
+        'deletedAt': fresh,
+      });
+
+      // 4. Failed -> PRESERVED.
+      await db.insert('transcript_chunks', {
+        'id': 'chunk-failed',
+        'transcriptId': 'local-a',
+        'chunkIndex': 4,
+        'text': 'Failed',
+        'audioPath': null,
+        'startTime': 3,
+        'endTime': 4,
         'syncStatus': SyncStatus.failed.key,
         'lastSyncedAt': expired,
       });
 
       await service.runManualSync();
 
-      final expiredRows = await db.query(
+      final deletedExpiredRows = await db.query(
         'transcript_chunks',
         where: 'id = ?',
-        whereArgs: ['chunk-expired'],
+        whereArgs: ['chunk-deleted-expired'],
       );
-      final freshRows = await db.query(
+      final activeExpiredRows = await db.query(
         'transcript_chunks',
         where: 'id = ?',
-        whereArgs: ['chunk-fresh'],
+        whereArgs: ['chunk-active-expired'],
+      );
+      final deletedFreshRows = await db.query(
+        'transcript_chunks',
+        where: 'id = ?',
+        whereArgs: ['chunk-deleted-fresh'],
       );
       final failedRows = await db.query(
         'transcript_chunks',
@@ -197,10 +220,75 @@ void main() {
         whereArgs: ['chunk-failed'],
       );
 
-      expect(expiredRows, isEmpty);
-      expect(freshRows, hasLength(1));
-      expect(failedRows, hasLength(1));
+      // Only soft-deleted + expired should be removed.
+      expect(deletedExpiredRows, isEmpty);
       expect(audioFile.existsSync(), isFalse);
+
+      // Active synced (cache), fresh soft-deleted, and failed should stay.
+      expect(activeExpiredRows, hasLength(1));
+      expect(deletedFreshRows, hasLength(1));
+      expect(failedRows, hasLength(1));
+    },
+  );
+
+  test(
+    'sync evicts audio of synced transcribed chunks but keeps unsynced audio',
+    () async {
+      final syncedAudio = File(
+        p.join(Directory.systemTemp.path, 'vs-evict-synced.wav'),
+      )..writeAsStringSync('audio');
+      final pendingAudio = File(
+        p.join(Directory.systemTemp.path, 'vs-evict-pending.wav'),
+      )..writeAsStringSync('audio');
+
+      // Synced + transcribed -> audio is dead weight and should be evicted.
+      await db.insert('transcript_chunks', {
+        'id': 'chunk-synced',
+        'transcriptId': 'local-a',
+        'chunkIndex': 1,
+        'text': 'Done',
+        'audioPath': syncedAudio.path,
+        'startTime': 0,
+        'endTime': 1,
+        'isTranscribed': 1,
+        'syncStatus': SyncStatus.synced.key,
+        'lastSyncedAt': '2026-05-17T10:00:00Z',
+      });
+
+      // Unsynced -> audio must be preserved (still needed for push/retry).
+      await db.insert('transcript_chunks', {
+        'id': 'chunk-pending',
+        'transcriptId': 'local-a',
+        'chunkIndex': 2,
+        'text': '',
+        'audioPath': pendingAudio.path,
+        'startTime': 1,
+        'endTime': 2,
+        'isTranscribed': 0,
+        'syncStatus': SyncStatus.pending.key,
+      });
+
+      await service.runManualSync();
+
+      final syncedRow = (await db.query(
+        'transcript_chunks',
+        where: 'id = ?',
+        whereArgs: ['chunk-synced'],
+      )).first;
+      final pendingRow = (await db.query(
+        'transcript_chunks',
+        where: 'id = ?',
+        whereArgs: ['chunk-pending'],
+      )).first;
+
+      expect(syncedRow['audioPath'], isNull);
+      expect(syncedRow['text'], 'Done', reason: 'text row kept as cache');
+      expect(syncedAudio.existsSync(), isFalse);
+
+      expect(pendingRow['audioPath'], pendingAudio.path);
+      expect(pendingAudio.existsSync(), isTrue);
+
+      pendingAudio.deleteSync();
     },
   );
 

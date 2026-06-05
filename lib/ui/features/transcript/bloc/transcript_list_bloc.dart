@@ -5,6 +5,7 @@ import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
+import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 
 enum TranscriptSort { newest, oldest, longest }
 
@@ -212,10 +213,32 @@ class TranscriptListBloc
     Emitter<TranscriptListState> emit,
   ) async {
     try {
+      // 1. Push any pending local changes to the server.
       await _syncQueueService.runManualSync(trigger: SyncTrigger.refresh);
+    } catch (error, stackTrace) {
+      // Manual sync may fail when offline; this is non-fatal because we
+      // still want to attempt a server fetch below.
+      AppLogger.warning(
+        '[TranscriptList] Manual sync failed during refresh',
+        error,
+        stackTrace,
+      );
+    }
+
+    try {
+      // 2. Fetch the latest server state into the local cache.
+      // refresh() internally calls fetchFromServer when online.
+      await _transcriptRepository.refresh();
       event.completer?.complete();
     } catch (error, stackTrace) {
-      event.completer?.completeError(error, stackTrace);
+      // refresh() should normally not throw (it falls back to cache),
+      // but we guard against unexpected errors so the UI never crashes.
+      AppLogger.error(
+        '[TranscriptList] Repository refresh failed during refresh',
+        error,
+        stackTrace,
+      );
+      event.completer?.complete();
     }
   }
 

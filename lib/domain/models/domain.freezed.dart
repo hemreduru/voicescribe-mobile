@@ -1177,7 +1177,7 @@ as DateTime?,
 /// @nodoc
 mixin _$AppPreferences {
 
- String get summaryProvider; String get summaryLength; String get themeMode; String get localePreference; String get transcriptionModel;
+ String get summaryProvider; String get summaryLength; String get themeMode; String get localePreference; String get transcriptionModel; String get transcriptionLanguage;
 /// Create a copy of AppPreferences
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1188,16 +1188,16 @@ $AppPreferencesCopyWith<AppPreferences> get copyWith => _$AppPreferencesCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppPreferences&&(identical(other.summaryProvider, summaryProvider) || other.summaryProvider == summaryProvider)&&(identical(other.summaryLength, summaryLength) || other.summaryLength == summaryLength)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.localePreference, localePreference) || other.localePreference == localePreference)&&(identical(other.transcriptionModel, transcriptionModel) || other.transcriptionModel == transcriptionModel));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppPreferences&&(identical(other.summaryProvider, summaryProvider) || other.summaryProvider == summaryProvider)&&(identical(other.summaryLength, summaryLength) || other.summaryLength == summaryLength)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.localePreference, localePreference) || other.localePreference == localePreference)&&(identical(other.transcriptionModel, transcriptionModel) || other.transcriptionModel == transcriptionModel)&&(identical(other.transcriptionLanguage, transcriptionLanguage) || other.transcriptionLanguage == transcriptionLanguage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,summaryProvider,summaryLength,themeMode,localePreference,transcriptionModel);
+int get hashCode => Object.hash(runtimeType,summaryProvider,summaryLength,themeMode,localePreference,transcriptionModel,transcriptionLanguage);
 
 @override
 String toString() {
-  return 'AppPreferences(summaryProvider: $summaryProvider, summaryLength: $summaryLength, themeMode: $themeMode, localePreference: $localePreference, transcriptionModel: $transcriptionModel)';
+  return 'AppPreferences(summaryProvider: $summaryProvider, summaryLength: $summaryLength, themeMode: $themeMode, localePreference: $localePreference, transcriptionModel: $transcriptionModel, transcriptionLanguage: $transcriptionLanguage)';
 }
 
 
@@ -1208,7 +1208,7 @@ abstract mixin class $AppPreferencesCopyWith<$Res>  {
   factory $AppPreferencesCopyWith(AppPreferences value, $Res Function(AppPreferences) _then) = _$AppPreferencesCopyWithImpl;
 @useResult
 $Res call({
- String summaryProvider, String summaryLength, String themeMode, String localePreference, String transcriptionModel
+ String summaryProvider, String summaryLength, String themeMode, String localePreference, String transcriptionModel, String transcriptionLanguage
 });
 
 
@@ -1225,13 +1225,14 @@ class _$AppPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of AppPreferences
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? summaryProvider = null,Object? summaryLength = null,Object? themeMode = null,Object? localePreference = null,Object? transcriptionModel = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? summaryProvider = null,Object? summaryLength = null,Object? themeMode = null,Object? localePreference = null,Object? transcriptionModel = null,Object? transcriptionLanguage = null,}) {
   return _then(_self.copyWith(
 summaryProvider: null == summaryProvider ? _self.summaryProvider : summaryProvider // ignore: cast_nullable_to_non_nullable
 as String,summaryLength: null == summaryLength ? _self.summaryLength : summaryLength // ignore: cast_nullable_to_non_nullable
 as String,themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
 as String,localePreference: null == localePreference ? _self.localePreference : localePreference // ignore: cast_nullable_to_non_nullable
 as String,transcriptionModel: null == transcriptionModel ? _self.transcriptionModel : transcriptionModel // ignore: cast_nullable_to_non_nullable
+as String,transcriptionLanguage: null == transcriptionLanguage ? _self.transcriptionLanguage : transcriptionLanguage // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -1317,10 +1318,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String summaryProvider,  String summaryLength,  String themeMode,  String localePreference,  String transcriptionModel)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String summaryProvider,  String summaryLength,  String themeMode,  String localePreference,  String transcriptionModel,  String transcriptionLanguage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppPreferences() when $default != null:
-return $default(_that.summaryProvider,_that.summaryLength,_that.themeMode,_that.localePreference,_that.transcriptionModel);case _:
+return $default(_that.summaryProvider,_that.summaryLength,_that.themeMode,_that.localePreference,_that.transcriptionModel,_that.transcriptionLanguage);case _:
   return orElse();
 
 }
@@ -1338,10 +1339,10 @@ return $default(_that.summaryProvider,_that.summaryLength,_that.themeMode,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String summaryProvider,  String summaryLength,  String themeMode,  String localePreference,  String transcriptionModel)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String summaryProvider,  String summaryLength,  String themeMode,  String localePreference,  String transcriptionModel,  String transcriptionLanguage)  $default,) {final _that = this;
 switch (_that) {
 case _AppPreferences():
-return $default(_that.summaryProvider,_that.summaryLength,_that.themeMode,_that.localePreference,_that.transcriptionModel);case _:
+return $default(_that.summaryProvider,_that.summaryLength,_that.themeMode,_that.localePreference,_that.transcriptionModel,_that.transcriptionLanguage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1358,10 +1359,10 @@ return $default(_that.summaryProvider,_that.summaryLength,_that.themeMode,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String summaryProvider,  String summaryLength,  String themeMode,  String localePreference,  String transcriptionModel)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String summaryProvider,  String summaryLength,  String themeMode,  String localePreference,  String transcriptionModel,  String transcriptionLanguage)?  $default,) {final _that = this;
 switch (_that) {
 case _AppPreferences() when $default != null:
-return $default(_that.summaryProvider,_that.summaryLength,_that.themeMode,_that.localePreference,_that.transcriptionModel);case _:
+return $default(_that.summaryProvider,_that.summaryLength,_that.themeMode,_that.localePreference,_that.transcriptionModel,_that.transcriptionLanguage);case _:
   return null;
 
 }
@@ -1373,7 +1374,7 @@ return $default(_that.summaryProvider,_that.summaryLength,_that.themeMode,_that.
 
 
 class _AppPreferences extends AppPreferences {
-  const _AppPreferences({this.summaryProvider = 'local', this.summaryLength = 'medium', this.themeMode = 'system', this.localePreference = 'system', this.transcriptionModel = 'base'}): super._();
+  const _AppPreferences({this.summaryProvider = 'local', this.summaryLength = 'medium', this.themeMode = 'system', this.localePreference = 'system', this.transcriptionModel = 'base', this.transcriptionLanguage = 'auto'}): super._();
   
 
 @override@JsonKey() final  String summaryProvider;
@@ -1381,6 +1382,7 @@ class _AppPreferences extends AppPreferences {
 @override@JsonKey() final  String themeMode;
 @override@JsonKey() final  String localePreference;
 @override@JsonKey() final  String transcriptionModel;
+@override@JsonKey() final  String transcriptionLanguage;
 
 /// Create a copy of AppPreferences
 /// with the given fields replaced by the non-null parameter values.
@@ -1392,16 +1394,16 @@ _$AppPreferencesCopyWith<_AppPreferences> get copyWith => __$AppPreferencesCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppPreferences&&(identical(other.summaryProvider, summaryProvider) || other.summaryProvider == summaryProvider)&&(identical(other.summaryLength, summaryLength) || other.summaryLength == summaryLength)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.localePreference, localePreference) || other.localePreference == localePreference)&&(identical(other.transcriptionModel, transcriptionModel) || other.transcriptionModel == transcriptionModel));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppPreferences&&(identical(other.summaryProvider, summaryProvider) || other.summaryProvider == summaryProvider)&&(identical(other.summaryLength, summaryLength) || other.summaryLength == summaryLength)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.localePreference, localePreference) || other.localePreference == localePreference)&&(identical(other.transcriptionModel, transcriptionModel) || other.transcriptionModel == transcriptionModel)&&(identical(other.transcriptionLanguage, transcriptionLanguage) || other.transcriptionLanguage == transcriptionLanguage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,summaryProvider,summaryLength,themeMode,localePreference,transcriptionModel);
+int get hashCode => Object.hash(runtimeType,summaryProvider,summaryLength,themeMode,localePreference,transcriptionModel,transcriptionLanguage);
 
 @override
 String toString() {
-  return 'AppPreferences(summaryProvider: $summaryProvider, summaryLength: $summaryLength, themeMode: $themeMode, localePreference: $localePreference, transcriptionModel: $transcriptionModel)';
+  return 'AppPreferences(summaryProvider: $summaryProvider, summaryLength: $summaryLength, themeMode: $themeMode, localePreference: $localePreference, transcriptionModel: $transcriptionModel, transcriptionLanguage: $transcriptionLanguage)';
 }
 
 
@@ -1412,7 +1414,7 @@ abstract mixin class _$AppPreferencesCopyWith<$Res> implements $AppPreferencesCo
   factory _$AppPreferencesCopyWith(_AppPreferences value, $Res Function(_AppPreferences) _then) = __$AppPreferencesCopyWithImpl;
 @override @useResult
 $Res call({
- String summaryProvider, String summaryLength, String themeMode, String localePreference, String transcriptionModel
+ String summaryProvider, String summaryLength, String themeMode, String localePreference, String transcriptionModel, String transcriptionLanguage
 });
 
 
@@ -1429,13 +1431,14 @@ class __$AppPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of AppPreferences
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? summaryProvider = null,Object? summaryLength = null,Object? themeMode = null,Object? localePreference = null,Object? transcriptionModel = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? summaryProvider = null,Object? summaryLength = null,Object? themeMode = null,Object? localePreference = null,Object? transcriptionModel = null,Object? transcriptionLanguage = null,}) {
   return _then(_AppPreferences(
 summaryProvider: null == summaryProvider ? _self.summaryProvider : summaryProvider // ignore: cast_nullable_to_non_nullable
 as String,summaryLength: null == summaryLength ? _self.summaryLength : summaryLength // ignore: cast_nullable_to_non_nullable
 as String,themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
 as String,localePreference: null == localePreference ? _self.localePreference : localePreference // ignore: cast_nullable_to_non_nullable
 as String,transcriptionModel: null == transcriptionModel ? _self.transcriptionModel : transcriptionModel // ignore: cast_nullable_to_non_nullable
+as String,transcriptionLanguage: null == transcriptionLanguage ? _self.transcriptionLanguage : transcriptionLanguage // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
