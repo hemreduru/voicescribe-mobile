@@ -204,6 +204,7 @@
   "statusIconsTitle": "Status icons",
   "transcriptionLanguage": "Transcription language",
   "transcriptionModelSize": "Model size",
+  "recordingNotificationContent": "Recording in progress",
   "automatic": "Automatic",
   "unsyncedCount": "{count, plural, =1{1 recording not backed up yet} other{{count} recordings not backed up yet}}",
   "@unsyncedCount": {

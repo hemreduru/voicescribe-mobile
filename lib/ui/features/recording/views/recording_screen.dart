@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 
+import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
@@ -175,6 +177,14 @@ class _RecordingScreenState extends State<RecordingScreen> {
     if (state.isRecording) {
       bloc.add(const RecordingStopped());
     } else {
+      // Ask for notification permission (Android 13+) so the foreground-service
+      // notification is actually visible; recording still starts regardless.
+      unawaited(Permission.notification.request());
+      // Localize the foreground-service notification before recording starts.
+      context.read<RecordingService>().setForegroundNotification(
+        title: context.l10n.appName,
+        content: context.l10n.recordingNotificationContent,
+      );
       bloc.add(RecordingStarted(_titleController.text));
     }
   }

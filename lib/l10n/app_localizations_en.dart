@@ -478,6 +478,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transcriptionModelSize => 'Model size';
 
   @override
+  String get recordingNotificationContent => 'Recording in progress';
+
+  @override
   String get automatic => 'Automatic';
 
   @override

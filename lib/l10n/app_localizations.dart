@@ -948,6 +948,12 @@ abstract class AppLocalizations {
   /// **'Model size'**
   String get transcriptionModelSize;
 
+  /// No description provided for @recordingNotificationContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording in progress'**
+  String get recordingNotificationContent;
+
   /// No description provided for @automatic.
   ///
   /// In en, this message translates to:

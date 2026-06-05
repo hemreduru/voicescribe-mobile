@@ -481,6 +481,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get transcriptionModelSize => 'Model boyutu';
 
   @override
+  String get recordingNotificationContent => 'Kayıt sürüyor';
+
+  @override
   String get automatic => 'Otomatik';
 
   @override

@@ -171,6 +171,9 @@ class FakeRecordingService implements RecordingService {
   }
 
   @override
+  void setForegroundNotification({required String title, String? content}) {}
+
+  @override
   Future<void> start() async {}
 
   @override

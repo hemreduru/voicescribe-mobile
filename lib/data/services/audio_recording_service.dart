@@ -27,6 +27,11 @@ abstract class RecordingService {
   Stream<RecordedAudioChunk> get chunks;
   Stream<double> get levels;
 
+  /// Sets the text shown in the Android foreground-service notification while
+  /// recording. Call from the UI layer (which has localized strings) before
+  /// [start]. No-op on platforms without a foreground recording service.
+  void setForegroundNotification({required String title, String? content});
+
   Future<void> start();
   Future<void> pause();
   Future<void> resume();
@@ -54,6 +59,14 @@ class AudioRecordingService implements RecordingService {
   StreamSubscription<List<int>>? _recordingSubscription;
   bool _isRecording = false;
   Future<void> _emitTask = Future.value();
+  String _notificationTitle = 'VoiceScribe';
+  String? _notificationContent;
+
+  @override
+  void setForegroundNotification({required String title, String? content}) {
+    _notificationTitle = title.trim().isEmpty ? 'VoiceScribe' : title.trim();
+    _notificationContent = content;
+  }
 
   @override
   Stream<RecordedAudioChunk> get chunks => _chunksController.stream;
@@ -72,11 +85,19 @@ class AudioRecordingService implements RecordingService {
 
     _chunker.reset();
     final stream = await _recorder.startStream(
-      const RecordConfig(
+      RecordConfig(
         encoder: AudioEncoder.pcm16bits,
         sampleRate: 16000,
         numChannels: 1,
         streamBufferSize: 3200,
+        // Run a foreground service with a persistent notification so recording
+        // survives the app being backgrounded / the screen turning off.
+        androidConfig: AndroidRecordConfig(
+          service: AndroidService(
+            title: _notificationTitle,
+            content: _notificationContent,
+          ),
+        ),
       ),
     );
     _isRecording = true;

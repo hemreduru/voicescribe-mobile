@@ -1,12 +1,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Keep recording alive while the app is backgrounded / the screen is off. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:label="VoiceScribe"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+        <!-- Foreground recording service shipped by the `record` plugin. -->
+        <service
+            android:name="com.llfbandit.record.service.AudioRecordingService"
+            android:foregroundServiceType="microphone"
+            android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
