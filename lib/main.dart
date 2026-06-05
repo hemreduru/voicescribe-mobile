@@ -53,13 +53,16 @@ class VoiceScribeRoot extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
+        // AuthRepository must be declared before TranscriptRepository: the
+        // first provider is the outermost ancestor, and TranscriptRepository's
+        // create reads AuthRepository, so AuthRepository has to sit above it.
+        RepositoryProvider<AuthRepository>(
+          create: (_) => VoiceScribeAuthRepository(),
+        ),
         RepositoryProvider<TranscriptRepository>(
           create: (context) => SqfliteTranscriptRepository(
             authRepository: context.read<AuthRepository>(),
           ),
-        ),
-        RepositoryProvider<AuthRepository>(
-          create: (_) => VoiceScribeAuthRepository(),
         ),
         RepositoryProvider<RecordingService>(
           create: (_) => AudioRecordingService(),
