@@ -10,6 +10,7 @@ import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
+import 'package:voicescribe_mobile/ui/core/widgets/ambient_backdrop.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
@@ -74,101 +75,105 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
         return Scaffold(
           appBar: AppBar(title: Text(l10n.recording)),
-          body: SafeArea(
-            child: AppPageListView(
-              children: [
-                AppCard(
-                  child: AppTextField(
-                    controller: _titleController,
-                    hintText: l10n.sessionNamePlaceholder,
-                    prefixIcon: Icons.edit_note,
-                    textInputAction: TextInputAction.done,
-                    onChanged: (value) => context.read<RecordingBloc>().add(
-                      RecordingTitleChanged(value),
+          body: AmbientBackdrop(
+            child: SafeArea(
+              child: AppPageListView(
+                children: [
+                  AppCard(
+                    child: AppTextField(
+                      controller: _titleController,
+                      hintText: l10n.sessionNamePlaceholder,
+                      prefixIcon: Icons.edit_note,
+                      textInputAction: TextInputAction.done,
+                      onChanged: (value) => context.read<RecordingBloc>().add(
+                        RecordingTitleChanged(value),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Center(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final compact =
-                          constraints.maxWidth < AppLayout.compactWidth;
-                      return PulseRecordButton(
-                        isRecording: state.isRecording,
-                        dimension: compact ? 154 : 172,
-                        semanticLabel: state.isRecording
-                            ? l10n.stop
-                            : l10n.tapToRecord,
-                        onPressed: () => _toggleRecording(context, state),
-                      );
-                    },
+                  const SizedBox(height: AppSpacing.xl),
+                  Center(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact =
+                            constraints.maxWidth < AppLayout.compactWidth;
+                        return PulseRecordButton(
+                          isRecording: state.isRecording,
+                          dimension: compact ? 154 : 172,
+                          semanticLabel: state.isRecording
+                              ? l10n.stop
+                              : l10n.tapToRecord,
+                          onPressed: () => _toggleRecording(context, state),
+                        );
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppDurationDisplay(
-                  value: formatDuration(state.durationSeconds),
-                ),
-                if (state.isRecording) ...[
                   const SizedBox(height: AppSpacing.lg),
-                  AppButtonGroup(
-                    children: [
-                      AppButton(
-                        label: state.isPaused ? l10n.resume : l10n.pause,
-                        icon: state.isPaused ? Icons.play_arrow : Icons.pause,
-                        onPressed: () => context.read<RecordingBloc>().add(
-                          const RecordingPauseToggled(),
+                  AppDurationDisplay(
+                    value: formatDuration(state.durationSeconds),
+                  ),
+                  if (state.isRecording) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    AppButtonGroup(
+                      children: [
+                        AppButton(
+                          label: state.isPaused ? l10n.resume : l10n.pause,
+                          icon: state.isPaused ? Icons.play_arrow : Icons.pause,
+                          onPressed: () => context.read<RecordingBloc>().add(
+                            const RecordingPauseToggled(),
+                          ),
                         ),
-                      ),
-                      AppButton(
-                        label: l10n.stop,
-                        icon: Icons.stop,
-                        onPressed: () => context.read<RecordingBloc>().add(
-                          const RecordingStopped(),
+                        AppButton(
+                          label: l10n.stop,
+                          icon: Icons.stop,
+                          onPressed: () => context.read<RecordingBloc>().add(
+                            const RecordingStopped(),
+                          ),
+                          variant: AppButtonVariant.outline,
                         ),
-                        variant: AppButtonVariant.outline,
+                      ],
+                    ),
+                    if (!state.isPaused) ...[
+                      const SizedBox(height: AppSpacing.xl),
+                      RepaintBoundary(
+                        child: AudioVisualizer(level: state.audioLevel),
                       ),
                     ],
-                  ),
-                  if (!state.isPaused) ...[
-                    const SizedBox(height: AppSpacing.xl),
-                    RepaintBoundary(
-                      child: AudioVisualizer(level: state.audioLevel),
+                  ],
+                  if (state.errorMessage != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    AppErrorText(
+                      message: state.errorMessage!,
+                      textAlign: TextAlign.center,
                     ),
                   ],
-                ],
-                if (state.errorMessage != null) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  AppErrorText(
-                    message: state.errorMessage!,
-                    textAlign: TextAlign.center,
+                  const SizedBox(height: AppSpacing.xl),
+                  SectionHeader(
+                    title: l10n.recentRecordings,
+                    subtitle: recent.isEmpty
+                        ? null
+                        : l10n.recordingsCount(recent.length),
                   ),
-                ],
-                const SizedBox(height: AppSpacing.xl),
-                SectionHeader(
-                  title: l10n.recentRecordings,
-                  subtitle: recent.isEmpty
-                      ? null
-                      : l10n.recordingsCount(recent.length),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                if (recent.isEmpty)
-                  AppCard(
-                    child: Text(
-                      l10n.noRecordings,
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
+                  const SizedBox(height: AppSpacing.sm),
+                  if (recent.isEmpty)
+                    AppCard(
+                      child: Text(
+                        l10n.noRecordings,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  else
+                    ...recent.map(
+                      (transcript) => Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: AppSpacing.sm + 2,
+                        ),
+                        child: _RecentTranscriptCard(transcript: transcript),
                       ),
                     ),
-                  )
-                else
-                  ...recent.map(
-                    (transcript) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm + 2),
-                      child: _RecentTranscriptCard(transcript: transcript),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         );
