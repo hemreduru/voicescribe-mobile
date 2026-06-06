@@ -95,6 +95,10 @@ flutter:
   # transcription (the emulator does not forward host mic audio).
   assets:
     - test_assets/turkish16k.wav
+    # Bundled Plus Jakarta Sans (OFL) so google_fonts loads it locally instead
+    # of fetching at runtime — offline-capable, no FOUT, and deterministic in
+    # widget tests.
+    - google_fonts/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
