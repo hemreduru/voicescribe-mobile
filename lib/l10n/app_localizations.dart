@@ -965,6 +965,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 recording not backed up yet} other{{count} recordings not backed up yet}}'**
   String unsyncedCount(int count);
+
+  /// No description provided for @transcribingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing transcript · {done}/{total} parts · ~{time} left'**
+  String transcribingStatus(int done, int total, String time);
+
+  /// No description provided for @transcribingStatusNoEta.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing transcript · {done}/{total} parts'**
+  String transcribingStatusNoEta(int done, int total);
 }
 
 class _AppLocalizationsDelegate

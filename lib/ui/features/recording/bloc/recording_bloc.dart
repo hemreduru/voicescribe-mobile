@@ -120,7 +120,65 @@ abstract class RecordingState with _$RecordingState {
     String? errorMessage,
     String? userMessage,
     @Default(<String>{}) Set<String> retryingChunkIds,
+    // Measured processing-seconds-per-audio-second for the active model on this
+    // device, sourced from the transcription service to drive the live ETA.
+    @Default(1.1) double realtimeFactor,
   }) = _RecordingState;
+
+  const RecordingState._();
+
+  /// Chunks whose transcription progress we surface to the user: the active
+  /// session when one exists, otherwise everything pending across the snapshot
+  /// (e.g. chunks recovered after a force-kill).
+  List<TranscriptChunk> get _progressChunks {
+    final active = currentTranscript;
+    if (active != null) {
+      return allChunks.where((c) => c.transcriptId == active.id).toList();
+    }
+    return allChunks
+        .where((c) => !c.isTranscribed && c.transcriptionError == null)
+        .toList();
+  }
+
+  /// Total chunks in the progress set (the "Y" in "X/Y parça").
+  int get totalProgressChunks => _progressChunks.length;
+
+  /// Chunks already transcribed (the "X" in "X/Y parça").
+  int get transcribedProgressChunks =>
+      _progressChunks.where((c) => c.isTranscribed).length;
+
+  /// Seconds of audio still waiting to be transcribed in the progress set.
+  double get pendingAudioSeconds {
+    var total = 0.0;
+    for (final chunk in _progressChunks) {
+      if (chunk.isTranscribed ||
+          chunk.transcriptionError != null ||
+          (chunk.audioPath?.isEmpty ?? true)) {
+        continue;
+      }
+      final seconds = chunk.endTime - chunk.startTime;
+      if (seconds > 0) {
+        total += seconds;
+      }
+    }
+    return total;
+  }
+
+  /// True while at least one chunk in the progress set is still being
+  /// transcribed (not yet done and not errored).
+  bool get isTranscribing => _progressChunks.any(
+    (c) => !c.isTranscribed && c.transcriptionError == null,
+  );
+
+  /// Device-specific estimate of the time left to finish the pending backlog,
+  /// or null when nothing is pending.
+  Duration? get estimatedTranscriptionRemaining {
+    final pending = pendingAudioSeconds;
+    if (pending <= 0) {
+      return null;
+    }
+    return Duration(milliseconds: (pending * 1000 * realtimeFactor).round());
+  }
 }
 
 // =============================================================================
@@ -190,7 +248,11 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   ) async {
     await _snapshotSubscription?.cancel();
     final snapshot = await _transcriptRepository.loadSnapshot();
-    emit(_stateForSnapshot(state, snapshot));
+    emit(
+      _stateForSnapshot(state, snapshot).copyWith(
+        realtimeFactor: _transcriptionService.currentRealtimeFactor,
+      ),
+    );
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
       (snapshot) => add(_RecordingSnapshotChanged(snapshot)),
       onError: (Object error, StackTrace stack) {
@@ -643,6 +705,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
           currentTranscript: updatedTranscript,
           liveTranscriptPreview: livePreview,
           errorMessage: errorMessage,
+          // Refresh the device-specific speed each time a chunk completes so the
+          // live ETA converges on real hardware performance.
+          realtimeFactor: _transcriptionService.currentRealtimeFactor,
         ),
         updatedTranscript,
       ),

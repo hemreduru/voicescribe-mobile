@@ -211,5 +211,20 @@
     "placeholders": {
       "count": { "type": "int" }
     }
+  },
+  "transcribingStatus": "Preparing transcript · {done}/{total} parts · ~{time} left",
+  "@transcribingStatus": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" },
+      "time": { "type": "String" }
+    }
+  },
+  "transcribingStatusNoEta": "Preparing transcript · {done}/{total} parts",
+  "@transcribingStatusNoEta": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
   }
 }

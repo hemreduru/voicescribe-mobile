@@ -212,6 +212,17 @@ class FakeTranscriptionService implements TranscriptionService {
   @override
   String get currentModelKey => modelKeyFromWhisperModel(_currentModel);
 
+  /// Overridable so tests can simulate a slow device for ETA assertions.
+  double realtimeFactor = 1.1;
+
+  @override
+  double get currentRealtimeFactor => realtimeFactor;
+
+  @override
+  Duration estimateBacklog(double pendingAudioSeconds) => Duration(
+    milliseconds: (pendingAudioSeconds * 1000 * realtimeFactor).round(),
+  );
+
   String language = 'auto';
 
   @override

@@ -211,5 +211,20 @@
     "placeholders": {
       "count": { "type": "int" }
     }
+  },
+  "transcribingStatus": "Transkript hazırlanıyor · {done}/{total} parça · ~{time} kaldı",
+  "@transcribingStatus": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" },
+      "time": { "type": "String" }
+    }
+  },
+  "transcribingStatusNoEta": "Transkript hazırlanıyor · {done}/{total} parça",
+  "@transcribingStatusNoEta": {
+    "placeholders": {
+      "done": { "type": "int" },
+      "total": { "type": "int" }
+    }
   }
 }

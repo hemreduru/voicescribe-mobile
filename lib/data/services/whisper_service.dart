@@ -1,9 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:voicescribe_mobile/data/services/transcription/transcription_estimator.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 import 'package:whisper_ggml_plus/whisper_ggml_plus.dart';
+
+// 16 kHz mono 16-bit PCM = 32000 bytes per second of audio, plus a 44-byte WAV
+// header. Used to derive a chunk's audio length from its file size for ETA.
+const int _wavBytesPerSecond = 16000 * 1 * 2;
+const int _wavHeaderBytes = 44;
 
 // Model bootstrap needs file metadata checks and cleanup around downloaded
 // assets. These calls run outside frame-critical UI paths.
@@ -109,6 +115,15 @@ abstract class TranscriptionService {
   WhisperModel get currentModel;
   String get currentModelKey;
 
+  /// Measured processing-seconds-per-audio-second for the current model on this
+  /// device. Refines as chunks complete; seeded with a per-model default so the
+  /// first estimate is still reasonable. See [TranscriptionEstimator].
+  double get currentRealtimeFactor;
+
+  /// Estimated wall-clock time to transcribe [pendingAudioSeconds] of queued
+  /// audio with the current model on this device.
+  Duration estimateBacklog(double pendingAudioSeconds);
+
   /// Sets the transcription language: `auto` (detect per window, best for
   /// bilingual/code-switching audio), or an ISO code like `tr`/`en`.
   void setTranscriptionLanguage(String language);
@@ -155,6 +170,9 @@ class WhisperTranscriptionService implements TranscriptionService {
   final Map<WhisperModel, int?> _remoteSizeCache = {};
   DevicePerformanceProfile? _deviceProfile;
 
+  // Learns this device's transcription speed (per model) to drive live ETAs.
+  final TranscriptionEstimator _estimator = TranscriptionEstimator();
+
   // Sequential transcription queue
   final List<_TranscriptionRequest> _pendingRequests = [];
   bool _isProcessingQueue = false;
@@ -171,6 +189,15 @@ class WhisperTranscriptionService implements TranscriptionService {
 
   @override
   String get currentModelKey => modelKeyFromWhisperModel(_model);
+
+  @override
+  double get currentRealtimeFactor => _estimator.factorFor(currentModelKey);
+
+  @override
+  Duration estimateBacklog(double pendingAudioSeconds) => _estimator.estimateFor(
+    modelKey: currentModelKey,
+    pendingAudioSeconds: pendingAudioSeconds,
+  );
 
   @override
   void setTranscriptionLanguage(String language) {
@@ -362,15 +389,26 @@ class WhisperTranscriptionService implements TranscriptionService {
       'audioLevel: $audioLevel',
     );
 
+    final audioSeconds = await _audioSecondsForWav(audioPath);
     Exception? lastError;
 
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
+        final stopwatch = Stopwatch()..start();
         final result = await _executeSingle(
           audioPath: audioPath,
           model: selectedModel,
           threads: threads,
           attempt: attempt,
+        );
+        stopwatch.stop();
+        // Feed the per-device speed estimator so live ETAs reflect this exact
+        // hardware/model. Both empty and non-empty results consumed model time
+        // proportional to the clip length, so both are representative samples.
+        _estimator.record(
+          modelKey: modelKeyFromWhisperModel(selectedModel),
+          audioSeconds: audioSeconds,
+          processing: stopwatch.elapsed,
         );
         if (result.text.trim().isEmpty) {
           AppLogger.info(
@@ -463,6 +501,22 @@ class WhisperTranscriptionService implements TranscriptionService {
   }
 
   String _chunkIdFromPath(String audioPath) => audioPath.split('/').last;
+
+  /// Derives a chunk's audio length (seconds) from its WAV file size. Chunks are
+  /// always 16 kHz mono 16-bit PCM, so size maps directly to duration. Returns 0
+  /// when the file is missing/too small, which the estimator safely ignores.
+  Future<double> _audioSecondsForWav(String audioPath) async {
+    try {
+      final length = await File(audioPath).length();
+      final dataBytes = length - _wavHeaderBytes;
+      if (dataBytes <= 0) {
+        return 0;
+      }
+      return dataBytes / _wavBytesPerSecond;
+    } catch (_) {
+      return 0;
+    }
+  }
 
   @override
   Future<void> dispose() async {

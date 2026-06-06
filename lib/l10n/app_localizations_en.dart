@@ -493,4 +493,14 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String transcribingStatus(int done, int total, String time) {
+    return 'Preparing transcript · $done/$total parts · ~$time left';
+  }
+
+  @override
+  String transcribingStatusNoEta(int done, int total) {
+    return 'Preparing transcript · $done/$total parts';
+  }
 }
