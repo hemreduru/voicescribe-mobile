@@ -9,6 +9,7 @@ import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
+import 'package:voicescribe_mobile/l10n/app_localizations.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
@@ -419,16 +420,37 @@ class _TranscriptionErrorBanner extends StatelessWidget {
   }
 }
 
+/// Humanizes a remaining-time estimate into a localized, rounded phrase like
+/// "1 dakika" / "30 saniye" (diffForHumans style) — paired with the
+/// `etaRemaining` frame to read "~1 dakika kaldı".
+String humanizeEtaUnit(AppLocalizations l10n, Duration remaining) {
+  final seconds = remaining.inSeconds;
+  if (seconds < 60) {
+    // Round to the nearest 5s (min 5) so it doesn't jitter every second.
+    final rounded = (seconds / 5).round() * 5;
+    return l10n.etaUnitSeconds(rounded < 5 ? 5 : rounded);
+  }
+  if (seconds < 3600) {
+    return l10n.etaUnitMinutes((seconds / 60).round());
+  }
+  return l10n.etaUnitHours((seconds / 3600).round());
+}
+
 class _TranscriptionProgressBar extends StatelessWidget {
   const _TranscriptionProgressBar({
     required this.completed,
     required this.total,
     required this.isVisible,
+    this.remaining,
   });
 
   final int completed;
   final int total;
   final bool isVisible;
+
+  /// Device-specific estimate of time left; when set, shown as "~X kaldı"
+  /// next to the chunk count.
+  final Duration? remaining;
 
   @override
   Widget build(BuildContext context) {
@@ -477,7 +499,10 @@ class _TranscriptionProgressBar extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              l10n.transcriptionProgressChunks(completed, total),
+              remaining == null || remaining!.inSeconds <= 0
+                  ? l10n.transcriptionProgressChunks(completed, total)
+                  : '${l10n.transcriptionProgressChunks(completed, total)} · '
+                        '${l10n.etaRemaining(humanizeEtaUnit(l10n, remaining!))}',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -496,7 +521,10 @@ class _TranscriptDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<RecordingBloc, RecordingState>(
       buildWhen: (previous, current) =>
-          previous.retryingChunkIds != current.retryingChunkIds,
+          previous.retryingChunkIds != current.retryingChunkIds ||
+          previous.allChunks != current.allChunks ||
+          previous.realtimeFactor != current.realtimeFactor ||
+          previous.currentTranscript?.id != current.currentTranscript?.id,
       builder: (context, recordingState) {
         return BlocConsumer<TranscriptDetailBloc, TranscriptDetailState>(
           listenWhen: (previous, current) =>
@@ -583,6 +611,12 @@ class _TranscriptDetailSheet extends StatelessWidget {
                         completed: state.completedChunkCount,
                         total: state.totalChunkCount,
                         isVisible: isProcessing,
+                        remaining:
+                            (recordingState.currentTranscript?.id ==
+                                    transcript.id &&
+                                recordingState.isTranscribing)
+                            ? recordingState.estimatedTranscriptionRemaining
+                            : null,
                       ),
                     ],
                     if (isError) ...[
@@ -799,6 +833,15 @@ class _TranscriptCard extends StatelessWidget {
     final isProcessing =
         displayStatusFor(transcript.status) ==
         TranscriptDisplayStatus.processing;
+    // Show the live, device-specific ETA only on the transcript currently being
+    // transcribed (the active recording session). `select` keeps rebuilds
+    // scoped to this value.
+    final remaining = context.select<RecordingBloc, Duration?>((bloc) {
+      final s = bloc.state;
+      return (s.currentTranscript?.id == transcript.id && s.isTranscribing)
+          ? s.estimatedTranscriptionRemaining
+          : null;
+    });
 
     return GestureDetector(
       onLongPress: onLongPress,
@@ -857,6 +900,7 @@ class _TranscriptCard extends StatelessWidget {
                       completed: completedChunkCount,
                       total: totalChunkCount,
                       isVisible: isProcessing,
+                      remaining: remaining,
                     ),
                   ],
                   if (mergedText.isNotEmpty) ...[

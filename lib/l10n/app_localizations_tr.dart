@@ -498,15 +498,25 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String transcribingStatus(int done, int total, String time) {
-    return 'Transkript hazırlanıyor · $done/$total parça · ~$time kaldı';
-  }
-
-  @override
-  String transcribingStatusNoEta(int done, int total) {
-    return 'Transkript hazırlanıyor · $done/$total parça';
-  }
-
-  @override
   String get transcribingNotificationContent => 'Transkript hazırlanıyor';
+
+  @override
+  String etaUnitSeconds(int count) {
+    return '$count saniye';
+  }
+
+  @override
+  String etaUnitMinutes(int count) {
+    return '$count dakika';
+  }
+
+  @override
+  String etaUnitHours(int count) {
+    return '$count saat';
+  }
+
+  @override
+  String etaRemaining(String time) {
+    return '~$time kaldı';
+  }
 }

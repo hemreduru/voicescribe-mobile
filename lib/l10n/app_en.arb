@@ -212,20 +212,21 @@
       "count": { "type": "int" }
     }
   },
-  "transcribingStatus": "Preparing transcript · {done}/{total} parts · ~{time} left",
-  "@transcribingStatus": {
-    "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" },
-      "time": { "type": "String" }
-    }
+  "transcribingNotificationContent": "Preparing transcript",
+  "etaUnitSeconds": "{count, plural, =1{1 second} other{{count} seconds}}",
+  "@etaUnitSeconds": {
+    "placeholders": { "count": { "type": "int" } }
   },
-  "transcribingStatusNoEta": "Preparing transcript · {done}/{total} parts",
-  "@transcribingStatusNoEta": {
-    "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
-    }
+  "etaUnitMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
+  "@etaUnitMinutes": {
+    "placeholders": { "count": { "type": "int" } }
   },
-  "transcribingNotificationContent": "Preparing transcript"
+  "etaUnitHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@etaUnitHours": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "etaRemaining": "~{time} left",
+  "@etaRemaining": {
+    "placeholders": { "time": { "type": "String" } }
+  }
 }

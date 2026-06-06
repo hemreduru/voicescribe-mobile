@@ -212,20 +212,21 @@
       "count": { "type": "int" }
     }
   },
-  "transcribingStatus": "Transkript hazırlanıyor · {done}/{total} parça · ~{time} kaldı",
-  "@transcribingStatus": {
-    "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" },
-      "time": { "type": "String" }
-    }
+  "transcribingNotificationContent": "Transkript hazırlanıyor",
+  "etaUnitSeconds": "{count} saniye",
+  "@etaUnitSeconds": {
+    "placeholders": { "count": { "type": "int" } }
   },
-  "transcribingStatusNoEta": "Transkript hazırlanıyor · {done}/{total} parça",
-  "@transcribingStatusNoEta": {
-    "placeholders": {
-      "done": { "type": "int" },
-      "total": { "type": "int" }
-    }
+  "etaUnitMinutes": "{count} dakika",
+  "@etaUnitMinutes": {
+    "placeholders": { "count": { "type": "int" } }
   },
-  "transcribingNotificationContent": "Transkript hazırlanıyor"
+  "etaUnitHours": "{count} saat",
+  "@etaUnitHours": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "etaRemaining": "~{time} kaldı",
+  "@etaRemaining": {
+    "placeholders": { "time": { "type": "String" } }
+  }
 }

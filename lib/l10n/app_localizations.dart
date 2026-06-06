@@ -966,23 +966,35 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 recording not backed up yet} other{{count} recordings not backed up yet}}'**
   String unsyncedCount(int count);
 
-  /// No description provided for @transcribingStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Preparing transcript · {done}/{total} parts · ~{time} left'**
-  String transcribingStatus(int done, int total, String time);
-
-  /// No description provided for @transcribingStatusNoEta.
-  ///
-  /// In en, this message translates to:
-  /// **'Preparing transcript · {done}/{total} parts'**
-  String transcribingStatusNoEta(int done, int total);
-
   /// No description provided for @transcribingNotificationContent.
   ///
   /// In en, this message translates to:
   /// **'Preparing transcript'**
   String get transcribingNotificationContent;
+
+  /// No description provided for @etaUnitSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 second} other{{count} seconds}}'**
+  String etaUnitSeconds(int count);
+
+  /// No description provided for @etaUnitMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
+  String etaUnitMinutes(int count);
+
+  /// No description provided for @etaUnitHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour} other{{count} hours}}'**
+  String etaUnitHours(int count);
+
+  /// No description provided for @etaRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'~{time} left'**
+  String etaRemaining(String time);
 }
 
 class _AppLocalizationsDelegate

@@ -67,9 +67,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
           previous.userMessage != current.userMessage ||
           previous.transcripts != current.transcripts ||
           previous.currentTranscript != current.currentTranscript ||
-          previous.currentChunks != current.currentChunks ||
-          previous.allChunks != current.allChunks ||
-          previous.realtimeFactor != current.realtimeFactor,
+          previous.currentChunks != current.currentChunks,
       builder: (context, state) {
         final theme = Theme.of(context);
         final recent = state.transcripts.take(3).toList();
@@ -111,14 +109,6 @@ class _RecordingScreenState extends State<RecordingScreen> {
                 AppDurationDisplay(
                   value: formatDuration(state.durationSeconds),
                 ),
-                if (state.isTranscribing) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  _TranscriptionProgress(
-                    done: state.transcribedProgressChunks,
-                    total: state.totalProgressChunks,
-                    remaining: state.estimatedTranscriptionRemaining,
-                  ),
-                ],
                 if (state.isRecording) ...[
                   const SizedBox(height: AppSpacing.lg),
                   AppButtonGroup(
@@ -263,53 +253,6 @@ class _RecordButton extends StatelessWidget {
   }
 }
 
-/// Live transcription progress shown under the timer: how many chunks are done
-/// and a device-specific estimate of the time left. Reassures the user that a
-/// slow (e.g. `small` model) backlog is still being worked through.
-class _TranscriptionProgress extends StatelessWidget {
-  const _TranscriptionProgress({
-    required this.done,
-    required this.total,
-    required this.remaining,
-  });
-
-  final int done;
-  final int total;
-  final Duration? remaining;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final scheme = Theme.of(context).colorScheme;
-    final eta = remaining;
-    final label = (eta == null || eta.inSeconds <= 0)
-        ? l10n.transcribingStatusNoEta(done, total)
-        : l10n.transcribingStatus(done, total, formatDuration(eta.inSeconds));
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox.square(
-          dimension: 14,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: scheme.primary,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Flexible(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _RecentTranscriptCard extends StatelessWidget {
   const _RecentTranscriptCard({required this.transcript});
