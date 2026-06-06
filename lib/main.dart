@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:voicescribe_mobile/data/repositories/sqflite_transcript_repository.dart';
 import 'package:voicescribe_mobile/data/repositories/voice_scribe_auth_repository.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/background_work_service.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
@@ -53,11 +54,16 @@ class VoiceScribeRoot extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<TranscriptRepository>(
-          create: (_) => SqfliteTranscriptRepository(),
-        ),
+        // AuthRepository must be declared before TranscriptRepository: the
+        // first provider is the outermost ancestor, and TranscriptRepository's
+        // create reads AuthRepository, so AuthRepository has to sit above it.
         RepositoryProvider<AuthRepository>(
           create: (_) => VoiceScribeAuthRepository(),
+        ),
+        RepositoryProvider<TranscriptRepository>(
+          create: (context) => SqfliteTranscriptRepository(
+            authRepository: context.read<AuthRepository>(),
+          ),
         ),
         RepositoryProvider<RecordingService>(
           create: (_) => AudioRecordingService(),
@@ -73,6 +79,9 @@ class VoiceScribeRoot extends StatelessWidget {
         RepositoryProvider<SyncQueueService>(
           create: (_) => SyncQueueService(),
           dispose: (service) => service.dispose(),
+        ),
+        RepositoryProvider<BackgroundWorkService>(
+          create: (_) => ForegroundBackgroundWorkService(),
         ),
       ],
       child: MultiBlocProvider(
@@ -91,12 +100,18 @@ class VoiceScribeRoot extends StatelessWidget {
             )..add(const AuthStarted()),
           ),
           BlocProvider<RecordingBloc>(
+            // Eager (not lazy): the subscription handler also recovers chunks
+            // left un-transcribed by a force-kill mid-transcription, so it must
+            // run at app launch regardless of which tab the user lands on — not
+            // only when the recording screen is first built.
+            lazy: false,
             create: (context) => RecordingBloc(
               transcriptRepository: context.read<TranscriptRepository>(),
               recordingService: context.read<RecordingService>(),
               transcriptionService: context.read<TranscriptionService>(),
               authRepository: context.read<AuthRepository>(),
               syncQueueService: context.read<SyncQueueService>(),
+              backgroundWork: context.read<BackgroundWorkService>(),
             )..add(const RecordingSubscriptionRequested()),
           ),
           BlocProvider<TranscriptListBloc>(

@@ -80,6 +80,18 @@ class FakeTranscriptRepository implements TranscriptRepository {
     emit();
   }
 
+  @override
+  Future<bool> fetchFromServer({required String token}) async {
+    // Fake implementation: always returns false (no server data).
+    return false;
+  }
+
+  @override
+  Future<void> clearCache() async {
+    snapshot = TranscriptSnapshot.empty();
+    emit();
+  }
+
   void emit() {
     if (!_controller.isClosed) {
       _controller.add(snapshot);
@@ -150,8 +162,15 @@ class FakeRecordingService implements RecordingService {
   @override
   Stream<double> get levels => _levels.stream;
 
+  int startCalls = 0;
+  int stopCalls = 0;
+
   void emitChunk(RecordedAudioChunk chunk) {
     _chunks.add(chunk);
+  }
+
+  void emitChunkError(Object error) {
+    _chunks.addError(error);
   }
 
   void emitLevel(double value) {
@@ -159,7 +178,12 @@ class FakeRecordingService implements RecordingService {
   }
 
   @override
-  Future<void> start() async {}
+  void setForegroundNotification({required String title, String? content}) {}
+
+  @override
+  Future<void> start() async {
+    startCalls += 1;
+  }
 
   @override
   Future<void> pause() async {}
@@ -168,7 +192,9 @@ class FakeRecordingService implements RecordingService {
   Future<void> resume() async {}
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async {
+    stopCalls += 1;
+  }
 
   @override
   Future<void> dispose() async {
@@ -196,6 +222,24 @@ class FakeTranscriptionService implements TranscriptionService {
 
   @override
   String get currentModelKey => modelKeyFromWhisperModel(_currentModel);
+
+  /// Overridable so tests can simulate a slow device for ETA assertions.
+  double realtimeFactor = 1.1;
+
+  @override
+  double get currentRealtimeFactor => realtimeFactor;
+
+  @override
+  Duration estimateBacklog(double pendingAudioSeconds) => Duration(
+    milliseconds: (pendingAudioSeconds * 1000 * realtimeFactor).round(),
+  );
+
+  String language = 'auto';
+
+  @override
+  void setTranscriptionLanguage(String value) {
+    language = value;
+  }
 
   @override
   Future<void> selectModel(WhisperModel model) async {

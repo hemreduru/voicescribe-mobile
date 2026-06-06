@@ -24,9 +24,20 @@ class SyncHttpClient {
       final request = await client
           .postUrl(uri)
           .timeout(const Duration(seconds: 10));
-      request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      request.headers.set(
+        HttpHeaders.contentTypeHeader,
+        'application/json; charset=utf-8',
+      );
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
-      request.write(jsonEncode(payload));
+      // Write the body as explicit UTF-8 bytes. `request.write` would otherwise
+      // encode with latin1 (dart:io's default when the content-type carries no
+      // charset), which throws "Contains invalid characters" on Turkish text
+      // like 'ı'/'İ' (outside latin1) — silently blocking sync of TR content.
+      // Set Content-Length explicitly (avoids chunked transfer-encoding for the
+      // request body) and write the bytes.
+      final bodyBytes = utf8.encode(jsonEncode(payload));
+      request.contentLength = bodyBytes.length;
+      request.add(bodyBytes);
       final response = await request.close().timeout(
         const Duration(seconds: 15),
       );

@@ -151,6 +151,37 @@ void main() {
         );
       },
     );
+
+    blocTest<RecordingBloc, RecordingState>(
+      'a storage fault on the chunk stream stops recording and warns the user',
+      setUp: () {
+        audio = FakeRecordingService();
+      },
+      build: () => RecordingBloc(
+        transcriptRepository: FakeTranscriptRepository(),
+        recordingService: audio,
+        transcriptionService: FakeTranscriptionService(),
+        authRepository: FakeAuthRepository(
+          session: FakeAuthRepository.defaultSession,
+        ),
+        syncQueueService: FakeSyncQueueService(),
+      ),
+      act: (bloc) async {
+        bloc.add(const RecordingSubscriptionRequested());
+        bloc.add(const RecordingStarted('Demo'));
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.state.isRecording, isTrue);
+        // Disk fills up: the recorder raises a storage fault on the stream.
+        audio.emitChunkError(const RecordingStorageException());
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      },
+      verify: (bloc) {
+        expect(bloc.state.isRecording, isFalse);
+        expect(bloc.state.userMessage, contains('Storage is full'));
+        // The recorder was asked to stop (initial stop on fault + finalize).
+        expect(audio.stopCalls, greaterThan(0));
+      },
+    );
   });
 
   blocTest<TranscriptDetailBloc, TranscriptDetailState>(

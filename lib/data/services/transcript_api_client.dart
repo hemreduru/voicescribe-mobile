@@ -2,116 +2,47 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:voicescribe_mobile/data/services/auth/auth_exception.dart';
-import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/ui/core/utils/env_config.dart';
 import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 
-class AuthApiClient {
-  const AuthApiClient();
+class TranscriptApiClient {
+  const TranscriptApiClient();
 
-  Future<AuthSessionState> register({
-    required String email,
-    required String password,
-  }) {
-    return authenticate(
-      path: '/api/v1/auth/register',
-      payload: {
-        'email': email,
-        'password': password,
-        'password_confirmation': password,
-      },
-    );
-  }
-
-  Future<AuthSessionState> login({
-    required String email,
-    required String password,
-  }) {
-    return authenticate(
-      path: '/api/v1/auth/login',
-      payload: {'email': email, 'password': password},
-    );
-  }
-
-  Future<AuthSessionState> authenticate({
-    required String path,
-    required Map<String, Object?> payload,
+  /// Fetches the full transcript list from the server.
+  /// Returns the raw `data` list on success, throws on failure.
+  Future<List<Map<String, Object?>>> fetchTranscripts({
+    required String token,
   }) async {
     final response = await request(
-      method: 'POST',
-      path: path,
-      payload: payload,
-    );
-    if (!response.isSuccess) {
-      throw VoiceScribeAuthException(
-        response.message ?? 'Authentication failed.',
-      );
-    }
-
-    final sessionMap = _toMap(response.data?['session']);
-    final userMap = _toMap(response.data?['user']);
-    final accessToken = _toText(sessionMap?['accessToken']);
-    final userId = _toText(userMap?['id']);
-
-    if (accessToken == null || userId == null) {
-      throw const VoiceScribeAuthException(
-        'Authentication response is incomplete.',
-      );
-    }
-
-    final expiresInSeconds = _toInt(sessionMap?['expiresIn']);
-    return AuthSessionState(
-      userId: userId,
-      email: _toText(userMap?['email']) ?? '',
-      accessToken: accessToken,
-      refreshToken: _toText(sessionMap?['refreshToken']),
-      expiresAt: expiresInSeconds == null
-          ? null
-          : DateTime.now().add(Duration(seconds: expiresInSeconds)),
-    );
-  }
-
-  Future<AuthSessionState?> verifySession(AuthSessionState session) async {
-    final response = await request(
       method: 'GET',
-      path: '/api/v1/auth/me',
-      token: session.accessToken,
-    );
-    if (response.isNetworkFailure) {
-      AppLogger.warning(
-        'Keeping stored auth session because backend API is unreachable.',
-      );
-      return session;
-    }
-    if (!response.isSuccess) {
-      if (!response.isUnauthorized) {
-        AppLogger.warning(
-          'Keeping stored auth session after backend verification returned '
-          '${response.statusCode}.',
-        );
-        return session;
-      }
-      return null;
-    }
-
-    final userMap = _toMap(response.data?['user']);
-    return session.copyWith(
-      userId: _toText(userMap?['id']) ?? session.userId,
-      email: _toText(userMap?['email']) ?? session.email,
-    );
-  }
-
-  Future<void> logout(String token) async {
-    if (token.isEmpty) {
-      return;
-    }
-    await request(
-      method: 'POST',
-      path: '/api/v1/auth/logout',
-      payload: const <String, Object?>{},
+      path: '/api/v1/transcripts',
       token: token,
     );
+    if (!response.isSuccess) {
+      if (response.isNetworkFailure) {
+        throw const TranscriptFetchException(
+          'Network unavailable while fetching transcripts.',
+        );
+      }
+      throw TranscriptFetchException(
+        'Failed to fetch transcripts: ${response.message ?? 'HTTP ${response.statusCode}'}',
+      );
+    }
+
+    final data = response.data;
+    if (data is! List) {
+      throw const TranscriptFetchException(
+        'Invalid transcript list response: data is not a list.',
+      );
+    }
+
+    return data
+        .whereType<Map<dynamic, dynamic>>()
+        .map(
+          (item) =>
+              item.map((key, value) => MapEntry(key?.toString() ?? '', value)),
+        )
+        .toList(growable: false);
   }
 
   Future<ApiResponse> request({
@@ -125,7 +56,7 @@ class AuthApiClient {
       ..connectionTimeout = const Duration(seconds: 10);
 
     try {
-      AppLogger.debug('Auth request: $method $uri');
+      AppLogger.debug('Transcript API request: $method $uri');
       final request = await client
           .openUrl(method, uri)
           .timeout(const Duration(seconds: 10));
@@ -163,18 +94,22 @@ class AuthApiClient {
       final rawSuccess = parsed?['success'];
       final message = _toText(parsed?['message']) ?? _fallbackMessage(body);
       AppLogger.debug(
-        'Auth response: $method $uri -> ${response.statusCode}'
+        'Transcript API response: $method $uri -> ${response.statusCode}'
         '${message == null ? '' : ' ($message)'}',
       );
+
+      final rawData = parsed?['data'];
+      // Preserve Lists and Maps so callers can handle both shapes.
+      final data = rawData is List || rawData is Map ? rawData : null;
 
       return ApiResponse(
         statusCode: response.statusCode,
         success: rawSuccess is bool ? rawSuccess : null,
         message: message,
-        data: _toMap(parsed?['data']),
+        data: data,
       );
     } on SocketException catch (error) {
-      AppLogger.warning('Auth socket error: $method $uri', error);
+      AppLogger.warning('Transcript API socket error: $method $uri', error);
       return ApiResponse(
         statusCode: 0,
         success: false,
@@ -182,7 +117,7 @@ class AuthApiClient {
             'Cannot reach backend API (${error.osError?.message ?? error.message}).',
       );
     } on HandshakeException catch (error) {
-      AppLogger.warning('Auth TLS error: $method $uri', error);
+      AppLogger.warning('Transcript API TLS error: $method $uri', error);
       return ApiResponse(
         statusCode: 0,
         success: false,
@@ -190,14 +125,18 @@ class AuthApiClient {
             'TLS handshake failed while connecting backend API (${error.message}).',
       );
     } on HttpException catch (error) {
-      AppLogger.warning('Auth HTTP error: $method $uri', error);
+      AppLogger.warning('Transcript API HTTP error: $method $uri', error);
       return ApiResponse(statusCode: 0, success: false, message: error.message);
     } catch (error, stackTrace) {
-      AppLogger.error('Auth unexpected error: $method $uri', error, stackTrace);
+      AppLogger.error(
+        'Transcript API unexpected error: $method $uri',
+        error,
+        stackTrace,
+      );
       return ApiResponse(
         statusCode: 0,
         success: false,
-        message: 'Unexpected auth error (${error.runtimeType}).',
+        message: 'Unexpected transcript API error (${error.runtimeType}).',
       );
     } finally {
       client.close(force: true);
@@ -230,19 +169,6 @@ class AuthApiClient {
     final text = value.toString().trim();
     return text.isEmpty ? null : text;
   }
-
-  static int? _toInt(Object? value) {
-    if (value is int) {
-      return value;
-    }
-    if (value is num) {
-      return value.toInt();
-    }
-    if (value is String) {
-      return int.tryParse(value);
-    }
-    return null;
-  }
 }
 
 class ApiResponse {
@@ -256,7 +182,7 @@ class ApiResponse {
   final int statusCode;
   final bool? success;
   final String? message;
-  final Map<String, Object?>? data;
+  final Object? data;
 
   bool get isSuccess {
     final httpSuccess = statusCode >= 200 && statusCode < 300;
@@ -269,4 +195,13 @@ class ApiResponse {
   bool get isUnauthorized =>
       statusCode == HttpStatus.unauthorized ||
       statusCode == HttpStatus.forbidden;
+}
+
+class TranscriptFetchException implements Exception {
+  const TranscriptFetchException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'TranscriptFetchException: $message';
 }

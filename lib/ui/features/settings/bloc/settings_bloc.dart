@@ -45,6 +45,12 @@ final class SettingsTranscriptionModelChanged extends SettingsEvent {
   final String value;
 }
 
+final class SettingsTranscriptionLanguageChanged extends SettingsEvent {
+  const SettingsTranscriptionLanguageChanged(this.value);
+
+  final String value;
+}
+
 final class SettingsLogoutRequested extends SettingsEvent {
   const SettingsLogoutRequested();
 }
@@ -85,6 +91,7 @@ class SettingsState {
     this.modelCatalogErrorMessage,
     this.deviceProfile,
     this.applyingTranscriptionModel = false,
+    this.pendingSyncCount = 0,
   });
 
   final AppPreferences preferences;
@@ -99,6 +106,10 @@ class SettingsState {
   final String? modelCatalogErrorMessage;
   final DevicePerformanceProfile? deviceProfile;
   final bool applyingTranscriptionModel;
+
+  /// Number of local transcripts not yet backed up to the server. Surfaced so
+  /// the user can trust that nothing is stuck unsynced.
+  final int pendingSyncCount;
 
   SettingsState copyWith({
     AppPreferences? preferences,
@@ -119,6 +130,7 @@ class SettingsState {
     DevicePerformanceProfile? deviceProfile,
     bool clearDeviceProfile = false,
     bool? applyingTranscriptionModel,
+    int? pendingSyncCount,
   }) {
     return SettingsState(
       preferences: preferences ?? this.preferences,
@@ -142,6 +154,7 @@ class SettingsState {
           : deviceProfile ?? this.deviceProfile,
       applyingTranscriptionModel:
           applyingTranscriptionModel ?? this.applyingTranscriptionModel,
+      pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
     );
   }
 }
@@ -166,6 +179,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<SettingsThemeModeChanged>(_onThemeModeChanged);
     on<SettingsLocalePreferenceChanged>(_onLocalePreferenceChanged);
     on<SettingsTranscriptionModelChanged>(_onTranscriptionModelChanged);
+    on<SettingsTranscriptionLanguageChanged>(_onTranscriptionLanguageChanged);
     on<SettingsManualSyncRequested>(_onManualSyncRequested);
     on<SettingsLogoutRequested>(_onLogoutRequested);
   }
@@ -186,6 +200,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     await _sessionSubscription?.cancel();
     await _syncSubscription?.cancel();
     final snapshot = await _transcriptRepository.loadSnapshot();
+    // Apply the persisted transcription language so it is active for the next
+    // recording without needing the user to re-open settings.
+    _transcriptionService.setTranscriptionLanguage(
+      snapshot.preferences.transcriptionLanguage,
+    );
     final lastSyncAt = await _syncQueueService.readLastSuccessfulSyncAt();
     emit(
       state.copyWith(
@@ -193,6 +212,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         session: _authRepository.currentSession(),
         clearSession: _authRepository.currentSession() == null,
         lastSyncAt: lastSyncAt,
+        pendingSyncCount: _pendingSyncCount(snapshot),
       ),
     );
     await _loadModelCatalog(emit);
@@ -211,7 +231,20 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _SettingsSnapshotChanged event,
     Emitter<SettingsState> emit,
   ) {
-    emit(state.copyWith(preferences: event.snapshot.preferences));
+    emit(
+      state.copyWith(
+        preferences: event.snapshot.preferences,
+        pendingSyncCount: _pendingSyncCount(event.snapshot),
+      ),
+    );
+  }
+
+  int _pendingSyncCount(TranscriptSnapshot snapshot) {
+    // Snapshots only contain non-deleted rows, so an un-synced transcript is
+    // simply one whose sync status hasn't reached `synced` yet.
+    return snapshot.transcripts
+        .where((t) => t.syncStatus != SyncStatus.synced)
+        .length;
   }
 
   void _onSessionChanged(
@@ -309,9 +342,61 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     SettingsTranscriptionModelChanged event,
     Emitter<SettingsState> emit,
   ) async {
-    // Model selection is locked to base for stability.
-    // This handler is kept for API compatibility but does nothing.
-    return;
+    final normalized = AppPreferences.normalizeTranscriptionModel(event.value);
+    if (normalized == state.preferences.transcriptionModel) {
+      return;
+    }
+    emit(
+      state.copyWith(applyingTranscriptionModel: true, clearErrorMessage: true),
+    );
+    try {
+      await _transcriptionService.selectModel(whisperModelFromKey(normalized));
+      await _transcriptionService.ensureModel();
+      // selectModel may reject a model that's too heavy for the device and stay
+      // on the current one, so persist what was actually applied.
+      final applied = AppPreferences.normalizeTranscriptionModel(
+        _transcriptionService.currentModelKey,
+      );
+      await _savePreferences(
+        emit,
+        state.preferences.copyWith(transcriptionModel: applied),
+      );
+      emit(state.copyWith(applyingTranscriptionModel: false));
+      await _loadModelCatalog(emit);
+    } catch (error) {
+      // A failed switch (e.g. the new model's download failed) must not leave
+      // the service pointing at a model with no file on disk. Roll it back to
+      // the last persisted (known-good, already-downloaded) model so recording
+      // keeps working and the service matches the saved preference.
+      try {
+        await _transcriptionService.selectModel(
+          whisperModelFromKey(state.preferences.transcriptionModel),
+        );
+        await _transcriptionService.ensureModel();
+      } catch (_) {
+        // Best effort; nothing more we can safely do here.
+      }
+      emit(
+        state.copyWith(
+          applyingTranscriptionModel: false,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onTranscriptionLanguageChanged(
+    SettingsTranscriptionLanguageChanged event,
+    Emitter<SettingsState> emit,
+  ) async {
+    final normalized = AppPreferences.normalizeTranscriptionLanguage(
+      event.value,
+    );
+    _transcriptionService.setTranscriptionLanguage(normalized);
+    await _savePreferences(
+      emit,
+      state.preferences.copyWith(transcriptionLanguage: normalized),
+    );
   }
 
   Future<void> _onLogoutRequested(

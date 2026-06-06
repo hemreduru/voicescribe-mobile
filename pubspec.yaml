@@ -55,6 +55,8 @@ dependencies:
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
   waveform_visualizer: ^1.0.0
+  permission_handler: ^12.0.3
+  flutter_foreground_task: ^9.2.2
 
 dev_dependencies:
   flutter_test:
@@ -87,6 +89,12 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Test-only fixture: a 16 kHz mono Turkish speech sample used by
+  # integration_test/whisper_turkish_test.dart to validate on-device
+  # transcription (the emulator does not forward host mic audio).
+  assets:
+    - test_assets/turkish16k.wav
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

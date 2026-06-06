@@ -9,6 +9,7 @@ import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
+import 'package:voicescribe_mobile/l10n/app_localizations.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
@@ -30,6 +31,7 @@ class TranscriptScreen extends StatelessWidget {
 
     return BlocBuilder<TranscriptListBloc, TranscriptListState>(
       buildWhen: (previous, current) =>
+          (previous.snapshot == null) != (current.snapshot == null) ||
           previous.items != current.items ||
           previous.selectedIds != current.selectedIds ||
           previous.query != current.query ||
@@ -45,9 +47,7 @@ class TranscriptScreen extends StatelessWidget {
                 IconButton(
                   onPressed: () => _showStatusHelp(context),
                   icon: const Icon(Icons.help_outline),
-                  tooltip: _isTurkish(context)
-                      ? 'Statu ikonlari'
-                      : 'Status icons',
+                  tooltip: l10n.statusIconsTitle,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 )
               else ...[
@@ -154,7 +154,9 @@ class TranscriptScreen extends StatelessWidget {
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: () => _refreshFromBackend(context),
-                      child: state.items.isEmpty
+                      child: state.snapshot == null
+                          ? const _TranscriptListSkeleton()
+                          : state.items.isEmpty
                           ? ListView(
                               physics: const AlwaysScrollableScrollPhysics(),
                               children: [
@@ -315,7 +317,7 @@ class _StatusHelpSheet extends StatelessWidget {
     return AppModalListView(
       children: [
         Text(
-          _isTurkish(context) ? 'Statu ikonlari' : 'Status icons',
+          context.l10n.statusIconsTitle,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -418,16 +420,37 @@ class _TranscriptionErrorBanner extends StatelessWidget {
   }
 }
 
+/// Humanizes a remaining-time estimate into a localized, rounded phrase like
+/// "1 dakika" / "30 saniye" (diffForHumans style) — paired with the
+/// `etaRemaining` frame to read "~1 dakika kaldı".
+String humanizeEtaUnit(AppLocalizations l10n, Duration remaining) {
+  final seconds = remaining.inSeconds;
+  if (seconds < 60) {
+    // Round to the nearest 5s (min 5) so it doesn't jitter every second.
+    final rounded = (seconds / 5).round() * 5;
+    return l10n.etaUnitSeconds(rounded < 5 ? 5 : rounded);
+  }
+  if (seconds < 3600) {
+    return l10n.etaUnitMinutes((seconds / 60).round());
+  }
+  return l10n.etaUnitHours((seconds / 3600).round());
+}
+
 class _TranscriptionProgressBar extends StatelessWidget {
   const _TranscriptionProgressBar({
     required this.completed,
     required this.total,
     required this.isVisible,
+    this.remaining,
   });
 
   final int completed;
   final int total;
   final bool isVisible;
+
+  /// Device-specific estimate of time left; when set, shown as "~X kaldı"
+  /// next to the chunk count.
+  final Duration? remaining;
 
   @override
   Widget build(BuildContext context) {
@@ -476,7 +499,10 @@ class _TranscriptionProgressBar extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              l10n.transcriptionProgressChunks(completed, total),
+              remaining == null || remaining!.inSeconds <= 0
+                  ? l10n.transcriptionProgressChunks(completed, total)
+                  : '${l10n.transcriptionProgressChunks(completed, total)} · '
+                        '${l10n.etaRemaining(humanizeEtaUnit(l10n, remaining!))}',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -495,7 +521,10 @@ class _TranscriptDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<RecordingBloc, RecordingState>(
       buildWhen: (previous, current) =>
-          previous.retryingChunkIds != current.retryingChunkIds,
+          previous.retryingChunkIds != current.retryingChunkIds ||
+          previous.allChunks != current.allChunks ||
+          previous.realtimeFactor != current.realtimeFactor ||
+          previous.currentTranscript?.id != current.currentTranscript?.id,
       builder: (context, recordingState) {
         return BlocConsumer<TranscriptDetailBloc, TranscriptDetailState>(
           listenWhen: (previous, current) =>
@@ -582,6 +611,12 @@ class _TranscriptDetailSheet extends StatelessWidget {
                         completed: state.completedChunkCount,
                         total: state.totalChunkCount,
                         isVisible: isProcessing,
+                        remaining:
+                            (recordingState.currentTranscript?.id ==
+                                    transcript.id &&
+                                recordingState.isTranscribing)
+                            ? recordingState.estimatedTranscriptionRemaining
+                            : null,
                       ),
                     ],
                     if (isError) ...[
@@ -798,6 +833,15 @@ class _TranscriptCard extends StatelessWidget {
     final isProcessing =
         displayStatusFor(transcript.status) ==
         TranscriptDisplayStatus.processing;
+    // Show the live, device-specific ETA only on the transcript currently being
+    // transcribed (the active recording session). `select` keeps rebuilds
+    // scoped to this value.
+    final remaining = context.select<RecordingBloc, Duration?>((bloc) {
+      final s = bloc.state;
+      return (s.currentTranscript?.id == transcript.id && s.isTranscribing)
+          ? s.estimatedTranscriptionRemaining
+          : null;
+    });
 
     return GestureDetector(
       onLongPress: onLongPress,
@@ -856,6 +900,7 @@ class _TranscriptCard extends StatelessWidget {
                       completed: completedChunkCount,
                       total: totalChunkCount,
                       isVisible: isProcessing,
+                      remaining: remaining,
                     ),
                   ],
                   if (mergedText.isNotEmpty) ...[
@@ -943,4 +988,85 @@ String _statusHelpDescription(BuildContext context, TranscriptStatus status) {
 
 bool _isTurkish(BuildContext context) {
   return context.l10n.localeName.toLowerCase().startsWith('tr');
+}
+
+/// A lightweight shimmer placeholder shown while the first transcript snapshot
+/// loads, so the list fades in instead of popping from blank to content.
+class _TranscriptListSkeleton extends StatefulWidget {
+  const _TranscriptListSkeleton();
+
+  @override
+  State<_TranscriptListSkeleton> createState() =>
+      _TranscriptListSkeletonState();
+}
+
+class _TranscriptListSkeletonState extends State<_TranscriptListSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 6,
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm + 2),
+      itemBuilder: (context, index) => FadeTransition(
+        opacity: Tween<double>(begin: 0.4, end: 0.9).animate(
+          CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+        ),
+        child: const _SkeletonCard(),
+      ),
+    );
+  }
+}
+
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(
+      context,
+    ).colorScheme.onSurface.withValues(alpha: 0.08);
+    Widget bar(double widthFactor, double height) => FractionallySizedBox(
+      alignment: Alignment.centerLeft,
+      widthFactor: widthFactor,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(AppRadii.sm),
+        ),
+      ),
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          bar(0.6, 16),
+          const SizedBox(height: AppSpacing.sm),
+          bar(0.9, 12),
+          const SizedBox(height: AppSpacing.xs),
+          bar(0.75, 12),
+        ],
+      ),
+    );
+  }
 }

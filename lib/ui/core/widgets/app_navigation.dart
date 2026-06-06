@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
@@ -229,7 +230,11 @@ class _NavigationItem extends StatelessWidget {
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            // Light tactile tick when switching destinations.
+            HapticFeedback.selectionClick();
+            onTap();
+          },
           borderRadius: BorderRadius.circular(AppRadii.lg),
           splashColor: theme.colorScheme.primary.withValues(alpha: 0.08),
           highlightColor: theme.colorScheme.primary.withValues(alpha: 0.05),

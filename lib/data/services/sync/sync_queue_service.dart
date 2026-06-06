@@ -97,7 +97,9 @@ class SyncQueueService {
   static const Duration _maxRetryDelay = Duration(minutes: 2);
   static const Duration _periodicSyncInterval = Duration(minutes: 5);
   static const int _circuitBreakerThreshold = 3;
-  static const Duration _cacheTtl = Duration(minutes: 60);
+  // Cache TTL for soft-deleted rows only. Active synced rows are kept
+  // indefinitely as an offline cache.
+  static const Duration _deletedCacheTtl = Duration(minutes: 60);
 
   static const String _lastPullAtSettingKey = 'sync.lastPullAt';
   static const String _lastSuccessAtSettingKey = 'sync.lastSuccessAt';
@@ -312,6 +314,7 @@ class SyncQueueService {
 
     final pullPayload = await _fetchPullPayload(db: db, token: token);
     late final _CleanupResult cleanupResult;
+    late final Set<String> evictedAudioPaths;
     await db.transaction((txn) async {
       if (hasPushChanges) {
         final response = pushResponse;
@@ -343,8 +346,10 @@ class SyncQueueService {
         0,
         (sum, ids) => sum + ids.length,
       );
+      evictedAudioPaths = await _evictSyncedChunkAudio(txn);
     });
     await _cleanupChunkAudioFiles(cleanupResult.chunkAudioPaths);
+    await _cleanupChunkAudioFiles(evictedAudioPaths);
 
     return stats.toMetrics();
   }
@@ -637,7 +642,9 @@ class SyncQueueService {
     required DatabaseExecutor txn,
     required DateTime now,
   }) async {
-    final cutoffDate = now.toUtc().subtract(_cacheTtl);
+    // Only clean up soft-deleted rows that have been synced for a while.
+    // Active synced rows are preserved indefinitely as an offline cache.
+    final cutoffDate = now.toUtc().subtract(_deletedCacheTtl);
     final cleanedIds = <String, Set<String>>{
       for (final table in syncTables) table: <String>{},
     };
@@ -651,14 +658,10 @@ class SyncQueueService {
         table,
         columns: columns,
         where:
-            'syncStatus = ? AND (deletedAt IS NOT NULL OR lastSyncedAt IS NOT NULL)',
+            'syncStatus = ? AND deletedAt IS NOT NULL AND lastSyncedAt IS NOT NULL',
         whereArgs: [SyncStatus.synced.key],
       );
       final expiredRows = rows.where((row) {
-        final deletedAt = _toText(row['deletedAt']);
-        if (deletedAt != null) {
-          return true;
-        }
         final lastSyncedAtStr = _toText(row['lastSyncedAt']);
         if (lastSyncedAtStr == null) {
           return false;
@@ -698,6 +701,46 @@ class SyncQueueService {
       idsByTable: cleanedIds,
       chunkAudioPaths: chunkAudioPaths,
     );
+  }
+
+  /// Frees on-device storage by dropping the WAV of chunks that are already
+  /// synced and transcribed. The transcript text is safely on the server and
+  /// the app has no audio playback or full re-transcription path, so the audio
+  /// is dead weight. The text row is kept as an offline cache; only the
+  /// `audioPath` file + column are cleared. Active (recording) and unsynced
+  /// chunks are never touched.
+  Future<Set<String>> _evictSyncedChunkAudio(DatabaseExecutor txn) async {
+    final rows = await txn.query(
+      'transcript_chunks',
+      columns: const ['id', 'audioPath'],
+      where:
+          'syncStatus = ? AND isTranscribed = 1 AND deletedAt IS NULL '
+          "AND audioPath IS NOT NULL AND audioPath <> ''",
+      whereArgs: [SyncStatus.synced.key],
+    );
+
+    final paths = <String>{};
+    final ids = <String>[];
+    for (final row in rows) {
+      final path = _toText(row['audioPath']);
+      final id = _toText(row['id']);
+      if (path != null && id != null) {
+        paths.add(path);
+        ids.add(id);
+      }
+    }
+
+    if (ids.isNotEmpty) {
+      final placeholders = List.filled(ids.length, '?').join(', ');
+      await txn.update(
+        'transcript_chunks',
+        {'audioPath': null},
+        where: 'id IN ($placeholders)',
+        whereArgs: ids,
+      );
+    }
+
+    return paths;
   }
 
   Future<void> _cleanupChunkAudioFiles(Set<String> audioPaths) async {

@@ -123,8 +123,13 @@ void main() {
   });
 
   test(
-    'updateFromServer: when local row is pending but older than server',
+    'keepLocal: pending local row is preserved even when server is newer',
     () async {
+      // Zero-data-loss contract: an unsynced (pending) local row holds local
+      // work that must never be clobbered by a server copy, regardless of
+      // timestamps. The conflict is instead resolved at push time (the backend
+      // rejects with server_newer and the local row is marked failed, not
+      // overwritten).
       await db.insert('transcripts', {
         'id': 'local-1',
         'remoteId': 'remote-1',
@@ -140,7 +145,29 @@ void main() {
           'updated_at': '2026-05-10T10:00:00Z', // server is newer
         },
       );
-      expect(decision, MergeDecision.updateFromServer);
+      expect(decision, MergeDecision.keepLocal);
+    },
+  );
+
+  test(
+    'keepLocal: failed local row is preserved even when server is newer',
+    () async {
+      await db.insert('transcripts', {
+        'id': 'local-1',
+        'remoteId': 'remote-1',
+        'syncStatus': SyncStatus.failed.key,
+        'updatedAt': '2026-05-10T09:00:00Z', // local is older
+      });
+
+      final decision = await service.decideMergeForRow(
+        db: db,
+        table: 'transcripts',
+        serverRow: {
+          'id': 'remote-1',
+          'updated_at': '2026-05-10T10:00:00Z', // server is newer
+        },
+      );
+      expect(decision, MergeDecision.keepLocal);
     },
   );
 

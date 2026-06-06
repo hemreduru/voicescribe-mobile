@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +27,27 @@ import 'package:voicescribe_mobile/ui/features/transcript/bloc/transcript_list_b
 import '../helpers/fakes.dart';
 
 void main() {
+  // Bootstrap calls getApplicationDocumentsDirectory() for orphan-chunk
+  // cleanup. Without a mock the platform channel never resolves in tests, so
+  // the bootstrap bloc stays un-initialized and the router never leaves the
+  // splash gate. Return a temp dir so bootstrap can complete.
+  setUp(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (methodCall) async => Directory.systemTemp.path,
+        );
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          null,
+        );
+  });
+
   testWidgets('settings screen renders account, controls, and logout', (
     tester,
   ) async {
@@ -46,8 +70,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // The fake device reports a `performance` tier, so the model selector
+    // offers a real choice (Base + Small) rather than the single-model row.
     expect(find.text('Transcription Model'), findsOneWidget);
-    expect(find.text('Recommended for your device'), findsWidgets);
+    expect(find.text('Model size'), findsWidgets);
+    expect(find.text('Base'), findsWidgets);
+    expect(find.text('Small'), findsWidgets);
     expect(find.text('Tiny (EN)'), findsNothing);
   });
 
@@ -71,9 +99,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text(
-        'Düşük seviye telefonlar ve hızlı taslaklar için en hızlı seçenek.',
-      ),
+      find.text('Günlük transkripsiyon için dengeli varsayılan.'),
       findsWidgets,
     );
     expect(find.textContaining('(EN)'), findsNothing);
@@ -201,9 +227,15 @@ List<BlocProvider<dynamic>> _createBlocProviders(_Fakes fakes) {
 }
 
 Future<void> _pumpRouter(WidgetTester tester) async {
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 250));
-  await tester.pump(const Duration(milliseconds: 250));
+  // The shell only appears after the bootstrap + auth blocs resolve. Pump in a
+  // bounded loop (rather than pumpAndSettle, which would hang on the recording
+  // screen's continuous animations) until the navigation shell is mounted.
+  for (var i = 0; i < 20; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (find.byType(AppBottomNavigation).evaluate().isNotEmpty) {
+      break;
+    }
+  }
 }
 
 class _RouterAppHarness extends StatefulWidget {

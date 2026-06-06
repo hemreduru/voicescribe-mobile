@@ -169,24 +169,37 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     );
     try {
       final snapshot = await _transcriptRepository.loadSnapshot();
-      const modelKey = 'base';
 
-      await _transcriptionService.selectModel(whisperModelFromKey(modelKey));
+      // Apply the persisted transcription language before the model loads so
+      // the very first recording already uses the user's choice.
+      _transcriptionService.setTranscriptionLanguage(
+        snapshot.preferences.transcriptionLanguage,
+      );
+      // Honor the persisted model; selectModel safely falls back to base when
+      // the chosen model is too heavy for this device.
+      await _transcriptionService.selectModel(
+        whisperModelFromKey(snapshot.preferences.transcriptionModel),
+      );
       await RepairStaleRecordingsUseCase(
         _transcriptRepository,
       ).execute(snapshot);
       await _transcriptionService.ensureModel();
+      // After local bootstrap, fetch the latest server data into cache.
+      // This is a no-op when offline because refresh() falls back gracefully.
       await _transcriptRepository.refresh();
-      await _cleanupOrphanChunkFiles(snapshot);
       emit(
         state.copyWith(
           modelState: ModelBootstrapState.ready,
-          selectedModelKey: modelKey,
+          selectedModelKey: _transcriptionService.currentModelKey,
           initialized: true,
           clearDownloadProgress: true,
           clearErrorMessage: true,
         ),
       );
+      // Best-effort housekeeping: deleting orphaned chunk audio must never
+      // gate the app becoming usable, so run it after the app is ready and
+      // don't await it (a slow/stuck filesystem can't wedge startup).
+      unawaited(_cleanupOrphanChunkFiles(snapshot));
     } catch (error) {
       emit(
         state.copyWith(

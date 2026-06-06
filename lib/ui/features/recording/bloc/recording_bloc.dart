@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/background_work_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
@@ -70,6 +71,12 @@ final class _RecordingAudioChunkReceived extends RecordingEvent {
   final RecordedAudioChunk chunk;
 }
 
+final class _RecordingChunkStreamFailed extends RecordingEvent {
+  const _RecordingChunkStreamFailed(this.error);
+
+  final Object error;
+}
+
 final class _RecordingAudioLevelChanged extends RecordingEvent {
   const _RecordingAudioLevelChanged(this.level);
 
@@ -120,7 +127,65 @@ abstract class RecordingState with _$RecordingState {
     String? errorMessage,
     String? userMessage,
     @Default(<String>{}) Set<String> retryingChunkIds,
+    // Measured processing-seconds-per-audio-second for the active model on this
+    // device, sourced from the transcription service to drive the live ETA.
+    @Default(1.1) double realtimeFactor,
   }) = _RecordingState;
+
+  const RecordingState._();
+
+  /// Chunks whose transcription progress we surface to the user: the active
+  /// session when one exists, otherwise everything pending across the snapshot
+  /// (e.g. chunks recovered after a force-kill).
+  List<TranscriptChunk> get _progressChunks {
+    final active = currentTranscript;
+    if (active != null) {
+      return allChunks.where((c) => c.transcriptId == active.id).toList();
+    }
+    return allChunks
+        .where((c) => !c.isTranscribed && c.transcriptionError == null)
+        .toList();
+  }
+
+  /// Total chunks in the progress set (the "Y" in "X/Y parça").
+  int get totalProgressChunks => _progressChunks.length;
+
+  /// Chunks already transcribed (the "X" in "X/Y parça").
+  int get transcribedProgressChunks =>
+      _progressChunks.where((c) => c.isTranscribed).length;
+
+  /// Seconds of audio still waiting to be transcribed in the progress set.
+  double get pendingAudioSeconds {
+    var total = 0.0;
+    for (final chunk in _progressChunks) {
+      if (chunk.isTranscribed ||
+          chunk.transcriptionError != null ||
+          (chunk.audioPath?.isEmpty ?? true)) {
+        continue;
+      }
+      final seconds = chunk.endTime - chunk.startTime;
+      if (seconds > 0) {
+        total += seconds;
+      }
+    }
+    return total;
+  }
+
+  /// True while at least one chunk in the progress set is still being
+  /// transcribed (not yet done and not errored).
+  bool get isTranscribing => _progressChunks.any(
+    (c) => !c.isTranscribed && c.transcriptionError == null,
+  );
+
+  /// Device-specific estimate of the time left to finish the pending backlog,
+  /// or null when nothing is pending.
+  Duration? get estimatedTranscriptionRemaining {
+    final pending = pendingAudioSeconds;
+    if (pending <= 0) {
+      return null;
+    }
+    return Duration(milliseconds: (pending * 1000 * realtimeFactor).round());
+  }
 }
 
 // =============================================================================
@@ -134,11 +199,13 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     required TranscriptionService transcriptionService,
     required AuthRepository authRepository,
     required SyncQueueService syncQueueService,
+    BackgroundWorkService backgroundWork = const NoopBackgroundWorkService(),
   }) : _transcriptRepository = transcriptRepository,
        _recordingService = recordingService,
        _transcriptionService = transcriptionService,
        _authRepository = authRepository,
        _syncQueueService = syncQueueService,
+       _backgroundWork = backgroundWork,
        super(const RecordingState()) {
     on<RecordingSubscriptionRequested>(_onSubscriptionRequested);
     on<RecordingStarted>(_onStarted, transformer: droppable());
@@ -148,6 +215,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     on<RecordingChunkRetryRequested>(_onChunkRetryRequested);
     on<_RecordingSnapshotChanged>(_onSnapshotChanged);
     on<_RecordingAudioChunkReceived>(_onAudioChunkReceived);
+    on<_RecordingChunkStreamFailed>(_onChunkStreamFailed);
     on<_RecordingAudioLevelChanged>(_onAudioLevelChanged);
     on<_RecordingDurationTicked>(_onDurationTicked);
     on<_RecordingTranscriptionSucceeded>(_onTranscriptionSucceeded);
@@ -155,6 +223,8 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
 
     _chunkSubscription = _recordingService.chunks.listen(
       (chunk) => add(_RecordingAudioChunkReceived(chunk)),
+      onError: (Object error, StackTrace _) =>
+          add(_RecordingChunkStreamFailed(error)),
     );
     _levelSubscription = _recordingService.levels.listen(
       (level) => add(_RecordingAudioLevelChanged(level)),
@@ -166,6 +236,15 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   final TranscriptionService _transcriptionService;
   final AuthRepository _authRepository;
   final SyncQueueService _syncQueueService;
+  final BackgroundWorkService _backgroundWork;
+
+  // Notification copy for the background-transcription foreground service.
+  // Localized strings are pushed in from the UI via
+  // [configureBackgroundNotification]; these are safe fallbacks.
+  String _backgroundTitle = 'VoiceScribe';
+  String _backgroundText = 'Transcribing…';
+  // Tracks the last requested service state so we only start/stop on edges.
+  bool _backgroundActive = false;
 
   StreamSubscription<TranscriptSnapshot>? _snapshotSubscription;
   StreamSubscription<RecordedAudioChunk>? _chunkSubscription;
@@ -184,13 +263,56 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   // Event handlers
   // ---------------------------------------------------------------------------
 
+  /// Pushes localized notification copy for the background-transcription
+  /// foreground service from the UI (which has access to l10n).
+  void configureBackgroundNotification({
+    required String title,
+    required String text,
+  }) {
+    _backgroundTitle = title;
+    _backgroundText = text;
+  }
+
+  @override
+  void onChange(Change<RecordingState> change) {
+    super.onChange(change);
+    _reconcileBackgroundWork(change.nextState);
+  }
+
+  /// Runs a foreground service whenever transcription is still draining *after*
+  /// recording has stopped, so the backlog keeps processing while the app is
+  /// backgrounded. During recording the recorder's own (microphone) service
+  /// already keeps the process alive, so we don't double up.
+  void _reconcileBackgroundWork(RecordingState next) {
+    final shouldRun = next.isTranscribing && !next.isRecording;
+    if (shouldRun == _backgroundActive) {
+      return;
+    }
+    _backgroundActive = shouldRun;
+    if (shouldRun) {
+      unawaited(
+        _backgroundWork.ensureRunning(
+          title: _backgroundTitle,
+          text: _backgroundText,
+        ),
+      );
+    } else {
+      unawaited(_backgroundWork.stop());
+    }
+  }
+
   Future<void> _onSubscriptionRequested(
     RecordingSubscriptionRequested event,
     Emitter<RecordingState> emit,
   ) async {
     await _snapshotSubscription?.cancel();
     final snapshot = await _transcriptRepository.loadSnapshot();
-    emit(_stateForSnapshot(state, snapshot));
+    emit(
+      _stateForSnapshot(
+        state,
+        snapshot,
+      ).copyWith(realtimeFactor: _transcriptionService.currentRealtimeFactor),
+    );
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
       (snapshot) => add(_RecordingSnapshotChanged(snapshot)),
       onError: (Object error, StackTrace stack) {
@@ -328,7 +450,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
         stopped,
       ),
     );
-    unawaited(_enqueueSave(() => _transcriptRepository.saveTranscript(stopped)));
+    unawaited(
+      _enqueueSave(() => _transcriptRepository.saveTranscript(stopped)),
+    );
     _syncQueueService.scheduleSync();
     AppLogger.info(
       '[Recording] Session stopped | id=${stopped.id} | '
@@ -510,6 +634,19 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     unawaited(_transcribe(chunk));
   }
 
+  void _onChunkStreamFailed(
+    _RecordingChunkStreamFailed event,
+    Emitter<RecordingState> emit,
+  ) {
+    // The recorder stops itself on a storage fault; finalize the session and
+    // tell the user so audio isn't dropped silently for the rest of a long
+    // recording. Chunks already written stay queued for transcription.
+    emit(state.copyWith(userMessage: _userMessageFor(event.error)));
+    if (state.isRecording) {
+      add(const RecordingStopped());
+    }
+  }
+
   void _onAudioLevelChanged(
     _RecordingAudioLevelChanged event,
     Emitter<RecordingState> emit,
@@ -643,6 +780,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
           currentTranscript: updatedTranscript,
           liveTranscriptPreview: livePreview,
           errorMessage: errorMessage,
+          // Refresh the device-specific speed each time a chunk completes so the
+          // live ETA converges on real hardware performance.
+          realtimeFactor: _transcriptionService.currentRealtimeFactor,
         ),
         updatedTranscript,
       ),
@@ -807,6 +947,10 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   String _userMessageFor(Object error) {
     if (error is RecordingPermissionException) {
       return 'Microphone permission is required.';
+    }
+    if (error is RecordingStorageException) {
+      return 'Storage is full. Recording was stopped; '
+          'free up space and try again.';
     }
     return error.toString();
   }

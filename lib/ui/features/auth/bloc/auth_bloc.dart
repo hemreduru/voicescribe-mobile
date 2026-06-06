@@ -162,7 +162,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       state.copyWith(status: AuthStatus.submitting, clearErrorMessage: true),
     );
     try {
+      // Best-effort: flush unsynced local changes while the session token is
+      // still valid, so the synced-only clearCache below can safely free them.
+      // Offline/failure is non-fatal — unsynced rows are preserved by
+      // clearCache and will sync on the next login.
+      try {
+        await _syncQueueService.runManualSync();
+      } catch (_) {
+        // Intentionally ignored; data safety is handled by clearCache.
+      }
       await _authRepository.logout();
+      await _transcriptRepository.clearCache();
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,

@@ -929,6 +929,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retrying...'**
   String get retrying;
+
+  /// No description provided for @statusIconsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Status icons'**
+  String get statusIconsTitle;
+
+  /// No description provided for @transcriptionLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription language'**
+  String get transcriptionLanguage;
+
+  /// No description provided for @transcriptionModelSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Model size'**
+  String get transcriptionModelSize;
+
+  /// No description provided for @recordingNotificationContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording in progress'**
+  String get recordingNotificationContent;
+
+  /// No description provided for @automatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get automatic;
+
+  /// No description provided for @unsyncedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 recording not backed up yet} other{{count} recordings not backed up yet}}'**
+  String unsyncedCount(int count);
+
+  /// No description provided for @transcribingNotificationContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing transcript'**
+  String get transcribingNotificationContent;
+
+  /// No description provided for @etaUnitSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 second} other{{count} seconds}}'**
+  String etaUnitSeconds(int count);
+
+  /// No description provided for @etaUnitMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
+  String etaUnitMinutes(int count);
+
+  /// No description provided for @etaUnitHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour} other{{count} hours}}'**
+  String etaUnitHours(int count);
+
+  /// No description provided for @etaRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'~{time} left'**
+  String etaRemaining(String time);
 }
 
 class _AppLocalizationsDelegate

@@ -147,6 +147,7 @@ abstract class AppPreferences with _$AppPreferences {
     @Default('system') String themeMode,
     @Default('system') String localePreference,
     @Default('base') String transcriptionModel,
+    @Default('auto') String transcriptionLanguage,
   }) = _AppPreferences;
 
   const AppPreferences._();
@@ -179,6 +180,16 @@ abstract class AppPreferences with _$AppPreferences {
       'en' => 'en',
       'tr' => 'tr',
       _ => 'system',
+    };
+  }
+
+  /// Transcription language. `auto` lets Whisper detect per window (best for
+  /// code-switching / bilingual sessions); `tr`/`en` force a single language.
+  static String normalizeTranscriptionLanguage(String value) {
+    return switch (value) {
+      'tr' => 'tr',
+      'en' => 'en',
+      _ => 'auto',
     };
   }
 

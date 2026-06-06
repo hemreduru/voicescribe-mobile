@@ -467,4 +467,71 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get retrying => 'Retrying...';
+
+  @override
+  String get statusIconsTitle => 'Status icons';
+
+  @override
+  String get transcriptionLanguage => 'Transcription language';
+
+  @override
+  String get transcriptionModelSize => 'Model size';
+
+  @override
+  String get recordingNotificationContent => 'Recording in progress';
+
+  @override
+  String get automatic => 'Automatic';
+
+  @override
+  String unsyncedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recordings not backed up yet',
+      one: '1 recording not backed up yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get transcribingNotificationContent => 'Preparing transcript';
+
+  @override
+  String etaUnitSeconds(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seconds',
+      one: '1 second',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String etaUnitMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minutes',
+      one: '1 minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String etaUnitHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours',
+      one: '1 hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String etaRemaining(String time) {
+    return '~$time left';
+  }
 }

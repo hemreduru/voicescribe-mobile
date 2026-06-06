@@ -23,9 +23,6 @@ extension TranscriptMutations on Transcript {
 
 extension TranscriptChunkMutations on TranscriptChunk {
   TranscriptChunk markPendingSync() {
-    return copyWith(
-      syncStatus: SyncStatus.pending,
-      syncError: null,
-    );
+    return copyWith(syncStatus: SyncStatus.pending, syncError: null);
   }
 }

@@ -4,9 +4,18 @@ import 'package:voicescribe_mobile/domain/models/domain.dart';
 
 class DatabaseProvider {
   factory DatabaseProvider() => _instance;
-  DatabaseProvider._internal();
+
+  DatabaseProvider._internal({String dbName = 'voicescribe.db'})
+    : _dbName = dbName;
+
+  /// Creates a non-singleton test instance with a custom database name.
+  /// Use this in tests to avoid colliding with the production singleton.
+  factory DatabaseProvider.test(String dbName) =>
+      DatabaseProvider._internal(dbName: dbName);
+
   static final DatabaseProvider _instance = DatabaseProvider._internal();
 
+  final String _dbName;
   Database? _database;
 
   Future<Database> get database async {
@@ -17,7 +26,7 @@ class DatabaseProvider {
 
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'voicescribe.db');
+    final path = join(dbPath, _dbName);
 
     return openDatabase(
       path,

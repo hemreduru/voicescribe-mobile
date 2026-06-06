@@ -470,4 +470,53 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get retrying => 'Tekrar deneniyor...';
+
+  @override
+  String get statusIconsTitle => 'Statü ikonları';
+
+  @override
+  String get transcriptionLanguage => 'Transkripsiyon dili';
+
+  @override
+  String get transcriptionModelSize => 'Model boyutu';
+
+  @override
+  String get recordingNotificationContent => 'Kayıt sürüyor';
+
+  @override
+  String get automatic => 'Otomatik';
+
+  @override
+  String unsyncedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kayıt henüz yedeklenmedi',
+      one: '1 kayıt henüz yedeklenmedi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get transcribingNotificationContent => 'Transkript hazırlanıyor';
+
+  @override
+  String etaUnitSeconds(int count) {
+    return '$count saniye';
+  }
+
+  @override
+  String etaUnitMinutes(int count) {
+    return '$count dakika';
+  }
+
+  @override
+  String etaUnitHours(int count) {
+    return '$count saat';
+  }
+
+  @override
+  String etaRemaining(String time) {
+    return '~$time kaldı';
+  }
 }

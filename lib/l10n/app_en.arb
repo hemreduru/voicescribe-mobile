@@ -200,5 +200,33 @@
   "modelWarningSlow": "May be very slow",
   "retryTranscription": "Retry",
   "transcriptionFailedRetry": "Transcription failed. Tap to retry.",
-  "retrying": "Retrying..."
+  "retrying": "Retrying...",
+  "statusIconsTitle": "Status icons",
+  "transcriptionLanguage": "Transcription language",
+  "transcriptionModelSize": "Model size",
+  "recordingNotificationContent": "Recording in progress",
+  "automatic": "Automatic",
+  "unsyncedCount": "{count, plural, =1{1 recording not backed up yet} other{{count} recordings not backed up yet}}",
+  "@unsyncedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "transcribingNotificationContent": "Preparing transcript",
+  "etaUnitSeconds": "{count, plural, =1{1 second} other{{count} seconds}}",
+  "@etaUnitSeconds": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "etaUnitMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
+  "@etaUnitMinutes": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "etaUnitHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@etaUnitHours": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "etaRemaining": "~{time} left",
+  "@etaRemaining": {
+    "placeholders": { "time": { "type": "String" } }
+  }
 }

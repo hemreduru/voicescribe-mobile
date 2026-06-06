@@ -219,20 +219,22 @@ class _AuthenticatedView extends StatelessWidget {
     final modelState = context.select<BootstrapBloc, ModelBootstrapState>(
       (bloc) => bloc.state.modelState,
     );
-    final downloadProgress = context.select<BootstrapBloc, ModelDownloadProgress?>(
-      (bloc) => bloc.state.downloadProgress,
-    );
+    final downloadProgress = context
+        .select<BootstrapBloc, ModelDownloadProgress?>(
+          (bloc) => bloc.state.downloadProgress,
+        );
     final bootstrapError = context.select<BootstrapBloc, String?>(
       (bloc) => bloc.state.errorMessage,
     );
 
     return AppPageListView(
       children: [
-        if (!isReady) _ModelSetupCard(
-          state: modelState,
-          progress: downloadProgress,
-          error: bootstrapError,
-        ),
+        if (!isReady)
+          _ModelSetupCard(
+            state: modelState,
+            progress: downloadProgress,
+            error: bootstrapError,
+          ),
         if (!isReady) const SizedBox(height: AppSpacing.md),
         AppButton(
           label: l10n.logout,

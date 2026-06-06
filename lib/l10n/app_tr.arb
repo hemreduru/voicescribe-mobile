@@ -200,5 +200,33 @@
   "modelWarningSlow": "Çok yavaş olabilir",
   "retryTranscription": "Tekrar Dene",
   "transcriptionFailedRetry": "Transkripsiyon başarısız oldu. Tekrar denemek için dokunun.",
-  "retrying": "Tekrar deneniyor..."
+  "retrying": "Tekrar deneniyor...",
+  "statusIconsTitle": "Statü ikonları",
+  "transcriptionLanguage": "Transkripsiyon dili",
+  "transcriptionModelSize": "Model boyutu",
+  "recordingNotificationContent": "Kayıt sürüyor",
+  "automatic": "Otomatik",
+  "unsyncedCount": "{count, plural, =1{1 kayıt henüz yedeklenmedi} other{{count} kayıt henüz yedeklenmedi}}",
+  "@unsyncedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "transcribingNotificationContent": "Transkript hazırlanıyor",
+  "etaUnitSeconds": "{count} saniye",
+  "@etaUnitSeconds": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "etaUnitMinutes": "{count} dakika",
+  "@etaUnitMinutes": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "etaUnitHours": "{count} saat",
+  "@etaUnitHours": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "etaRemaining": "~{time} kaldı",
+  "@etaRemaining": {
+    "placeholders": { "time": { "type": "String" } }
+  }
 }
