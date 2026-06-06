@@ -71,6 +71,12 @@ final class _RecordingAudioChunkReceived extends RecordingEvent {
   final RecordedAudioChunk chunk;
 }
 
+final class _RecordingChunkStreamFailed extends RecordingEvent {
+  const _RecordingChunkStreamFailed(this.error);
+
+  final Object error;
+}
+
 final class _RecordingAudioLevelChanged extends RecordingEvent {
   const _RecordingAudioLevelChanged(this.level);
 
@@ -209,6 +215,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     on<RecordingChunkRetryRequested>(_onChunkRetryRequested);
     on<_RecordingSnapshotChanged>(_onSnapshotChanged);
     on<_RecordingAudioChunkReceived>(_onAudioChunkReceived);
+    on<_RecordingChunkStreamFailed>(_onChunkStreamFailed);
     on<_RecordingAudioLevelChanged>(_onAudioLevelChanged);
     on<_RecordingDurationTicked>(_onDurationTicked);
     on<_RecordingTranscriptionSucceeded>(_onTranscriptionSucceeded);
@@ -216,6 +223,8 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
 
     _chunkSubscription = _recordingService.chunks.listen(
       (chunk) => add(_RecordingAudioChunkReceived(chunk)),
+      onError: (Object error, StackTrace _) =>
+          add(_RecordingChunkStreamFailed(error)),
     );
     _levelSubscription = _recordingService.levels.listen(
       (level) => add(_RecordingAudioLevelChanged(level)),
@@ -622,6 +631,19 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     unawaited(_transcribe(chunk));
   }
 
+  void _onChunkStreamFailed(
+    _RecordingChunkStreamFailed event,
+    Emitter<RecordingState> emit,
+  ) {
+    // The recorder stops itself on a storage fault; finalize the session and
+    // tell the user so audio isn't dropped silently for the rest of a long
+    // recording. Chunks already written stay queued for transcription.
+    emit(state.copyWith(userMessage: _userMessageFor(event.error)));
+    if (state.isRecording) {
+      add(const RecordingStopped());
+    }
+  }
+
   void _onAudioLevelChanged(
     _RecordingAudioLevelChanged event,
     Emitter<RecordingState> emit,
@@ -922,6 +944,10 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   String _userMessageFor(Object error) {
     if (error is RecordingPermissionException) {
       return 'Microphone permission is required.';
+    }
+    if (error is RecordingStorageException) {
+      return 'Storage is full. Recording was stopped; '
+          'free up space and try again.';
     }
     return error.toString();
   }

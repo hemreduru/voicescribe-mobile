@@ -61,6 +61,12 @@ class AudioRecordingService implements RecordingService {
   Future<void> _emitTask = Future.value();
   String _notificationTitle = 'VoiceScribe';
   String? _notificationContent;
+  // Consecutive chunk-write failures. A full disk fails *every* write, so a run
+  // of failures (vs. a one-off IO hiccup) means we should stop and tell the
+  // user rather than silently dropping audio for the rest of the session.
+  int _consecutiveEmitFailures = 0;
+  bool _storageFaultRaised = false;
+  static const int _emitFailureLimit = 2;
 
   @override
   void setForegroundNotification({required String title, String? content}) {
@@ -101,6 +107,8 @@ class AudioRecordingService implements RecordingService {
       ),
     );
     _isRecording = true;
+    _consecutiveEmitFailures = 0;
+    _storageFaultRaised = false;
     _emitTask = Future.value();
     _recordingSubscription = stream.listen((data) {
       final pcmBytes = Uint8List.fromList(data);
@@ -113,11 +121,7 @@ class AudioRecordingService implements RecordingService {
         _emitTask = _emitTask
             .then((_) => _emitChunk(chunk))
             .catchError((Object error, StackTrace stack) {
-              AppLogger.error(
-                '[Recording] Emit chunk failed (index=${chunk.index})',
-                error,
-                stack,
-              );
+              _onEmitFailure(chunk.index, error, stack);
             });
       }
     }, onError: _levelsController.addError);
@@ -170,6 +174,7 @@ class AudioRecordingService implements RecordingService {
       '${directory.path}/voicescribe_chunks/chunk_${DateTime.now().microsecondsSinceEpoch}_${chunk.index}.wav',
     );
     await _wavWriter.writeWavFile(file: file, pcm16Data: chunk.pcm16Data);
+    _consecutiveEmitFailures = 0;
     _chunksController.add(
       RecordedAudioChunk(
         path: file.path,
@@ -179,6 +184,25 @@ class AudioRecordingService implements RecordingService {
       ),
     );
   }
+
+  /// Handles a failed chunk write. One-off IO errors are tolerated, but a run of
+  /// them (the signature of a full disk) stops recording and surfaces a fault on
+  /// the chunk stream so the UI can warn the user instead of losing audio
+  /// silently for the rest of a long session.
+  void _onEmitFailure(int index, Object error, StackTrace stack) {
+    _consecutiveEmitFailures += 1;
+    AppLogger.error(
+      '[Recording] Emit chunk failed '
+      '(index=$index, consecutive=$_consecutiveEmitFailures)',
+      error,
+      stack,
+    );
+    if (_consecutiveEmitFailures >= _emitFailureLimit && !_storageFaultRaised) {
+      _storageFaultRaised = true;
+      _chunksController.addError(const RecordingStorageException());
+      unawaited(stop());
+    }
+  }
 }
 
 class RecordingPermissionException implements Exception {
@@ -186,4 +210,13 @@ class RecordingPermissionException implements Exception {
 
   @override
   String toString() => 'Microphone permission is required.';
+}
+
+/// Raised on the chunk stream when recorded audio can no longer be written to
+/// disk (typically a full storage volume), so the UI can stop and warn the user.
+class RecordingStorageException implements Exception {
+  const RecordingStorageException();
+
+  @override
+  String toString() => 'Storage is full; recording was stopped.';
 }

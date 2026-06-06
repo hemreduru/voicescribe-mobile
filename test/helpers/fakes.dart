@@ -162,8 +162,15 @@ class FakeRecordingService implements RecordingService {
   @override
   Stream<double> get levels => _levels.stream;
 
+  int startCalls = 0;
+  int stopCalls = 0;
+
   void emitChunk(RecordedAudioChunk chunk) {
     _chunks.add(chunk);
+  }
+
+  void emitChunkError(Object error) {
+    _chunks.addError(error);
   }
 
   void emitLevel(double value) {
@@ -174,7 +181,9 @@ class FakeRecordingService implements RecordingService {
   void setForegroundNotification({required String title, String? content}) {}
 
   @override
-  Future<void> start() async {}
+  Future<void> start() async {
+    startCalls += 1;
+  }
 
   @override
   Future<void> pause() async {}
@@ -183,7 +192,9 @@ class FakeRecordingService implements RecordingService {
   Future<void> resume() async {}
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async {
+    stopCalls += 1;
+  }
 
   @override
   Future<void> dispose() async {
