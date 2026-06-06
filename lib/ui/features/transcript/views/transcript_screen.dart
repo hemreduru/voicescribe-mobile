@@ -12,6 +12,8 @@ import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
+import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
+import 'package:voicescribe_mobile/ui/core/widgets/adaptive_master_detail.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
@@ -34,6 +36,7 @@ class TranscriptScreen extends StatelessWidget {
           (previous.snapshot == null) != (current.snapshot == null) ||
           previous.items != current.items ||
           previous.selectedIds != current.selectedIds ||
+          previous.selectedTranscriptId != current.selectedTranscriptId ||
           previous.query != current.query ||
           previous.sort != current.sort ||
           previous.filter != current.filter,
@@ -67,153 +70,39 @@ class TranscriptScreen extends StatelessWidget {
             ],
           ),
           body: SafeArea(
-            child: AppConstrainedBody(
-              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-              child: Column(
-                children: [
-                  AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppSearchField(
-                          hintText: l10n.searchRecordings,
-                          onChanged: (value) => context
-                              .read<TranscriptListBloc>()
-                              .add(TranscriptListQueryChanged(value)),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        AppSegmentedControl<TranscriptSort>(
-                          value: state.sort,
-                          segments: [
-                            AppSegment(
-                              value: TranscriptSort.newest,
-                              label: l10n.newest,
-                              icon: Icons.arrow_downward,
-                            ),
-                            AppSegment(
-                              value: TranscriptSort.oldest,
-                              label: l10n.oldest,
-                              icon: Icons.arrow_upward,
-                            ),
-                            AppSegment(
-                              value: TranscriptSort.longest,
-                              label: l10n.longest,
-                              icon: Icons.timer_outlined,
-                            ),
-                          ],
-                          onChanged: (value) => context
-                              .read<TranscriptListBloc>()
-                              .add(TranscriptListSortChanged(value)),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        AppSegmentedControl<TranscriptFilter>(
-                          value: state.filter,
-                          minSegmentWidth: 104,
-                          segments: [
-                            AppSegment(
-                              value: TranscriptFilter.all,
-                              label: l10n.all,
-                            ),
-                            AppSegment(
-                              value: TranscriptFilter.ready,
-                              label: l10n.statusReady,
-                            ),
-                            AppSegment(
-                              value: TranscriptFilter.processing,
-                              label: l10n.statusProcessing,
-                            ),
-                            AppSegment(
-                              value: TranscriptFilter.issue,
-                              label: l10n.statusIssue,
-                            ),
-                          ],
-                          onChanged: (value) => context
-                              .read<TranscriptListBloc>()
-                              .add(TranscriptListFilterChanged(value)),
-                        ),
-                      ],
-                    ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final twoPane =
+                    constraints.maxWidth >= AppPanes.twoPaneBreakpoint;
+                final master = _TranscriptMaster(
+                  state: state,
+                  twoPane: twoPane,
+                );
+                if (twoPane) {
+                  // Wide layout: list stays visible, detail updates in place.
+                  return AdaptiveMasterDetail<String>(
+                    isTwoPane: true,
+                    master: master,
+                    selected: state.selectedTranscriptId,
+                    emptyState: _detailEmptyState(context),
+                    detailBuilder: (context, id) =>
+                        _TranscriptDetailPane(transcriptId: id),
+                  );
+                }
+                // Compact: drive the existing modal sheet from the same
+                // selected-id so phone behavior is unchanged.
+                return BlocListener<TranscriptListBloc, TranscriptListState>(
+                  listenWhen: (previous, current) =>
+                      previous.selectedTranscriptId !=
+                          current.selectedTranscriptId &&
+                      current.selectedTranscriptId != null,
+                  listener: (context, state) => _openTranscriptModal(
+                    context,
+                    state.selectedTranscriptId!,
                   ),
-                  if (selected.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    AppCard(
-                      selected: true,
-                      child: AppSelectionBar(
-                        label: '${selected.length} ${l10n.selected}',
-                        action: AppButton(
-                          label: l10n.delete,
-                          icon: Icons.delete_outline,
-                          onPressed: () =>
-                              _confirmDelete(context, selected.length),
-                          variant: AppButtonVariant.outline,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.md),
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: () => _refreshFromBackend(context),
-                      child: state.snapshot == null
-                          ? const _TranscriptListSkeleton()
-                          : state.items.isEmpty
-                          ? ListView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              children: [
-                                const SizedBox(height: AppSpacing.xl),
-                                EmptyState(
-                                  icon: Icons.description_outlined,
-                                  title: l10n.transcript,
-                                  description: state.query.isEmpty
-                                      ? l10n.noTranscriptAvailable
-                                      : l10n.noMatchingText,
-                                ),
-                              ],
-                            )
-                          : ListView.separated(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemBuilder: (context, index) {
-                                final item = state.items[index];
-                                final transcript = item.transcript;
-                                final isSelected = selected.contains(
-                                  transcript.id,
-                                );
-                                return _TranscriptCard(
-                                  transcript: transcript,
-                                  mergedText: item.mergedText,
-                                  completedChunkCount: item.completedChunkCount,
-                                  totalChunkCount: item.totalChunkCount,
-                                  selected: isSelected,
-                                  onTap: () {
-                                    if (selected.isNotEmpty) {
-                                      context.read<TranscriptListBloc>().add(
-                                        TranscriptListSelectionToggled(
-                                          transcript.id,
-                                        ),
-                                      );
-                                    } else {
-                                      _showTranscriptDetail(
-                                        context,
-                                        transcript.id,
-                                      );
-                                    }
-                                  },
-                                  onLongPress: () =>
-                                      context.read<TranscriptListBloc>().add(
-                                        TranscriptListSelectionToggled(
-                                          transcript.id,
-                                        ),
-                                      ),
-                                );
-                              },
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: AppSpacing.sm + 2),
-                              itemCount: state.items.length,
-                            ),
-                    ),
-                  ),
-                ],
-              ),
+                  child: master,
+                );
+              },
             ),
           ),
         );
@@ -221,43 +110,20 @@ class TranscriptScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, int count) async {
-    if (count == 0) {
-      return;
-    }
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        final l10n = context.l10n;
-        return AlertDialog(
-          title: Text(l10n.deleteRecordingsTitle),
-          content: Text(l10n.deleteRecordingsMessage(count)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton.icon(
-              onPressed: () => Navigator.of(context).pop(true),
-              icon: const Icon(Icons.delete_outline),
-              label: Text(l10n.delete),
-            ),
-          ],
-        );
-      },
+  Widget _detailEmptyState(BuildContext context) {
+    final l10n = context.l10n;
+    return EmptyState(
+      icon: Icons.touch_app_outlined,
+      title: l10n.transcript,
+      description: l10n.noTranscriptAvailable,
     );
-
-    if ((confirmed ?? false) && context.mounted) {
-      context.read<TranscriptListBloc>().add(
-        const TranscriptListSelectedDeleted(),
-      );
-    }
   }
 
-  void _showTranscriptDetail(BuildContext context, String transcriptId) {
+  void _openTranscriptModal(BuildContext context, String transcriptId) {
     final repository = context.read<TranscriptRepository>();
     final summaryService = context.read<SummaryService>();
     final syncQueueService = context.read<SyncQueueService>();
+    final listBloc = context.read<TranscriptListBloc>();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -273,23 +139,10 @@ class TranscriptScreen extends StatelessWidget {
           child: const _TranscriptDetailSheet(),
         );
       },
-    );
-  }
-
-  Future<void> _refreshFromBackend(BuildContext context) async {
-    final completer = Completer<void>();
-    context.read<TranscriptListBloc>().add(
-      TranscriptListRefreshRequested(completer: completer),
-    );
-    try {
-      await completer.future;
-    } catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
-      }
-    }
+    ).whenComplete(() {
+      // Keep the single selected-id in sync when the sheet is dismissed.
+      listBloc.add(const TranscriptListDetailClosed());
+    });
   }
 
   void _showStatusHelp(BuildContext context) {
@@ -298,6 +151,213 @@ class TranscriptScreen extends StatelessWidget {
       showDragHandle: true,
       builder: (context) => const _StatusHelpSheet(),
     );
+  }
+}
+
+/// The persistent transcript list (search, filters, list). Reads the
+/// [TranscriptListBloc] from context. On compact it is the whole screen; on wide
+/// it is the master pane.
+class _TranscriptMaster extends StatelessWidget {
+  const _TranscriptMaster({required this.state, required this.twoPane});
+
+  final TranscriptListState state;
+  final bool twoPane;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final selected = state.selectedIds;
+    return AppConstrainedBody(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: Column(
+        children: [
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppSearchField(
+                  hintText: l10n.searchRecordings,
+                  onChanged: (value) => context.read<TranscriptListBloc>().add(
+                    TranscriptListQueryChanged(value),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppSegmentedControl<TranscriptSort>(
+                  value: state.sort,
+                  segments: [
+                    AppSegment(
+                      value: TranscriptSort.newest,
+                      label: l10n.newest,
+                      icon: Icons.arrow_downward,
+                    ),
+                    AppSegment(
+                      value: TranscriptSort.oldest,
+                      label: l10n.oldest,
+                      icon: Icons.arrow_upward,
+                    ),
+                    AppSegment(
+                      value: TranscriptSort.longest,
+                      label: l10n.longest,
+                      icon: Icons.timer_outlined,
+                    ),
+                  ],
+                  onChanged: (value) => context.read<TranscriptListBloc>().add(
+                    TranscriptListSortChanged(value),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                AppSegmentedControl<TranscriptFilter>(
+                  value: state.filter,
+                  minSegmentWidth: 104,
+                  segments: [
+                    AppSegment(value: TranscriptFilter.all, label: l10n.all),
+                    AppSegment(
+                      value: TranscriptFilter.ready,
+                      label: l10n.statusReady,
+                    ),
+                    AppSegment(
+                      value: TranscriptFilter.processing,
+                      label: l10n.statusProcessing,
+                    ),
+                    AppSegment(
+                      value: TranscriptFilter.issue,
+                      label: l10n.statusIssue,
+                    ),
+                  ],
+                  onChanged: (value) => context.read<TranscriptListBloc>().add(
+                    TranscriptListFilterChanged(value),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (selected.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            AppCard(
+              selected: true,
+              child: AppSelectionBar(
+                label: '${selected.length} ${l10n.selected}',
+                action: AppButton(
+                  label: l10n.delete,
+                  icon: Icons.delete_outline,
+                  onPressed: () => _confirmDelete(context, selected.length),
+                  variant: AppButtonVariant.outline,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => _refreshFromBackend(context),
+              child: state.snapshot == null
+                  ? const _TranscriptListSkeleton()
+                  : state.items.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        const SizedBox(height: AppSpacing.xl),
+                        EmptyState(
+                          icon: Icons.description_outlined,
+                          title: l10n.transcript,
+                          description: state.query.isEmpty
+                              ? l10n.noTranscriptAvailable
+                              : l10n.noMatchingText,
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        final item = state.items[index];
+                        final transcript = item.transcript;
+                        final isSelected = selected.contains(transcript.id);
+                        final isActive =
+                            twoPane &&
+                            state.selectedTranscriptId == transcript.id;
+                        return _TranscriptCard(
+                          transcript: transcript,
+                          mergedText: item.mergedText,
+                          completedChunkCount: item.completedChunkCount,
+                          totalChunkCount: item.totalChunkCount,
+                          selected: isSelected,
+                          active: isActive,
+                          onTap: () {
+                            if (selected.isNotEmpty) {
+                              context.read<TranscriptListBloc>().add(
+                                TranscriptListSelectionToggled(transcript.id),
+                              );
+                            } else {
+                              AppHaptics.selection();
+                              context.read<TranscriptListBloc>().add(
+                                TranscriptListDetailOpened(transcript.id),
+                              );
+                            }
+                          },
+                          onLongPress: () =>
+                              context.read<TranscriptListBloc>().add(
+                                TranscriptListSelectionToggled(transcript.id),
+                              ),
+                        );
+                      },
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: AppSpacing.sm + 2),
+                      itemCount: state.items.length,
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _confirmDelete(BuildContext context, int count) async {
+  if (count == 0) {
+    return;
+  }
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      final l10n = context.l10n;
+      return AlertDialog(
+        title: Text(l10n.deleteRecordingsTitle),
+        content: Text(l10n.deleteRecordingsMessage(count)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.delete_outline),
+            label: Text(l10n.delete),
+          ),
+        ],
+      );
+    },
+  );
+
+  if ((confirmed ?? false) && context.mounted) {
+    context.read<TranscriptListBloc>().add(
+      const TranscriptListSelectedDeleted(),
+    );
+  }
+}
+
+Future<void> _refreshFromBackend(BuildContext context) async {
+  final completer = Completer<void>();
+  context.read<TranscriptListBloc>().add(
+    TranscriptListRefreshRequested(completer: completer),
+  );
+  try {
+    await completer.future;
+  } catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
   }
 }
 
@@ -514,8 +574,141 @@ class _TranscriptionProgressBar extends StatelessWidget {
   }
 }
 
-class _TranscriptDetailSheet extends StatelessWidget {
-  const _TranscriptDetailSheet();
+/// Shared body children for the transcript detail, used by both the compact
+/// modal sheet and the tablet detail pane. [onAfterRetry] is invoked after a
+/// retry is dispatched (the sheet pops; the pane closes its selection).
+List<Widget> _transcriptDetailChildren(
+  BuildContext context,
+  TranscriptDetailState state,
+  RecordingState recordingState, {
+  required VoidCallback onAfterRetry,
+}) {
+  final l10n = context.l10n;
+  final transcript = state.transcript!;
+  final recordedAt = transcript.recordedAt ?? transcript.createdAt;
+  final isProcessing =
+      displayStatusFor(transcript.status) == TranscriptDisplayStatus.processing;
+  final isError = transcript.status == TranscriptStatus.transcriptionError;
+  final hasRetryingChunks = state.chunks.any(
+    (c) => recordingState.retryingChunkIds.contains(c.id),
+  );
+
+  return [
+    AppEditableTitle(
+      title: transcript.title,
+      placeholder: l10n.unnamed,
+      editTooltip: l10n.edit,
+      onSubmitted: (value) => context.read<TranscriptDetailBloc>().add(
+        TranscriptDetailTitleSubmitted(value),
+      ),
+    ),
+    const SizedBox(height: AppSpacing.md),
+    Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: [
+        TranscriptStatusPill(status: transcript.status, compact: true),
+        MetricPill(
+          icon: Icons.calendar_today_outlined,
+          value: DateFormat('MMM d, HH:mm').format(recordedAt),
+          label: '',
+        ),
+        MetricPill(
+          icon: Icons.timer_outlined,
+          value: formatCompactDuration(transcript.durationSeconds),
+          label: l10n.duration,
+        ),
+        MetricPill(
+          icon: Icons.graphic_eq,
+          value: '${state.chunks.length}',
+          label: l10n.chunks,
+        ),
+      ],
+    ),
+    if (isProcessing) ...[
+      const SizedBox(height: AppSpacing.md),
+      _TranscriptionProgressBar(
+        completed: state.completedChunkCount,
+        total: state.totalChunkCount,
+        isVisible: isProcessing,
+        remaining:
+            (recordingState.currentTranscript?.id == transcript.id &&
+                recordingState.isTranscribing)
+            ? recordingState.estimatedTranscriptionRemaining
+            : null,
+      ),
+    ],
+    if (isError) ...[
+      const SizedBox(height: AppSpacing.md),
+      _TranscriptionErrorBanner(
+        isRetrying: hasRetryingChunks,
+        onRetry: hasRetryingChunks
+            ? null
+            : () {
+                final chunkIds = state.chunks
+                    .where((c) => c.transcriptionError != null)
+                    .map((c) => c.id)
+                    .toList();
+                context.read<RecordingBloc>().add(
+                  RecordingChunkRetryRequested(
+                    transcriptId: transcript.id,
+                    chunkIds: chunkIds,
+                  ),
+                );
+              },
+      ),
+    ],
+    const SizedBox(height: AppSpacing.lg),
+    DefaultTabController(
+      length: 2,
+      child: TabBar(
+        onTap: (value) => context.read<TranscriptDetailBloc>().add(
+          TranscriptDetailTabChanged(value),
+        ),
+        tabs: [
+          Tab(text: l10n.transcript),
+          Tab(text: l10n.summary),
+        ],
+      ),
+    ),
+    const PremiumDivider(),
+    if (state.tabIndex == 0)
+      _TranscriptTextTab(
+        mergedText: state.mergedText,
+        canRetry: isError,
+        isRetrying: hasRetryingChunks,
+        onRetry: isError && !hasRetryingChunks
+            ? () {
+                final chunkIds = state.chunks
+                    .where((c) => c.transcriptionError != null)
+                    .map((c) => c.id)
+                    .toList();
+                context.read<RecordingBloc>().add(
+                  RecordingChunkRetryRequested(
+                    transcriptId: transcript.id,
+                    chunkIds: chunkIds,
+                  ),
+                );
+                onAfterRetry();
+              }
+            : null,
+      )
+    else
+      _SummaryTab(state: state),
+  ];
+}
+
+/// Wires the recording + detail blocs and delegates to [builder] once the
+/// states are available. Shared by the modal sheet and the tablet pane.
+class _TranscriptDetailScope extends StatelessWidget {
+  const _TranscriptDetailScope({required this.builder});
+
+  final Widget Function(
+    BuildContext context,
+    TranscriptDetailState state,
+    RecordingState recordingState,
+  )
+  builder;
 
   @override
   Widget build(BuildContext context) {
@@ -544,143 +737,116 @@ class _TranscriptDetailSheet extends StatelessWidget {
               previous.generatingSummary != current.generatingSummary ||
               previous.completedChunkCount != current.completedChunkCount ||
               previous.totalChunkCount != current.totalChunkCount,
-          builder: (context, state) {
-            final l10n = context.l10n;
-            final transcript = state.transcript;
-            if (transcript == null) {
-              return AppModalBody(child: Text(l10n.noTranscriptAvailable));
-            }
+          builder: (context, state) => builder(context, state, recordingState),
+        );
+      },
+    );
+  }
+}
 
-            final recordedAt = transcript.recordedAt ?? transcript.createdAt;
-            final isProcessing =
-                displayStatusFor(transcript.status) ==
-                TranscriptDisplayStatus.processing;
-            final isError =
-                transcript.status == TranscriptStatus.transcriptionError;
-            final hasRetryingChunks = state.chunks.any(
-              (c) => recordingState.retryingChunkIds.contains(c.id),
-            );
-            return DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: 0.84,
-              minChildSize: 0.45,
-              maxChildSize: 0.95,
-              builder: (context, scrollController) {
-                return AppModalListView(
-                  controller: scrollController,
-                  children: [
-                    AppEditableTitle(
-                      title: transcript.title,
-                      placeholder: l10n.unnamed,
-                      editTooltip: l10n.edit,
-                      onSubmitted: (value) => context
-                          .read<TranscriptDetailBloc>()
-                          .add(TranscriptDetailTitleSubmitted(value)),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Wrap(
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.sm,
-                      children: [
-                        TranscriptStatusPill(
-                          status: transcript.status,
-                          compact: true,
-                        ),
-                        MetricPill(
-                          icon: Icons.calendar_today_outlined,
-                          value: DateFormat('MMM d, HH:mm').format(recordedAt),
-                          label: '',
-                        ),
-                        MetricPill(
-                          icon: Icons.timer_outlined,
-                          value: formatCompactDuration(
-                            transcript.durationSeconds,
-                          ),
-                          label: l10n.duration,
-                        ),
-                        MetricPill(
-                          icon: Icons.graphic_eq,
-                          value: '${state.chunks.length}',
-                          label: l10n.chunks,
-                        ),
-                      ],
-                    ),
-                    if (isProcessing) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      _TranscriptionProgressBar(
-                        completed: state.completedChunkCount,
-                        total: state.totalChunkCount,
-                        isVisible: isProcessing,
-                        remaining:
-                            (recordingState.currentTranscript?.id ==
-                                    transcript.id &&
-                                recordingState.isTranscribing)
-                            ? recordingState.estimatedTranscriptionRemaining
-                            : null,
-                      ),
-                    ],
-                    if (isError) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      _TranscriptionErrorBanner(
-                        isRetrying: hasRetryingChunks,
-                        onRetry: hasRetryingChunks
-                            ? null
-                            : () {
-                                final chunkIds = state.chunks
-                                    .where((c) => c.transcriptionError != null)
-                                    .map((c) => c.id)
-                                    .toList();
-                                context.read<RecordingBloc>().add(
-                                  RecordingChunkRetryRequested(
-                                    transcriptId: transcript.id,
-                                    chunkIds: chunkIds,
-                                  ),
-                                );
-                              },
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.lg),
-                    DefaultTabController(
-                      length: 2,
-                      child: TabBar(
-                        onTap: (value) => context
-                            .read<TranscriptDetailBloc>()
-                            .add(TranscriptDetailTabChanged(value)),
-                        tabs: [
-                          Tab(text: l10n.transcript),
-                          Tab(text: l10n.summary),
-                        ],
-                      ),
-                    ),
-                    const PremiumDivider(),
-                    if (state.tabIndex == 0)
-                      _TranscriptTextTab(
-                        mergedText: state.mergedText,
-                        canRetry: isError,
-                        isRetrying: hasRetryingChunks,
-                        onRetry: isError && !hasRetryingChunks
-                            ? () {
-                                final chunkIds = state.chunks
-                                    .where((c) => c.transcriptionError != null)
-                                    .map((c) => c.id)
-                                    .toList();
-                                context.read<RecordingBloc>().add(
-                                  RecordingChunkRetryRequested(
-                                    transcriptId: transcript.id,
-                                    chunkIds: chunkIds,
-                                  ),
-                                );
-                                Navigator.of(context).pop();
-                              }
-                            : null,
-                      )
-                    else
-                      _SummaryTab(state: state),
-                  ],
-                );
-              },
+class _TranscriptDetailSheet extends StatelessWidget {
+  const _TranscriptDetailSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return _TranscriptDetailScope(
+      builder: (context, state, recordingState) {
+        final l10n = context.l10n;
+        if (state.transcript == null) {
+          return AppModalBody(child: Text(l10n.noTranscriptAvailable));
+        }
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.84,
+          minChildSize: 0.45,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return AppModalListView(
+              controller: scrollController,
+              children: _transcriptDetailChildren(
+                context,
+                state,
+                recordingState,
+                onAfterRetry: () => Navigator.of(context).pop(),
+              ),
             );
           },
+        );
+      },
+    );
+  }
+}
+
+/// Tablet detail pane: same content as the modal sheet, hosted beside the
+/// master list. Creates its own [TranscriptDetailBloc] keyed by [transcriptId]
+/// (the surrounding [AnimatedSwitcher] keys this subtree, so it rebuilds when
+/// the selection changes).
+class _TranscriptDetailPane extends StatelessWidget {
+  const _TranscriptDetailPane({required this.transcriptId});
+
+  final String transcriptId;
+
+  @override
+  Widget build(BuildContext context) {
+    final repository = context.read<TranscriptRepository>();
+    final summaryService = context.read<SummaryService>();
+    final syncQueueService = context.read<SyncQueueService>();
+    return BlocProvider(
+      create: (_) => TranscriptDetailBloc(
+        transcriptId: transcriptId,
+        transcriptRepository: repository,
+        summaryService: summaryService,
+        syncQueueService: syncQueueService,
+      )..add(const TranscriptDetailSubscriptionRequested()),
+      child: const _TranscriptDetailPaneBody(),
+    );
+  }
+}
+
+class _TranscriptDetailPaneBody extends StatelessWidget {
+  const _TranscriptDetailPaneBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return _TranscriptDetailScope(
+      builder: (context, state, recordingState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.sm,
+                0,
+              ),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  onPressed: () => context.read<TranscriptListBloc>().add(
+                    const TranscriptListDetailClosed(),
+                  ),
+                  icon: const Icon(Icons.close),
+                  tooltip: l10n.cancel,
+                ),
+              ),
+            ),
+            Expanded(
+              child: state.transcript == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : AppPageListView(
+                      children: _transcriptDetailChildren(
+                        context,
+                        state,
+                        recordingState,
+                        onAfterRetry: () => context
+                            .read<TranscriptListBloc>()
+                            .add(const TranscriptListDetailClosed()),
+                      ),
+                    ),
+            ),
+          ],
         );
       },
     );
@@ -813,6 +979,7 @@ class _TranscriptCard extends StatelessWidget {
     required this.selected,
     required this.onTap,
     required this.onLongPress,
+    this.active = false,
     this.completedChunkCount = 0,
     this.totalChunkCount = 0,
   });
@@ -820,6 +987,10 @@ class _TranscriptCard extends StatelessWidget {
   final Transcript transcript;
   final String mergedText;
   final bool selected;
+
+  /// Whether this transcript is the one currently open in the tablet detail
+  /// pane. Highlights the card (without the multi-select check icon).
+  final bool active;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   final int completedChunkCount;
@@ -847,7 +1018,7 @@ class _TranscriptCard extends StatelessWidget {
       onLongPress: onLongPress,
       child: AppCard(
         onTap: onTap,
-        selected: selected,
+        selected: selected || active,
         semanticLabel: transcript.title ?? l10n.unnamed,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

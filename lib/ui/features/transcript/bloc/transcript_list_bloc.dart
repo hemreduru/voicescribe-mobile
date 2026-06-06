@@ -53,6 +53,20 @@ final class TranscriptListSelectedDeleted extends TranscriptListEvent {
   const TranscriptListSelectedDeleted();
 }
 
+/// UI-only: marks a transcript as the currently-open detail. Drives both the
+/// phone modal and the tablet two-pane from a single source of truth. Does not
+/// touch persistence or query logic.
+final class TranscriptListDetailOpened extends TranscriptListEvent {
+  const TranscriptListDetailOpened(this.id);
+
+  final String id;
+}
+
+/// UI-only: clears the currently-open detail selection.
+final class TranscriptListDetailClosed extends TranscriptListEvent {
+  const TranscriptListDetailClosed();
+}
+
 final class TranscriptListRefreshRequested extends TranscriptListEvent {
   const TranscriptListRefreshRequested({this.completer});
 
@@ -87,6 +101,7 @@ class TranscriptListState {
     this.sort = TranscriptSort.newest,
     this.filter = TranscriptFilter.all,
     this.selectedIds = const {},
+    this.selectedTranscriptId,
   });
 
   final TranscriptSnapshot? snapshot;
@@ -96,6 +111,10 @@ class TranscriptListState {
   final TranscriptFilter filter;
   final Set<String> selectedIds;
 
+  /// UI-only: the transcript whose detail is currently open (modal on compact,
+  /// detail pane on wide). Null when nothing is open.
+  final String? selectedTranscriptId;
+
   TranscriptListState copyWith({
     TranscriptSnapshot? snapshot,
     List<TranscriptListItem>? items,
@@ -103,6 +122,8 @@ class TranscriptListState {
     TranscriptSort? sort,
     TranscriptFilter? filter,
     Set<String>? selectedIds,
+    String? selectedTranscriptId,
+    bool clearSelectedTranscriptId = false,
   }) {
     return TranscriptListState(
       snapshot: snapshot ?? this.snapshot,
@@ -111,6 +132,9 @@ class TranscriptListState {
       sort: sort ?? this.sort,
       filter: filter ?? this.filter,
       selectedIds: selectedIds ?? this.selectedIds,
+      selectedTranscriptId: clearSelectedTranscriptId
+          ? null
+          : selectedTranscriptId ?? this.selectedTranscriptId,
     );
   }
 }
@@ -131,6 +155,8 @@ class TranscriptListBloc
     on<TranscriptListSelectionToggled>(_onSelectionToggled);
     on<TranscriptListSelectionCleared>(_onSelectionCleared);
     on<TranscriptListSelectedDeleted>(_onSelectedDeleted);
+    on<TranscriptListDetailOpened>(_onDetailOpened);
+    on<TranscriptListDetailClosed>(_onDetailClosed);
     on<TranscriptListRefreshRequested>(_onRefreshRequested);
   }
 
@@ -208,6 +234,20 @@ class TranscriptListBloc
     _syncQueueService.scheduleSync();
   }
 
+  void _onDetailOpened(
+    TranscriptListDetailOpened event,
+    Emitter<TranscriptListState> emit,
+  ) {
+    emit(state.copyWith(selectedTranscriptId: event.id));
+  }
+
+  void _onDetailClosed(
+    TranscriptListDetailClosed event,
+    Emitter<TranscriptListState> emit,
+  ) {
+    emit(state.copyWith(clearSelectedTranscriptId: true));
+  }
+
   Future<void> _onRefreshRequested(
     TranscriptListRefreshRequested event,
     Emitter<TranscriptListState> emit,
@@ -264,6 +304,10 @@ class TranscriptListBloc
     final nextSelected = (selectedIds ?? state.selectedIds)
         .where(validIds.contains)
         .toSet();
+    // Keep the open-detail selection only while its transcript is still present
+    // (e.g. not deleted or filtered out); otherwise close it.
+    final detailId = state.selectedTranscriptId;
+    final keepDetail = detailId != null && validIds.contains(detailId);
     return state.copyWith(
       snapshot: nextSnapshot,
       items: items,
@@ -271,6 +315,8 @@ class TranscriptListBloc
       sort: nextSort,
       filter: nextFilter,
       selectedIds: nextSelected,
+      selectedTranscriptId: keepDetail ? detailId : null,
+      clearSelectedTranscriptId: !keepDetail,
     );
   }
 
