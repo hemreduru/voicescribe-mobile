@@ -226,5 +226,6 @@
       "done": { "type": "int" },
       "total": { "type": "int" }
     }
-  }
+  },
+  "transcribingNotificationContent": "Transkript hazırlanıyor"
 }

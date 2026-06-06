@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/background_work_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
@@ -192,11 +193,13 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     required TranscriptionService transcriptionService,
     required AuthRepository authRepository,
     required SyncQueueService syncQueueService,
+    BackgroundWorkService backgroundWork = const NoopBackgroundWorkService(),
   }) : _transcriptRepository = transcriptRepository,
        _recordingService = recordingService,
        _transcriptionService = transcriptionService,
        _authRepository = authRepository,
        _syncQueueService = syncQueueService,
+       _backgroundWork = backgroundWork,
        super(const RecordingState()) {
     on<RecordingSubscriptionRequested>(_onSubscriptionRequested);
     on<RecordingStarted>(_onStarted, transformer: droppable());
@@ -224,6 +227,15 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   final TranscriptionService _transcriptionService;
   final AuthRepository _authRepository;
   final SyncQueueService _syncQueueService;
+  final BackgroundWorkService _backgroundWork;
+
+  // Notification copy for the background-transcription foreground service.
+  // Localized strings are pushed in from the UI via
+  // [configureBackgroundNotification]; these are safe fallbacks.
+  String _backgroundTitle = 'VoiceScribe';
+  String _backgroundText = 'Transcribing…';
+  // Tracks the last requested service state so we only start/stop on edges.
+  bool _backgroundActive = false;
 
   StreamSubscription<TranscriptSnapshot>? _snapshotSubscription;
   StreamSubscription<RecordedAudioChunk>? _chunkSubscription;
@@ -241,6 +253,44 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   // ---------------------------------------------------------------------------
   // Event handlers
   // ---------------------------------------------------------------------------
+
+  /// Pushes localized notification copy for the background-transcription
+  /// foreground service from the UI (which has access to l10n).
+  void configureBackgroundNotification({
+    required String title,
+    required String text,
+  }) {
+    _backgroundTitle = title;
+    _backgroundText = text;
+  }
+
+  @override
+  void onChange(Change<RecordingState> change) {
+    super.onChange(change);
+    _reconcileBackgroundWork(change.nextState);
+  }
+
+  /// Runs a foreground service whenever transcription is still draining *after*
+  /// recording has stopped, so the backlog keeps processing while the app is
+  /// backgrounded. During recording the recorder's own (microphone) service
+  /// already keeps the process alive, so we don't double up.
+  void _reconcileBackgroundWork(RecordingState next) {
+    final shouldRun = next.isTranscribing && !next.isRecording;
+    if (shouldRun == _backgroundActive) {
+      return;
+    }
+    _backgroundActive = shouldRun;
+    if (shouldRun) {
+      unawaited(
+        _backgroundWork.ensureRunning(
+          title: _backgroundTitle,
+          text: _backgroundText,
+        ),
+      );
+    } else {
+      unawaited(_backgroundWork.stop());
+    }
+  }
 
   Future<void> _onSubscriptionRequested(
     RecordingSubscriptionRequested event,

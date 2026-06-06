@@ -506,4 +506,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String transcribingStatusNoEta(int done, int total) {
     return 'Transkript hazırlanıyor · $done/$total parça';
   }
+
+  @override
+  String get transcribingNotificationContent => 'Transkript hazırlanıyor';
 }

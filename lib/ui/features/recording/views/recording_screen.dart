@@ -39,6 +39,12 @@ class _RecordingScreenState extends State<RecordingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    // Keep the background-transcription foreground-service notification copy
+    // localized (cheap string assignment on the bloc).
+    context.read<RecordingBloc>().configureBackgroundNotification(
+      title: l10n.appName,
+      text: l10n.transcribingNotificationContent,
+    );
 
     return BlocConsumer<RecordingBloc, RecordingState>(
       listenWhen: (previous, current) =>

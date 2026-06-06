@@ -977,6 +977,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preparing transcript · {done}/{total} parts'**
   String transcribingStatusNoEta(int done, int total);
+
+  /// No description provided for @transcribingNotificationContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing transcript'**
+  String get transcribingNotificationContent;
 }
 
 class _AppLocalizationsDelegate

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:voicescribe_mobile/data/repositories/sqflite_transcript_repository.dart';
 import 'package:voicescribe_mobile/data/repositories/voice_scribe_auth_repository.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/background_work_service.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
@@ -79,6 +80,9 @@ class VoiceScribeRoot extends StatelessWidget {
           create: (_) => SyncQueueService(),
           dispose: (service) => service.dispose(),
         ),
+        RepositoryProvider<BackgroundWorkService>(
+          create: (_) => ForegroundBackgroundWorkService(),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -107,6 +111,7 @@ class VoiceScribeRoot extends StatelessWidget {
               transcriptionService: context.read<TranscriptionService>(),
               authRepository: context.read<AuthRepository>(),
               syncQueueService: context.read<SyncQueueService>(),
+              backgroundWork: context.read<BackgroundWorkService>(),
             )..add(const RecordingSubscriptionRequested()),
           ),
           BlocProvider<TranscriptListBloc>(
