@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:voicescribe_mobile/ui/core/theme/app_typography_theme.dart';
 import 'package:voicescribe_mobile/ui/core/theme/design_system.dart';
 
 export 'package:voicescribe_mobile/ui/core/theme/design_system.dart';
@@ -331,36 +332,6 @@ class AppTheme {
     );
   }
 
-  static TextTheme _textTheme(Brightness brightness) {
-    final base = ThemeData(
-      useMaterial3: true,
-      brightness: brightness,
-    ).textTheme;
-
-    return TextTheme(
-      displayLarge: base.displayLarge?.copyWith(
-        fontWeight: FontWeight.w700,
-        letterSpacing: AppTypography.letterSpacing,
-      ),
-      displayMedium: base.displayMedium?.copyWith(
-        fontWeight: FontWeight.w700,
-        letterSpacing: AppTypography.letterSpacing,
-      ),
-      displaySmall: base.displaySmall?.copyWith(fontWeight: FontWeight.w700),
-      headlineLarge: base.headlineLarge?.copyWith(fontWeight: FontWeight.w700),
-      headlineMedium: base.headlineMedium?.copyWith(
-        fontWeight: FontWeight.w700,
-      ),
-      headlineSmall: base.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-      titleLarge: base.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-      titleMedium: base.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-      titleSmall: base.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-      labelLarge: base.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-      labelMedium: base.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-      labelSmall: base.labelSmall?.copyWith(fontWeight: FontWeight.w600),
-      bodyLarge: base.bodyLarge?.copyWith(height: AppTypography.bodyHeight),
-      bodyMedium: base.bodyMedium?.copyWith(height: AppTypography.bodyHeight),
-      bodySmall: base.bodySmall?.copyWith(height: 1.35),
-    );
-  }
+  static TextTheme _textTheme(Brightness brightness) =>
+      AppTypographyTheme.textTheme(brightness);
 }

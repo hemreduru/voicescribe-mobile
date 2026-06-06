@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
+import 'package:voicescribe_mobile/ui/core/theme/app_typography_theme.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_text_field.dart';
 
@@ -286,8 +287,8 @@ class MetricPill extends StatelessWidget {
           ],
           Text(
             value,
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
+            style: AppTextStyles.numeric(
+              theme.textTheme.labelLarge!.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           if (label.isNotEmpty) ...[
@@ -369,13 +370,7 @@ class AppDurationDisplay extends StatelessWidget {
       children: [
         Icon(icon, color: theme.colorScheme.onSurfaceVariant),
         const SizedBox(width: AppSpacing.sm),
-        Text(
-          value,
-          style: theme.textTheme.displaySmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0,
-          ),
-        ),
+        Text(value, style: AppTextStyles.timer(context)),
       ],
     );
   }
