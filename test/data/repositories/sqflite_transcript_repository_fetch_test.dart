@@ -55,94 +55,46 @@ void main() {
     await repository.dispose();
   });
 
-  test('fetchFromServer writes transcripts, chunks and summaries to cache', () async {
-    apiClient.transcripts = [
-      {
-        'remote_id': '1',
-        'local_id': 'local-1',
-        'client_local_id': 'local-1',
-        'title': 'Server Transcript',
-        'duration_seconds': 120,
-        'status_key': 'completed',
-        'recorded_at': '2026-05-17T10:00:00Z',
-        'created_at': '2026-05-17T10:00:00Z',
-        'updated_at': '2026-05-17T10:00:00Z',
-        'deleted_at': null,
-        'chunks': [
-          {
-            'remote_id': '10',
-            'client_local_id': 'local-chunk-1',
-            'chunk_index': 1,
-            'text': 'Hello world',
-            'start_time': 0.0,
-            'end_time': 5.0,
-            'confidence': 0.95,
-            'deleted_at': null,
-          },
-        ],
-        'summaries': [
-          {
-            'remote_id': '20',
-            'client_local_id': 'local-summary-1',
-            'provider_key': 'openai',
-            'model': 'gpt-4',
-            'summary_text': 'A greeting.',
-            'token_count': 10,
-            'processing_time_ms': 500,
-            'created_at': '2026-05-17T10:01:00Z',
-            'deleted_at': null,
-          },
-        ],
-      },
-    ];
-
-    final result = await repository.fetchFromServer(token: 'token');
-    expect(result, isTrue);
-
-    final snapshot = await repository.loadSnapshot();
-    expect(snapshot.transcripts, hasLength(1));
-    expect(snapshot.transcripts.first.title, 'Server Transcript');
-    expect(snapshot.transcripts.first.remoteId, '1');
-    expect(snapshot.transcripts.first.syncStatus, SyncStatus.synced);
-
-    expect(snapshot.chunks, hasLength(1));
-    expect(snapshot.chunks.first.text, 'Hello world');
-    expect(snapshot.chunks.first.syncStatus, SyncStatus.synced);
-
-    expect(snapshot.summaries, hasLength(1));
-    expect(snapshot.summaries.first.summaryText, 'A greeting.');
-    expect(snapshot.summaries.first.syncStatus, SyncStatus.synced);
-  });
-
   test(
-    'fetchFromServer does not overwrite an unsynced local edit',
+    'fetchFromServer writes transcripts, chunks and summaries to cache',
     () async {
-      // Local pending edit that has NOT been pushed yet.
-      await db.insert('transcripts', {
-        'id': 'local-1',
-        'localId': 'local-1',
-        'remoteId': '1',
-        'title': 'My local edit',
-        'durationSeconds': 120,
-        'statusKey': 'completed',
-        'createdAt': '2026-05-17T10:00:00Z',
-        'updatedAt': '2026-05-17T12:00:00Z', // local is newer
-        'syncStatus': SyncStatus.pending.key,
-      });
-
-      // Server returns an older copy under the same id.
       apiClient.transcripts = [
         {
           'remote_id': '1',
           'local_id': 'local-1',
           'client_local_id': 'local-1',
-          'title': 'Stale server copy',
+          'title': 'Server Transcript',
           'duration_seconds': 120,
           'status_key': 'completed',
           'recorded_at': '2026-05-17T10:00:00Z',
           'created_at': '2026-05-17T10:00:00Z',
-          'updated_at': '2026-05-17T10:00:00Z', // server is older
+          'updated_at': '2026-05-17T10:00:00Z',
           'deleted_at': null,
+          'chunks': [
+            {
+              'remote_id': '10',
+              'client_local_id': 'local-chunk-1',
+              'chunk_index': 1,
+              'text': 'Hello world',
+              'start_time': 0.0,
+              'end_time': 5.0,
+              'confidence': 0.95,
+              'deleted_at': null,
+            },
+          ],
+          'summaries': [
+            {
+              'remote_id': '20',
+              'client_local_id': 'local-summary-1',
+              'provider_key': 'openai',
+              'model': 'gpt-4',
+              'summary_text': 'A greeting.',
+              'token_count': 10,
+              'processing_time_ms': 500,
+              'created_at': '2026-05-17T10:01:00Z',
+              'deleted_at': null,
+            },
+          ],
         },
       ];
 
@@ -151,26 +103,77 @@ void main() {
 
       final snapshot = await repository.loadSnapshot();
       expect(snapshot.transcripts, hasLength(1));
-      expect(
-        snapshot.transcripts.first.title,
-        'My local edit',
-        reason: 'merge policy must keep the unsynced local edit',
-      );
-      expect(snapshot.transcripts.first.syncStatus, SyncStatus.pending);
+      expect(snapshot.transcripts.first.title, 'Server Transcript');
+      expect(snapshot.transcripts.first.remoteId, '1');
+      expect(snapshot.transcripts.first.syncStatus, SyncStatus.synced);
+
+      expect(snapshot.chunks, hasLength(1));
+      expect(snapshot.chunks.first.text, 'Hello world');
+      expect(snapshot.chunks.first.syncStatus, SyncStatus.synced);
+
+      expect(snapshot.summaries, hasLength(1));
+      expect(snapshot.summaries.first.summaryText, 'A greeting.');
+      expect(snapshot.summaries.first.syncStatus, SyncStatus.synced);
     },
   );
 
-  test('fetchFromServer returns false on network failure without throwing', () async {
-    apiClient.shouldThrow = true;
+  test('fetchFromServer does not overwrite an unsynced local edit', () async {
+    // Local pending edit that has NOT been pushed yet.
+    await db.insert('transcripts', {
+      'id': 'local-1',
+      'localId': 'local-1',
+      'remoteId': '1',
+      'title': 'My local edit',
+      'durationSeconds': 120,
+      'statusKey': 'completed',
+      'createdAt': '2026-05-17T10:00:00Z',
+      'updatedAt': '2026-05-17T12:00:00Z', // local is newer
+      'syncStatus': SyncStatus.pending.key,
+    });
+
+    // Server returns an older copy under the same id.
+    apiClient.transcripts = [
+      {
+        'remote_id': '1',
+        'local_id': 'local-1',
+        'client_local_id': 'local-1',
+        'title': 'Stale server copy',
+        'duration_seconds': 120,
+        'status_key': 'completed',
+        'recorded_at': '2026-05-17T10:00:00Z',
+        'created_at': '2026-05-17T10:00:00Z',
+        'updated_at': '2026-05-17T10:00:00Z', // server is older
+        'deleted_at': null,
+      },
+    ];
 
     final result = await repository.fetchFromServer(token: 'token');
-    expect(result, isFalse);
+    expect(result, isTrue);
 
     final snapshot = await repository.loadSnapshot();
-    expect(snapshot.transcripts, isEmpty);
-    expect(snapshot.chunks, isEmpty);
-    expect(snapshot.summaries, isEmpty);
+    expect(snapshot.transcripts, hasLength(1));
+    expect(
+      snapshot.transcripts.first.title,
+      'My local edit',
+      reason: 'merge policy must keep the unsynced local edit',
+    );
+    expect(snapshot.transcripts.first.syncStatus, SyncStatus.pending);
   });
+
+  test(
+    'fetchFromServer returns false on network failure without throwing',
+    () async {
+      apiClient.shouldThrow = true;
+
+      final result = await repository.fetchFromServer(token: 'token');
+      expect(result, isFalse);
+
+      final snapshot = await repository.loadSnapshot();
+      expect(snapshot.transcripts, isEmpty);
+      expect(snapshot.chunks, isEmpty);
+      expect(snapshot.summaries, isEmpty);
+    },
+  );
 
   test(
     'clearCache drops synced rows but preserves unsynced local data',

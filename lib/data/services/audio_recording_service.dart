@@ -118,11 +118,12 @@ class AudioRecordingService implements RecordingService {
         // Isolate each chunk's failure so the emit pipeline never gets
         // poisoned — otherwise a single IO error would silently stop all
         // future chunks from reaching the transcription queue.
-        _emitTask = _emitTask
-            .then((_) => _emitChunk(chunk))
-            .catchError((Object error, StackTrace stack) {
-              _onEmitFailure(chunk.index, error, stack);
-            });
+        _emitTask = _emitTask.then((_) => _emitChunk(chunk)).catchError((
+          Object error,
+          StackTrace stack,
+        ) {
+          _onEmitFailure(chunk.index, error, stack);
+        });
       }
     }, onError: _levelsController.addError);
   }

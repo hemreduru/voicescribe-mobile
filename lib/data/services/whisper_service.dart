@@ -194,10 +194,11 @@ class WhisperTranscriptionService implements TranscriptionService {
   double get currentRealtimeFactor => _estimator.factorFor(currentModelKey);
 
   @override
-  Duration estimateBacklog(double pendingAudioSeconds) => _estimator.estimateFor(
-    modelKey: currentModelKey,
-    pendingAudioSeconds: pendingAudioSeconds,
-  );
+  Duration estimateBacklog(double pendingAudioSeconds) =>
+      _estimator.estimateFor(
+        modelKey: currentModelKey,
+        pendingAudioSeconds: pendingAudioSeconds,
+      );
 
   @override
   void setTranscriptionLanguage(String language) {

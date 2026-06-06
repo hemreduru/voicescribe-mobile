@@ -5,11 +5,13 @@ import 'package:voicescribe_mobile/domain/models/domain.dart';
 class DatabaseProvider {
   factory DatabaseProvider() => _instance;
 
-  DatabaseProvider._internal({String dbName = 'voicescribe.db'}) : _dbName = dbName;
+  DatabaseProvider._internal({String dbName = 'voicescribe.db'})
+    : _dbName = dbName;
 
   /// Creates a non-singleton test instance with a custom database name.
   /// Use this in tests to avoid colliding with the production singleton.
-  factory DatabaseProvider.test(String dbName) => DatabaseProvider._internal(dbName: dbName);
+  factory DatabaseProvider.test(String dbName) =>
+      DatabaseProvider._internal(dbName: dbName);
 
   static final DatabaseProvider _instance = DatabaseProvider._internal();
 

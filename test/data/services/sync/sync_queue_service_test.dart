@@ -204,35 +204,38 @@ void main() {
     },
   );
 
-  test('a previously failed row is retried on the next sync and converges', () async {
-    await db.insert('transcripts', {
-      'id': 'local-failed',
-      'localId': 'local-failed',
-      'title': 'Retry me',
-      'durationSeconds': 10,
-      'statusKey': TranscriptStatus.completed.key,
-      'createdAt': '2026-05-17T10:00:00Z',
-      'updatedAt': '2026-05-17T10:00:00Z',
-      'syncStatus': SyncStatus.failed.key,
-      'syncError': 'previous network error',
-    });
+  test(
+    'a previously failed row is retried on the next sync and converges',
+    () async {
+      await db.insert('transcripts', {
+        'id': 'local-failed',
+        'localId': 'local-failed',
+        'title': 'Retry me',
+        'durationSeconds': 10,
+        'statusKey': TranscriptStatus.completed.key,
+        'createdAt': '2026-05-17T10:00:00Z',
+        'updatedAt': '2026-05-17T10:00:00Z',
+        'syncStatus': SyncStatus.failed.key,
+        'syncError': 'previous network error',
+      });
 
-    httpClient.pushResult = SyncHttpResult(
-      statusCode: 200,
-      body: appliedBody('local-failed', 'remote-failed'),
-    );
+      httpClient.pushResult = SyncHttpResult(
+        statusCode: 200,
+        body: appliedBody('local-failed', 'remote-failed'),
+      );
 
-    await service.runManualSync();
+      await service.runManualSync();
 
-    final rows = await db.query(
-      'transcripts',
-      where: 'id = ?',
-      whereArgs: ['local-failed'],
-    );
-    expect(rows.first['syncStatus'], SyncStatus.synced.key);
-    expect(rows.first['remoteId'], 'remote-failed');
-    expect(rows.first['syncError'], isNull);
-  });
+      final rows = await db.query(
+        'transcripts',
+        where: 'id = ?',
+        whereArgs: ['local-failed'],
+      );
+      expect(rows.first['syncStatus'], SyncStatus.synced.key);
+      expect(rows.first['remoteId'], 'remote-failed');
+      expect(rows.first['syncError'], isNull);
+    },
+  );
 
   test(
     'ttl cleanup removes only soft-deleted expired synced rows; active synced rows are preserved as cache',

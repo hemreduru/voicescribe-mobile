@@ -254,7 +254,9 @@ class SettingsScreen extends StatelessWidget {
                                   if (state.pendingSyncCount > 0) ...[
                                     const SizedBox(height: AppSpacing.xs),
                                     Text(
-                                      l10n.unsyncedCount(state.pendingSyncCount),
+                                      l10n.unsyncedCount(
+                                        state.pendingSyncCount,
+                                      ),
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodySmall
@@ -298,13 +300,8 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     ActionRow(
                       icon: _modelStatusIcon(modelState),
-                      title: _modelStatusLabel(
-                        context,
-                        modelState,
-                      ),
-                      trailing:
-                          modelState ==
-                              ModelBootstrapState.failed
+                      title: _modelStatusLabel(context, modelState),
+                      trailing: modelState == ModelBootstrapState.failed
                           ? AppButton(
                               label: l10n.retrySetup,
                               icon: Icons.refresh,
@@ -315,15 +312,9 @@ class SettingsScreen extends StatelessWidget {
                             )
                           : StatusPill(
                               icon: _modelStatusIcon(modelState),
-                              label: _modelStatusLabel(
-                                context,
-                                modelState,
-                              ),
+                              label: _modelStatusLabel(context, modelState),
                               compact: true,
-                              color: _modelStatusColor(
-                                context,
-                                modelState,
-                              ),
+                              color: _modelStatusColor(context, modelState),
                             ),
                     ),
                   ],
@@ -403,7 +394,9 @@ class _TranscriptionModelSelector extends StatelessWidget {
           ..sort(
             (a, b) => _mobileModels
                 .indexOf(modelKeyFromWhisperModel(a.model))
-                .compareTo(_mobileModels.indexOf(modelKeyFromWhisperModel(b.model))),
+                .compareTo(
+                  _mobileModels.indexOf(modelKeyFromWhisperModel(b.model)),
+                ),
           );
 
     final descriptionText = switch (selectedKey) {
@@ -413,9 +406,9 @@ class _TranscriptionModelSelector extends StatelessWidget {
     };
     final description = Text(
       descriptionText,
-      style: Theme.of(
-        context,
-      ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
 
     if (allowed.length <= 1) {

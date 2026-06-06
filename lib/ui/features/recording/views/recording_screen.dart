@@ -253,7 +253,6 @@ class _RecordButton extends StatelessWidget {
   }
 }
 
-
 class _RecentTranscriptCard extends StatelessWidget {
   const _RecentTranscriptCard({required this.transcript});
 

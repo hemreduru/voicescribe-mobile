@@ -15,8 +15,7 @@ void main() {
       String? receivedContentType;
       unawaited(
         server.first.then((request) async {
-          receivedContentType =
-              request.headers.contentType?.toString();
+          receivedContentType = request.headers.contentType?.toString();
           // Decode the raw bytes as UTF-8 — the client must have encoded them
           // as UTF-8, not latin1.
           final body = await utf8.decoder.bind(request).join();

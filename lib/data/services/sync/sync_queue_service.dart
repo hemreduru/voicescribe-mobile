@@ -657,7 +657,8 @@ class SyncQueueService {
       final rows = await txn.query(
         table,
         columns: columns,
-        where: 'syncStatus = ? AND deletedAt IS NOT NULL AND lastSyncedAt IS NOT NULL',
+        where:
+            'syncStatus = ? AND deletedAt IS NOT NULL AND lastSyncedAt IS NOT NULL',
         whereArgs: [SyncStatus.synced.key],
       );
       final expiredRows = rows.where((row) {

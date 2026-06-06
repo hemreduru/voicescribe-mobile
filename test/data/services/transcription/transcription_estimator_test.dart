@@ -7,8 +7,14 @@ void main() {
       final estimator = TranscriptionEstimator();
 
       // small is seeded slower than base, base slower than tiny.
-      expect(estimator.factorFor('small'), greaterThan(estimator.factorFor('base')));
-      expect(estimator.factorFor('base'), greaterThan(estimator.factorFor('tiny')));
+      expect(
+        estimator.factorFor('small'),
+        greaterThan(estimator.factorFor('base')),
+      );
+      expect(
+        estimator.factorFor('base'),
+        greaterThan(estimator.factorFor('tiny')),
+      );
       // Unknown models fall back to a sane default rather than crashing.
       expect(estimator.factorFor('mystery'), greaterThan(0));
     });
@@ -22,10 +28,7 @@ void main() {
         pendingAudioSeconds: 30,
       );
 
-      expect(
-        estimate.inMilliseconds,
-        (30 * 1000 * baseFactor).round(),
-      );
+      expect(estimate.inMilliseconds, (30 * 1000 * baseFactor).round());
     });
 
     test('returns zero for a non-positive backlog', () {
@@ -61,7 +64,11 @@ void main() {
       final before = estimator.factorFor('base');
 
       estimator
-        ..record(modelKey: 'base', audioSeconds: 0, processing: const Duration(seconds: 5))
+        ..record(
+          modelKey: 'base',
+          audioSeconds: 0,
+          processing: const Duration(seconds: 5),
+        )
         ..record(modelKey: 'base', audioSeconds: 5, processing: Duration.zero);
 
       expect(estimator.factorFor('base'), before);

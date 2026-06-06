@@ -347,10 +347,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       return;
     }
     emit(
-      state.copyWith(
-        applyingTranscriptionModel: true,
-        clearErrorMessage: true,
-      ),
+      state.copyWith(applyingTranscriptionModel: true, clearErrorMessage: true),
     );
     try {
       await _transcriptionService.selectModel(whisperModelFromKey(normalized));

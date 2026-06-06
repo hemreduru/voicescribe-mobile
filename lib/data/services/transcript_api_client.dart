@@ -39,9 +39,8 @@ class TranscriptApiClient {
     return data
         .whereType<Map<dynamic, dynamic>>()
         .map(
-          (item) => item.map(
-            (key, value) => MapEntry(key?.toString() ?? '', value),
-          ),
+          (item) =>
+              item.map((key, value) => MapEntry(key?.toString() ?? '', value)),
         )
         .toList(growable: false);
   }

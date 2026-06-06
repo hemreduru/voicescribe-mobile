@@ -81,9 +81,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
   @override
   Future<bool> fetchFromServer({required String token}) async {
     try {
-      final serverTranscripts = await _apiClient.fetchTranscripts(
-        token: token,
-      );
+      final serverTranscripts = await _apiClient.fetchTranscripts(token: token);
       await _writeServerTranscriptsToCache(serverTranscripts);
       return true;
     } on TranscriptFetchException catch (error) {
@@ -276,9 +274,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
 
         // Write transcript row (cache as synced).
         if (writeTranscript) {
-          await txn.insert(
-          'transcripts',
-          {
+          await txn.insert('transcripts', {
             'id': localId,
             'localId': localId,
             'userId': _toText(transcriptData['user_id']),
@@ -293,9 +289,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
             'lastSyncedAt': now,
             'syncError': null,
             'deletedAt': deletedAt,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
 
         // Write nested chunks.
@@ -317,29 +311,25 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
             continue;
           }
 
-          await txn.insert(
-            'transcript_chunks',
-            {
-              'id': chunkLocalId,
-              'transcriptId': localId,
-              'remoteId': chunkRemoteId,
-              'chunkIndex': _toInt(chunkData['chunk_index']),
-              'text': _toText(chunkData['text']) ?? '',
-              'audioPath': null,
-              'recordedAt': null,
-              'startTime': _toDouble(chunkData['start_time']),
-              'endTime': _toDouble(chunkData['end_time']),
-              'confidence': _toNullableDouble(chunkData['confidence']),
-              'transcriptionError': null,
-              'audioLevel': null,
-              'isTranscribed': 1,
-              'syncStatus': SyncStatus.synced.key,
-              'lastSyncedAt': now,
-              'syncError': null,
-              'deletedAt': _toText(chunkData['deleted_at']),
-            },
-            conflictAlgorithm: ConflictAlgorithm.replace,
-          );
+          await txn.insert('transcript_chunks', {
+            'id': chunkLocalId,
+            'transcriptId': localId,
+            'remoteId': chunkRemoteId,
+            'chunkIndex': _toInt(chunkData['chunk_index']),
+            'text': _toText(chunkData['text']) ?? '',
+            'audioPath': null,
+            'recordedAt': null,
+            'startTime': _toDouble(chunkData['start_time']),
+            'endTime': _toDouble(chunkData['end_time']),
+            'confidence': _toNullableDouble(chunkData['confidence']),
+            'transcriptionError': null,
+            'audioLevel': null,
+            'isTranscribed': 1,
+            'syncStatus': SyncStatus.synced.key,
+            'lastSyncedAt': now,
+            'syncError': null,
+            'deletedAt': _toText(chunkData['deleted_at']),
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
 
         // Write nested summaries.
@@ -357,27 +347,23 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
             continue;
           }
 
-          await txn.insert(
-            'summaries',
-            {
-              'id': summaryLocalId,
-              'transcriptId': localId,
-              'remoteId': summaryRemoteId,
-              'providerKey': _toText(summaryData['provider_key']) ?? 'local',
-              'model': _toText(summaryData['model']) ?? 'local-default',
-              'summaryText': _toText(summaryData['summary_text']) ?? '',
-              'tokenCount': _toNullableInt(summaryData['token_count']),
-              'processingTimeMs': _toNullableInt(
-                summaryData['processing_time_ms'],
-              ),
-              'createdAt': _toText(summaryData['created_at']) ?? now,
-              'syncStatus': SyncStatus.synced.key,
-              'lastSyncedAt': now,
-              'syncError': null,
-              'deletedAt': _toText(summaryData['deleted_at']),
-            },
-            conflictAlgorithm: ConflictAlgorithm.replace,
-          );
+          await txn.insert('summaries', {
+            'id': summaryLocalId,
+            'transcriptId': localId,
+            'remoteId': summaryRemoteId,
+            'providerKey': _toText(summaryData['provider_key']) ?? 'local',
+            'model': _toText(summaryData['model']) ?? 'local-default',
+            'summaryText': _toText(summaryData['summary_text']) ?? '',
+            'tokenCount': _toNullableInt(summaryData['token_count']),
+            'processingTimeMs': _toNullableInt(
+              summaryData['processing_time_ms'],
+            ),
+            'createdAt': _toText(summaryData['created_at']) ?? now,
+            'syncStatus': SyncStatus.synced.key,
+            'lastSyncedAt': now,
+            'syncError': null,
+            'deletedAt': _toText(summaryData['deleted_at']),
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
     });
@@ -471,9 +457,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
     }
     return value
         .whereType<Map<Object?, Object?>>()
-        .map(
-          (item) => item.map((key, val) => MapEntry(key.toString(), val)),
-        )
+        .map((item) => item.map((key, val) => MapEntry(key.toString(), val)))
         .toList(growable: false);
   }
 }

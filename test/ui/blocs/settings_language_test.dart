@@ -41,7 +41,10 @@ void main() {
 
       expect(bloc.state.preferences.transcriptionLanguage, 'tr');
       expect(transcription.language, 'tr');
-      expect(transcripts.savedPreferences['latest']?.transcriptionLanguage, 'tr');
+      expect(
+        transcripts.savedPreferences['latest']?.transcriptionLanguage,
+        'tr',
+      );
     },
   );
 

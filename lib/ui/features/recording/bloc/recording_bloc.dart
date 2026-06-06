@@ -308,9 +308,10 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     await _snapshotSubscription?.cancel();
     final snapshot = await _transcriptRepository.loadSnapshot();
     emit(
-      _stateForSnapshot(state, snapshot).copyWith(
-        realtimeFactor: _transcriptionService.currentRealtimeFactor,
-      ),
+      _stateForSnapshot(
+        state,
+        snapshot,
+      ).copyWith(realtimeFactor: _transcriptionService.currentRealtimeFactor),
     );
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
       (snapshot) => add(_RecordingSnapshotChanged(snapshot)),
@@ -449,7 +450,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
         stopped,
       ),
     );
-    unawaited(_enqueueSave(() => _transcriptRepository.saveTranscript(stopped)));
+    unawaited(
+      _enqueueSave(() => _transcriptRepository.saveTranscript(stopped)),
+    );
     _syncQueueService.scheduleSync();
     AppLogger.info(
       '[Recording] Session stopped | id=${stopped.id} | '
