@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -17,6 +16,7 @@ import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_text_field.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/audio_visualizer.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/premium_widgets.dart';
+import 'package:voicescribe_mobile/ui/core/widgets/pulse_record_button.dart';
 import 'package:voicescribe_mobile/ui/features/recording/bloc/recording_bloc.dart';
 
 class RecordingScreen extends StatefulWidget {
@@ -94,7 +94,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                     builder: (context, constraints) {
                       final compact =
                           constraints.maxWidth < AppLayout.compactWidth;
-                      return _RecordButton(
+                      return PulseRecordButton(
                         isRecording: state.isRecording,
                         dimension: compact ? 154 : 172,
                         semanticLabel: state.isRecording
@@ -178,8 +178,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
   void _toggleRecording(BuildContext context, RecordingState state) {
     final bloc = context.read<RecordingBloc>();
-    // Tactile confirmation for the app's primary action.
-    unawaited(HapticFeedback.mediumImpact());
+    // Tactile confirmation is owned by PulseRecordButton (medium on start,
+    // warning on stop) so it isn't fired twice here.
     if (state.isRecording) {
       bloc.add(const RecordingStopped());
     } else {
@@ -208,48 +208,6 @@ class _RecordingScreenState extends State<RecordingScreen> {
     if (_titleController.text != title) {
       _titleController.text = title;
     }
-  }
-}
-
-class _RecordButton extends StatelessWidget {
-  const _RecordButton({
-    required this.isRecording,
-    required this.onPressed,
-    required this.dimension,
-    required this.semanticLabel,
-  });
-
-  final bool isRecording;
-  final double dimension;
-  final VoidCallback onPressed;
-  final String semanticLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: SizedBox.square(
-        dimension: dimension,
-        child: FilledButton(
-          style: FilledButton.styleFrom(
-            shape: const CircleBorder(),
-            backgroundColor: isRecording ? scheme.error : scheme.primary,
-            shadowColor: (isRecording ? scheme.error : scheme.primary)
-                .withValues(alpha: 0.34),
-            elevation: 5,
-          ),
-          onPressed: onPressed,
-          child: Icon(
-            isRecording ? Icons.stop : Icons.mic,
-            color: scheme.onPrimary,
-            size: dimension * 0.32,
-          ),
-        ),
-      ),
-    );
   }
 }
 
