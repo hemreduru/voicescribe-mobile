@@ -399,6 +399,52 @@ void main() {
     },
   );
 
+  test(
+    'audio is evicted in the SAME cycle a transcribed chunk is first synced (#4)',
+    () async {
+      // The user's concern: synced audio should leave the phone immediately,
+      // not linger to a later sync. A pending+transcribed chunk with audio is
+      // pushed, the server applies it, and the eviction must run in the same
+      // transaction so the file is gone after a single sync.
+      final audio = File(
+        p.join(Directory.systemTemp.path, 'vs-evict-fresh.wav'),
+      )..writeAsStringSync('audio');
+
+      await db.insert('transcript_chunks', {
+        'id': 'chunk-fresh',
+        'transcriptId': 'local-a',
+        'chunkIndex': 1,
+        'text': 'Done',
+        'audioPath': audio.path,
+        'startTime': 0,
+        'endTime': 1,
+        'isTranscribed': 1,
+        'syncStatus': SyncStatus.pending.key,
+      });
+
+      // Server applies the chunk (client_local_id == chunk id).
+      httpClient.pushResult = const SyncHttpResult(
+        statusCode: 200,
+        body:
+            '{"data":{"applied":{"transcript_chunks":[{"client_local_id":'
+            '"chunk-fresh","remote_id":"remote-chunk","updated_at":'
+            '"2026-05-17T12:00:00Z"}]},"conflicts":[]}}',
+      );
+
+      await service.runManualSync();
+
+      final row = (await db.query(
+        'transcript_chunks',
+        where: 'id = ?',
+        whereArgs: ['chunk-fresh'],
+      )).first;
+      expect(row['syncStatus'], SyncStatus.synced.key);
+      expect(row['audioPath'], isNull, reason: 'audio evicted same cycle');
+      expect(row['text'], 'Done', reason: 'text kept as offline cache');
+      expect(audio.existsSync(), isFalse, reason: 'file deleted from disk');
+    },
+  );
+
   test('connectivity restored triggers automatic sync', () async {
     await service.dispose();
     await connectivity.dispose();
