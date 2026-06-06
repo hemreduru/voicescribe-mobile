@@ -62,12 +62,17 @@ class TranscriptApiClient {
           .openUrl(method, uri)
           .timeout(const Duration(seconds: 10));
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
-      request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      request.headers.set(
+        HttpHeaders.contentTypeHeader,
+        'application/json; charset=utf-8',
+      );
       if (token != null && token.isNotEmpty) {
         request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
       }
       if (payload != null) {
-        request.write(jsonEncode(payload));
+        // UTF-8 bytes, not request.write (which defaults to latin1 here and
+        // throws on Turkish text like 'ı'/'İ').
+        request.add(utf8.encode(jsonEncode(payload)));
       }
 
       final response = await request.close().timeout(
