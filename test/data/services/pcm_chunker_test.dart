@@ -56,7 +56,6 @@ void main() {
     final chunker = PcmChunker(
       sampleRate: 10,
       maxDuration: const Duration(seconds: 2),
-      overlapDuration: const Duration(seconds: 1),
       minDuration: const Duration(milliseconds: 500),
       silenceDuration: const Duration(seconds: 5),
     );
@@ -74,7 +73,6 @@ void main() {
     final chunker = PcmChunker(
       sampleRate: 10,
       maxDuration: const Duration(seconds: 2),
-      overlapDuration: const Duration(seconds: 1),
       minDuration: const Duration(milliseconds: 500),
       silenceDuration: const Duration(seconds: 5),
     );
@@ -106,12 +104,8 @@ void main() {
     'sample-level silence tracking does not reset on single loud sample in batch',
     () {
       final chunker = PcmChunker(
-        sampleRate: 16000,
         maxDuration: const Duration(seconds: 30),
         overlapDuration: Duration.zero,
-        minDuration: const Duration(seconds: 2),
-        silenceDuration: const Duration(milliseconds: 1500),
-        silenceThreshold: 0.035,
       );
 
       final loudBatch = _pcm(samples: 3200, value: 12000);
@@ -126,7 +120,6 @@ void main() {
     final chunker = PcmChunker(
       sampleRate: 10,
       maxDuration: const Duration(seconds: 2),
-      overlapDuration: const Duration(seconds: 1),
       minDuration: const Duration(milliseconds: 500),
       silenceDuration: const Duration(seconds: 5),
     );

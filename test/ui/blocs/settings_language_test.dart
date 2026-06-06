@@ -70,7 +70,6 @@ void main() {
             recordedAt: now,
             createdAt: now,
             updatedAt: now,
-            syncStatus: SyncStatus.pending,
           ),
           Transcript(
             id: 'b',
