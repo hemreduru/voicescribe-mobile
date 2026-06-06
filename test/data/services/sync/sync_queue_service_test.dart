@@ -127,6 +127,113 @@ void main() {
     expect(rows.first['syncError'], 'conflict_detected');
   });
 
+  // ---------------------------------------------------------------------------
+  // Interruption / network-loss resilience (#3): a sync cut short by a dropped
+  // connection or a killed app must never lose data or wedge rows in `syncing`
+  // — they have to end up retryable and converge once connectivity returns.
+  // ---------------------------------------------------------------------------
+
+  String appliedBody(String clientLocalId, String remoteId) =>
+      '{"data":{"applied":{"transcripts":[{"client_local_id":"$clientLocalId",'
+      '"remote_id":"$remoteId","updated_at":"2026-05-17T12:00:00Z"}]},'
+      '"conflicts":[]}}';
+
+  test(
+    'a dropped connection mid-push leaves the row failed (retryable), not stuck syncing',
+    () async {
+      await db.insert('transcripts', {
+        'id': 'local-net',
+        'localId': 'local-net',
+        'title': 'Draft',
+        'durationSeconds': 10,
+        'statusKey': TranscriptStatus.completed.key,
+        'createdAt': '2026-05-17T10:00:00Z',
+        'updatedAt': '2026-05-17T10:00:00Z',
+        'syncStatus': SyncStatus.pending.key,
+      });
+
+      // Connection drops the moment we POST the push. runManualSync surfaces
+      // the error, but the row must still be left in a safe, retryable state.
+      httpClient.throwOnPushOnce = const SocketException('connection reset');
+      await expectLater(
+        service.runManualSync(),
+        throwsA(isA<SocketException>()),
+      );
+
+      final rows = await db.query(
+        'transcripts',
+        where: 'id = ?',
+        whereArgs: ['local-net'],
+      );
+      expect(rows.first['syncStatus'], SyncStatus.failed.key);
+      // The row is still here (no data loss) and will be re-pushed next cycle.
+      expect(rows.first['remoteId'], isNull);
+    },
+  );
+
+  test(
+    'a row left in syncing by an interrupted run is recovered and re-pushed to synced',
+    () async {
+      // Simulates the app being killed after marking the row syncing but before
+      // the synced write landed.
+      await db.insert('transcripts', {
+        'id': 'local-stuck',
+        'localId': 'local-stuck',
+        'title': 'Interrupted',
+        'durationSeconds': 10,
+        'statusKey': TranscriptStatus.completed.key,
+        'createdAt': '2026-05-17T10:00:00Z',
+        'updatedAt': '2026-05-17T10:00:00Z',
+        'syncStatus': SyncStatus.syncing.key,
+      });
+
+      httpClient.pushResult = SyncHttpResult(
+        statusCode: 200,
+        body: appliedBody('local-stuck', 'remote-stuck'),
+      );
+
+      await service.runManualSync();
+
+      final rows = await db.query(
+        'transcripts',
+        where: 'id = ?',
+        whereArgs: ['local-stuck'],
+      );
+      expect(rows.first['syncStatus'], SyncStatus.synced.key);
+      expect(rows.first['remoteId'], 'remote-stuck');
+    },
+  );
+
+  test('a previously failed row is retried on the next sync and converges', () async {
+    await db.insert('transcripts', {
+      'id': 'local-failed',
+      'localId': 'local-failed',
+      'title': 'Retry me',
+      'durationSeconds': 10,
+      'statusKey': TranscriptStatus.completed.key,
+      'createdAt': '2026-05-17T10:00:00Z',
+      'updatedAt': '2026-05-17T10:00:00Z',
+      'syncStatus': SyncStatus.failed.key,
+      'syncError': 'previous network error',
+    });
+
+    httpClient.pushResult = SyncHttpResult(
+      statusCode: 200,
+      body: appliedBody('local-failed', 'remote-failed'),
+    );
+
+    await service.runManualSync();
+
+    final rows = await db.query(
+      'transcripts',
+      where: 'id = ?',
+      whereArgs: ['local-failed'],
+    );
+    expect(rows.first['syncStatus'], SyncStatus.synced.key);
+    expect(rows.first['remoteId'], 'remote-failed');
+    expect(rows.first['syncError'], isNull);
+  });
+
   test(
     'ttl cleanup removes only soft-deleted expired synced rows; active synced rows are preserved as cache',
     () async {
@@ -382,6 +489,9 @@ class FakeSyncHttpClient extends SyncHttpClient {
   SyncHttpResult pullResult;
   int pushCalls = 0;
   int pullCalls = 0;
+  // When set, the next push throws this (simulating a dropped connection
+  // mid-sync) and then clears, so a retry can succeed.
+  Exception? throwOnPushOnce;
 
   @override
   Future<SyncHttpResult> postJson({
@@ -391,6 +501,11 @@ class FakeSyncHttpClient extends SyncHttpClient {
   }) async {
     if (url.endsWith('/api/v1/sync/push')) {
       pushCalls += 1;
+      final error = throwOnPushOnce;
+      if (error != null) {
+        throwOnPushOnce = null;
+        throw error;
+      }
       return pushResult;
     }
     if (url.endsWith('/api/v1/sync/pull')) {
