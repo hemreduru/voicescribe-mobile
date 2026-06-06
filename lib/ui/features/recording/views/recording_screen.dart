@@ -10,6 +10,7 @@ import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
+import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/ambient_backdrop.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
@@ -125,9 +126,12 @@ class _RecordingScreenState extends State<RecordingScreen> {
                         AppButton(
                           label: l10n.stop,
                           icon: Icons.stop,
-                          onPressed: () => context.read<RecordingBloc>().add(
-                            const RecordingStopped(),
-                          ),
+                          onPressed: () {
+                            AppHaptics.warning();
+                            context.read<RecordingBloc>().add(
+                              const RecordingStopped(),
+                            );
+                          },
                           variant: AppButtonVariant.outline,
                         ),
                       ],
