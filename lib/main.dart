@@ -96,6 +96,11 @@ class VoiceScribeRoot extends StatelessWidget {
             )..add(const AuthStarted()),
           ),
           BlocProvider<RecordingBloc>(
+            // Eager (not lazy): the subscription handler also recovers chunks
+            // left un-transcribed by a force-kill mid-transcription, so it must
+            // run at app launch regardless of which tab the user lands on — not
+            // only when the recording screen is first built.
+            lazy: false,
             create: (context) => RecordingBloc(
               transcriptRepository: context.read<TranscriptRepository>(),
               recordingService: context.read<RecordingService>(),
