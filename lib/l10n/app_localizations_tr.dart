@@ -111,6 +111,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settings => 'Ayarlar';
 
   @override
+  String get openSettings => 'Ayarları aç';
+
+  @override
   String get account => 'Hesap';
 
   @override

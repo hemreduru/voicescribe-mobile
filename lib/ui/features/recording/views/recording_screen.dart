@@ -33,6 +33,28 @@ class _RecordingScreenState extends State<RecordingScreen> {
   String? _boundTranscriptId;
 
   @override
+  void initState() {
+    super.initState();
+    // Ask for the permissions the app needs up front, on first entry to the
+    // home screen, so the first tap on record never collides with an in-flight
+    // permission dialog. Requests run sequentially (Android refuses concurrent
+    // permission requests) and are no-ops when already granted.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_requestStartupPermissions());
+    });
+  }
+
+  Future<void> _requestStartupPermissions() async {
+    try {
+      await Permission.microphone.request();
+      await Permission.notification.request();
+    } catch (_) {
+      // Platform channel may be unavailable (e.g. in tests); recording still
+      // requests the microphone again on demand.
+    }
+  }
+
+  @override
   void dispose() {
     _titleController.dispose();
     super.dispose();
@@ -138,8 +160,18 @@ class _RecordingScreenState extends State<RecordingScreen> {
                     ),
                     if (!state.isPaused) ...[
                       const SizedBox(height: AppSpacing.xl),
+                      // Rebuild only the visualizer on audio-level changes
+                      // (~8/sec) instead of waiting for the once-per-second
+                      // duration tick, so the waveform stays fluid. The parent
+                      // buildWhen intentionally omits audioLevel to avoid
+                      // rebuilding the whole screen.
                       RepaintBoundary(
-                        child: AudioVisualizer(level: state.audioLevel),
+                        child:
+                            BlocSelector<RecordingBloc, RecordingState, double>(
+                              selector: (state) => state.audioLevel,
+                              builder: (context, level) =>
+                                  AudioVisualizer(level: level),
+                            ),
                       ),
                     ],
                   ],
@@ -185,23 +217,64 @@ class _RecordingScreenState extends State<RecordingScreen> {
     );
   }
 
-  void _toggleRecording(BuildContext context, RecordingState state) {
+  Future<void> _toggleRecording(
+    BuildContext context,
+    RecordingState state,
+  ) async {
     final bloc = context.read<RecordingBloc>();
     // Tactile confirmation is owned by PulseRecordButton (medium on start,
     // warning on stop) so it isn't fired twice here.
     if (state.isRecording) {
       bloc.add(const RecordingStopped());
-    } else {
-      // Ask for notification permission (Android 13+) so the foreground-service
-      // notification is actually visible; recording still starts regardless.
-      unawaited(Permission.notification.request());
-      // Localize the foreground-service notification before recording starts.
-      context.read<RecordingService>().setForegroundNotification(
-        title: context.l10n.appName,
-        content: context.l10n.recordingNotificationContent,
-      );
-      bloc.add(RecordingStarted(_titleController.text));
+      return;
     }
+
+    // Request the microphone first and await it, so it never collides with the
+    // notification request (Android refuses concurrent permission dialogs).
+    final mic = await Permission.microphone.request();
+    if (!mic.isGranted) {
+      if (context.mounted) {
+        _showMicPermissionDenied(
+          context,
+          permanentlyDenied: mic.isPermanentlyDenied,
+        );
+      }
+      return;
+    }
+
+    if (!context.mounted) {
+      return;
+    }
+    // Notification permission (Android 13+) makes the foreground-service
+    // notification visible; recording proceeds regardless of the outcome.
+    await Permission.notification.request();
+    if (!context.mounted) {
+      return;
+    }
+    // Localize the foreground-service notification before recording starts.
+    context.read<RecordingService>().setForegroundNotification(
+      title: context.l10n.appName,
+      content: context.l10n.recordingNotificationContent,
+    );
+    bloc.add(RecordingStarted(_titleController.text));
+  }
+
+  void _showMicPermissionDenied(
+    BuildContext context, {
+    required bool permanentlyDenied,
+  }) {
+    final l10n = context.l10n;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.permissionDenied),
+        action: permanentlyDenied
+            ? SnackBarAction(
+                label: l10n.openSettings,
+                onPressed: openAppSettings,
+              )
+            : null,
+      ),
+    );
   }
 
   void _syncTitleController(Transcript? transcript) {

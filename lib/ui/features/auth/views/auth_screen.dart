@@ -70,14 +70,21 @@ class _AuthScreenState extends State<AuthScreen>
                         AppSpacing.lg,
                         AppSpacing.md,
                       ),
-                      child: AppSurface(
-                        padding: const EdgeInsets.all(4),
-                        child: TabBar(
-                          controller: _tabController,
-                          tabs: [
-                            Tab(text: l10n.login),
-                            Tab(text: l10n.register),
-                          ],
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: AppLayout.maxFormWidth,
+                          ),
+                          child: AppSurface(
+                            padding: const EdgeInsets.all(4),
+                            child: TabBar(
+                              controller: _tabController,
+                              tabs: [
+                                Tab(text: l10n.login),
+                                Tab(text: l10n.register),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -159,46 +166,54 @@ class _AuthForm extends StatelessWidget {
     return AppPageListView(
       padding: const EdgeInsets.only(top: AppSpacing.md),
       children: [
-        AppSectionCard(
-          title: buttonLabel,
-          subtitle: l10n.authTitle,
-          children: [
-            AppTextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              labelText: l10n.email,
-              prefixIcon: Icons.alternate_email,
+        // Keep the form a comfortable reading width and centered on tablets
+        // instead of stretching edge to edge.
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppLayout.maxFormWidth),
+            child: AppSectionCard(
+              title: buttonLabel,
+              subtitle: l10n.authTitle,
+              children: [
+                AppTextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  labelText: l10n.email,
+                  prefixIcon: Icons.alternate_email,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (showPassword) ...[
+                  AppTextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) {
+                      if (!submitting) {
+                        onSubmit();
+                      }
+                    },
+                    labelText: l10n.password,
+                    prefixIcon: Icons.lock_outline,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
+                if (!showPassword) const SizedBox(height: AppSpacing.xl),
+                AppButton(
+                  label: buttonLabel,
+                  icon: Icons.login,
+                  onPressed: onSubmit,
+                  isLoading: submitting,
+                  expanded: true,
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  AppErrorText(message: error!),
+                ],
+              ],
             ),
-            const SizedBox(height: AppSpacing.md),
-            if (showPassword) ...[
-              AppTextField(
-                controller: passwordController,
-                obscureText: true,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) {
-                  if (!submitting) {
-                    onSubmit();
-                  }
-                },
-                labelText: l10n.password,
-                prefixIcon: Icons.lock_outline,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-            if (!showPassword) const SizedBox(height: AppSpacing.xl),
-            AppButton(
-              label: buttonLabel,
-              icon: Icons.login,
-              onPressed: onSubmit,
-              isLoading: submitting,
-              expanded: true,
-            ),
-            if (error != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              AppErrorText(message: error!),
-            ],
-          ],
+          ),
         ),
       ],
     );

@@ -358,6 +358,27 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     }
 
     final transcript = _newSession(event.title, userId: session?.userId);
+
+    // Start the recorder first. Only surface the recording UI once capture has
+    // actually begun, so a denied microphone permission never flashes a fake
+    // "recording" state with a counting timer.
+    try {
+      await _recordingService.start();
+    } catch (error, stackTrace) {
+      AppLogger.error(
+        '[Recording] Failed to start session | id=${transcript.id}',
+        error,
+        stackTrace,
+      );
+      emit(
+        state.copyWith(
+          userMessage: _userMessageFor(error),
+          errorMessage: error.toString(),
+        ),
+      );
+      return;
+    }
+
     emit(
       state.copyWith(
         transcripts: [transcript, ...state.transcripts],
@@ -373,37 +394,9 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
         userMessage: null,
       ),
     );
-
-    try {
-      await _recordingService.start();
-      _startTimer();
-      await _enqueueSave(
-        () => _transcriptRepository.saveTranscript(transcript),
-      );
-      AppLogger.info('[Recording] Session started | id=${transcript.id}');
-    } catch (error, stackTrace) {
-      AppLogger.error(
-        '[Recording] Failed to start session | id=${transcript.id}',
-        error,
-        stackTrace,
-      );
-      emit(
-        state.copyWith(
-          transcripts: state.transcripts
-              .where((item) => item.id != transcript.id)
-              .toList(),
-          currentTranscript: null,
-          currentChunks: const [],
-          isRecording: false,
-          isPaused: false,
-          durationSeconds: 0,
-          chunkCount: 0,
-          audioLevel: 0,
-          userMessage: _userMessageFor(error),
-          errorMessage: error.toString(),
-        ),
-      );
-    }
+    _startTimer();
+    await _enqueueSave(() => _transcriptRepository.saveTranscript(transcript));
+    AppLogger.info('[Recording] Session started | id=${transcript.id}');
   }
 
   Future<void> _onStopped(
