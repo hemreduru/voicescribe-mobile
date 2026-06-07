@@ -7,6 +7,7 @@ import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/models/meeting_summary.dart';
 import 'package:voicescribe_mobile/domain/services/meeting_minutes_prompt.dart';
+import 'package:voicescribe_mobile/domain/utils/locale_utils.dart';
 
 /// Cap on transcript characters fed to the small local model so the request
 /// stays within its modest context window (Qwen2.5 0.5B ≈ 1280 tokens). Longer
@@ -61,7 +62,10 @@ class LocalLlmSummaryService implements SummaryService {
     final stopwatch = Stopwatch()..start();
     await _modelService.ensureReady();
 
-    final prompt = MeetingMinutesPrompt.system(length: length);
+    final prompt = MeetingMinutesPrompt.system(
+      length: length,
+      locale: deviceLanguageCode(),
+    );
     final boundedInput = input.length > _localInputCharBudget
         ? input.substring(0, _localInputCharBudget)
         : input;

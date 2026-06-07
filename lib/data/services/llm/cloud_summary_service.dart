@@ -2,6 +2,7 @@ import 'package:uuid/uuid.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/transcript_api_client.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
+import 'package:voicescribe_mobile/domain/utils/locale_utils.dart';
 
 /// Thrown when a cloud summary cannot be produced (offline, not synced, auth, or
 /// a backend error). The UI surfaces [message] to the user.
@@ -66,6 +67,9 @@ class CloudSummaryService implements SummaryService {
         'transcript_text': transcriptText,
         'length': length,
         'client_local_id': localId,
+        // Phone language → summary is written in this language regardless of the
+        // transcript's language.
+        'locale': deviceLanguageCode(),
         // `provider` intentionally omitted → backend uses its configured default.
       },
       token: token,

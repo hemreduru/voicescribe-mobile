@@ -347,7 +347,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu sefer okunabilir bir özet üretilemedi. Tekrar denemek için Özet Oluştur\'a dokun veya Ayarlar\'dan Bulut\'a geç.';
 
   @override
-  String get summaryExecutiveSummary => 'Yönetici Özeti';
+  String get summaryExecutiveSummary => 'Özet';
 
   @override
   String get summaryAgenda => 'Gündem';

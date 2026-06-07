@@ -122,12 +122,6 @@ class MeetingSummaryView extends StatelessWidget {
           label: meta.location!,
           compact: true,
         ),
-      if ((meta.recorder ?? '').isNotEmpty)
-        StatusPill(
-          icon: Icons.edit_note,
-          label: '${l10n.summaryRecorder}: ${meta.recorder!}',
-          compact: true,
-        ),
     ];
 
     return AppCard(

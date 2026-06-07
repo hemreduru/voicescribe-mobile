@@ -126,7 +126,7 @@
   "summaryPlaceholder": "No summary yet. Tap Generate to create structured meeting minutes from this transcript.",
   "noSummaryYet": "No summary generated yet.",
   "summaryUnavailable": "Couldn't produce a readable summary this time. Tap Generate to try again, or switch to Cloud in Settings.",
-  "summaryExecutiveSummary": "Executive Summary",
+  "summaryExecutiveSummary": "Summary",
   "summaryAgenda": "Agenda",
   "summaryDecisions": "Decisions",
   "summaryActionItems": "Action Items",

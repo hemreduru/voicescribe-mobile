@@ -347,7 +347,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t produce a readable summary this time. Tap Generate to try again, or switch to Cloud in Settings.';
 
   @override
-  String get summaryExecutiveSummary => 'Executive Summary';
+  String get summaryExecutiveSummary => 'Summary';
 
   @override
   String get summaryAgenda => 'Agenda';
