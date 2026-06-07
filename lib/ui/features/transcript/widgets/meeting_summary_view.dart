@@ -23,7 +23,9 @@ class MeetingSummaryView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final isCloud = providerKey == 'cloud';
+    // Only 'local' is on-device; treat any other key (cloud, or a raw backend
+    // provider like gemini/openai that slipped through) as cloud.
+    final isCloud = providerKey != 'local';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
