@@ -8,6 +8,7 @@ import 'package:voicescribe_mobile/data/repositories/sqflite_transcript_reposito
 import 'package:voicescribe_mobile/data/repositories/voice_scribe_auth_repository.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/background_work_service.dart';
+import 'package:voicescribe_mobile/data/services/chat/local_chat_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/cloud_summary_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/local_llm_summary_service.dart';
@@ -107,6 +108,12 @@ class VoiceScribeRoot extends StatelessWidget {
             apiClient: const TranscriptApiClient(),
             tokenProvider: () =>
                 context.read<AuthRepository>().currentSession()?.accessToken,
+          ),
+        ),
+        RepositoryProvider<LocalChatService>(
+          create: (context) => LocalChatService(
+            repository: context.read<TranscriptRepository>(),
+            modelService: context.read<LocalLlmModelService>(),
           ),
         ),
         RepositoryProvider<SyncQueueService>(

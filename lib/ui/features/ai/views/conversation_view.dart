@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:voicescribe_mobile/data/repositories/chat_repository.dart';
+import 'package:voicescribe_mobile/data/services/chat/local_chat_service.dart';
 import 'package:voicescribe_mobile/domain/models/chat.dart';
+import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/design_system.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_text_field.dart';
@@ -28,7 +30,11 @@ class ConversationView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<ChatCubit>(
       create: (ctx) {
-        final cubit = ChatCubit(ctx.read<ChatRepository>());
+        final cubit = ChatCubit(
+          ctx.read<ChatRepository>(),
+          localChat: ctx.read<LocalChatService>(),
+          transcriptRepository: ctx.read<TranscriptRepository>(),
+        );
         if (sessionId != null) {
           cubit.openExisting(sessionId!);
         }
