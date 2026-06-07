@@ -729,7 +729,7 @@ abstract class AppLocalizations {
   /// No description provided for @summaryExecutiveSummary.
   ///
   /// In en, this message translates to:
-  /// **'Executive Summary'**
+  /// **'Summary'**
   String get summaryExecutiveSummary;
 
   /// No description provided for @summaryAgenda.

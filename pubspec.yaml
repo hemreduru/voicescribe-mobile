@@ -96,6 +96,9 @@ flutter:
   # transcription (the emulator does not forward host mic audio).
   assets:
     - test_assets/turkish16k.wav
+    # Meeting-transcript corpus for the on-device summary stress test
+    # (integration_test/local_summary_corpus_test.dart).
+    - test_assets/corpus/
     # Bundled Plus Jakarta Sans (OFL) so google_fonts loads it locally instead
     # of fetching at runtime — offline-capable, no FOUT, and deterministic in
     # widget tests.

@@ -88,6 +88,29 @@ void main() {
       expect(summary.decisions, ['Tek karar metni.']);
     });
 
+    test('renders object items in string lists without raw map braces', () {
+      // Small local models sometimes emit action-item objects inside the
+      // decisions array; surface a meaningful field, never "{owner: ...}".
+      final summary = MeetingSummary.tryParse(
+        jsonEncode({
+          'title': 'Vizit',
+          'decisions': [
+            {
+              'owner': 'Doktor',
+              'task': 'Ameliyat planını değiştir',
+              'due_date': 'Salı',
+            },
+            'Düz karar',
+          ],
+        }),
+      );
+      expect(summary, isNotNull);
+      expect(summary!.decisions, ['Ameliyat planını değiştir', 'Düz karar']);
+      for (final d in summary.decisions) {
+        expect(d.contains('{'), isFalse, reason: 'no raw map braces: $d');
+      }
+    });
+
     test('extracts JSON despite trailing model garbage (repetition loop)', () {
       final raw =
           '${jsonEncode({'title': 'Toplantı', 'decisions': <Object?>['Karar']})}'

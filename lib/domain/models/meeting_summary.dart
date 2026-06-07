@@ -22,12 +22,54 @@ class _FlexibleStringList implements JsonConverter<List<String>, Object?> {
     }
     if (json is List) {
       return json
-          .where((item) => item != null)
-          .map((item) => item.toString().trim())
+          .map(_stringifyItem)
+          .whereType<String>()
           .where((item) => item.isNotEmpty)
           .toList();
     }
     return const [];
+  }
+
+  /// Renders a list item as readable text. Small models sometimes emit objects
+  /// (e.g. `{owner, task, due_date}`) inside string arrays; surface a meaningful
+  /// field instead of dumping a raw `{...}` map to the user.
+  static String? _stringifyItem(Object? item) {
+    if (item == null) return null;
+    if (item is String) {
+      final t = item.trim();
+      return t.isEmpty ? null : t;
+    }
+    if (item is num || item is bool) return item.toString();
+    if (item is Map) {
+      for (final key in const [
+        'task',
+        'text',
+        'title',
+        'decision',
+        'description',
+        'name',
+        'question',
+        'item',
+        'value',
+      ]) {
+        final value = item[key];
+        if (value is String && value.trim().isNotEmpty) {
+          return value.trim();
+        }
+      }
+      final parts = item.values
+          .where((v) => v != null && v is! Map && v is! List)
+          .map((v) => v.toString().trim())
+          .where((v) => v.isNotEmpty);
+      final joined = parts.join(' — ');
+      return joined.isEmpty ? null : joined;
+    }
+    if (item is List) {
+      final joined = item.map(_stringifyItem).whereType<String>().join(', ');
+      return joined.isEmpty ? null : joined;
+    }
+    final s = item.toString().trim();
+    return s.isEmpty ? null : s;
   }
 
   @override
