@@ -18,6 +18,60 @@ class AppLocalizationsTr extends AppLocalizations {
   String get transcript => 'Transkript';
 
   @override
+  String get ai => 'AI';
+
+  @override
+  String get aiTitle => 'AI Asistan';
+
+  @override
+  String get aiSubtitle => 'Kendi kayıtların hakkında soru sor';
+
+  @override
+  String get chatNewChat => 'Yeni sohbet';
+
+  @override
+  String get chatSources => 'Kaynaklar';
+
+  @override
+  String get chatThinking => 'Düşünüyor…';
+
+  @override
+  String get chatInputHint => 'Kayıtların hakkında sor…';
+
+  @override
+  String get chatSend => 'Gönder';
+
+  @override
+  String get chatEmptyTitle => 'Kayıtlarınla sohbet et';
+
+  @override
+  String get chatEmptyMessage =>
+      'Transkriptlerin hakkında her şeyi sorabilirsin. Yanıtlar, alındıkları kaydı kaynak gösterir.';
+
+  @override
+  String get chatNoSessionsTitle => 'Henüz sohbet yok';
+
+  @override
+  String get chatNoSessionsMessage =>
+      'Tüm kayıtların arasında soru sormak için yeni bir sohbet başlat.';
+
+  @override
+  String get chatSelectOrNew => 'Bir sohbet seç ya da yeni bir sohbet başlat.';
+
+  @override
+  String get chatDeleteTitle => 'Sohbeti sil';
+
+  @override
+  String get chatDeleteConfirm => 'Bu sohbet kalıcı olarak silinecek.';
+
+  @override
+  String get chatUntitled => 'Yeni sohbet';
+
+  @override
+  String get refreshFailed =>
+      'Yenilenemedi. Bağlantını kontrol edip tekrar dene.';
+
+  @override
   String get summary => 'Özet';
 
   @override
@@ -283,10 +337,69 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get summaryPlaceholder =>
-      'Özetleme motoru Flutter iskeletinde hazır. Yerel LLM veya bulut sağlayıcı bağlandığında burada sonuç üretilecek.';
+      'Henüz özet yok. Bu transkriptten yapılandırılmış toplantı notları oluşturmak için Özet Oluştur\'a dokun.';
 
   @override
   String get noSummaryYet => 'Üretilmiş özet henüz yok.';
+
+  @override
+  String get summaryUnavailable =>
+      'Bu sefer okunabilir bir özet üretilemedi. Tekrar denemek için Özet Oluştur\'a dokun veya Ayarlar\'dan Bulut\'a geç.';
+
+  @override
+  String get summaryExecutiveSummary => 'Yönetici Özeti';
+
+  @override
+  String get summaryAgenda => 'Gündem';
+
+  @override
+  String get summaryDecisions => 'Kararlar';
+
+  @override
+  String get summaryActionItems => 'Aksiyon Maddeleri';
+
+  @override
+  String get summaryOpenQuestions => 'Açık Konular';
+
+  @override
+  String get summaryNotes => 'Notlar';
+
+  @override
+  String get summaryAttendees => 'Katılımcılar';
+
+  @override
+  String get summaryAbsentees => 'Gelmeyenler';
+
+  @override
+  String get summaryRecorder => 'Tutanağı Yazan';
+
+  @override
+  String get summaryNextMeeting => 'Sonraki Toplantı';
+
+  @override
+  String get summaryProviderLocalLabel => 'Cihazda';
+
+  @override
+  String get summaryProviderCloudLabel => 'Bulut';
+
+  @override
+  String get summaryUnassigned => 'Atanmadı';
+
+  @override
+  String get localSummaryModel => 'Cihaz içi özet modeli';
+
+  @override
+  String get localSummaryModelDownload => 'İndir';
+
+  @override
+  String get localSummaryModelReady => 'İndirildi';
+
+  @override
+  String get localSummaryModelDownloading => 'İndiriliyor…';
+
+  @override
+  String get localSummaryModelUnsupported =>
+      'Cihaz içi özet için daha güçlü bir cihaz gerekir. Bunun yerine Bulut\'u kullanın.';
 
   @override
   String get chunks => 'Parçalar';

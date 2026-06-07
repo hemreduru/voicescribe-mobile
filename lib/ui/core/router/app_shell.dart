@@ -140,6 +140,11 @@ class _AppShellState extends State<AppShell> {
         label: l10n.transcript,
       ),
       AppNavigationDestination(
+        icon: Icons.auto_awesome_outlined,
+        selectedIcon: Icons.auto_awesome,
+        label: l10n.ai,
+      ),
+      AppNavigationDestination(
         icon: Icons.settings_outlined,
         selectedIcon: Icons.settings,
         label: l10n.settings,

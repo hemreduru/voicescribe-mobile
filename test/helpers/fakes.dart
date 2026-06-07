@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
+import 'package:voicescribe_mobile/data/services/transcript_api_client.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
@@ -310,6 +312,44 @@ class FakeTranscriptionService implements TranscriptionService {
   Future<void> dispose() async {
     await _progress.close();
   }
+}
+
+class FakeLocalLlmModelService extends LocalLlmModelService {
+  FakeLocalLlmModelService({this.supported = true, this.downloaded = false})
+    : super(
+        transcriptionService: FakeTranscriptionService(),
+        apiClient: const TranscriptApiClient(),
+        tokenProvider: _noToken,
+      );
+
+  static String? _noToken() => null;
+
+  final bool supported;
+  bool downloaded;
+
+  @override
+  Future<bool> isSupported() async => supported;
+
+  @override
+  Future<bool> isDownloaded() async => downloaded;
+
+  @override
+  Future<LocalLlmModelCatalogEntry> catalogEntry() async {
+    return LocalLlmModelCatalogEntry(
+      label: modelLabel,
+      totalBytes: 555 * 1024 * 1024,
+      isDownloaded: downloaded,
+      isSupported: supported,
+    );
+  }
+
+  @override
+  Future<void> ensureReady() async {
+    downloaded = true;
+  }
+
+  @override
+  Future<void> download() => ensureReady();
 }
 
 class FakeSyncQueueService extends SyncQueueService {

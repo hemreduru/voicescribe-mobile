@@ -18,6 +18,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transcript => 'Transcript';
 
   @override
+  String get ai => 'AI';
+
+  @override
+  String get aiTitle => 'AI Assistant';
+
+  @override
+  String get aiSubtitle => 'Ask questions about your own recordings';
+
+  @override
+  String get chatNewChat => 'New chat';
+
+  @override
+  String get chatSources => 'Sources';
+
+  @override
+  String get chatThinking => 'Thinking…';
+
+  @override
+  String get chatInputHint => 'Ask about your recordings…';
+
+  @override
+  String get chatSend => 'Send';
+
+  @override
+  String get chatEmptyTitle => 'Chat with your recordings';
+
+  @override
+  String get chatEmptyMessage =>
+      'Ask anything about your transcripts. Answers cite the recording they came from.';
+
+  @override
+  String get chatNoSessionsTitle => 'No conversations yet';
+
+  @override
+  String get chatNoSessionsMessage =>
+      'Start a new chat to ask questions across all your recordings.';
+
+  @override
+  String get chatSelectOrNew => 'Select a conversation or start a new chat.';
+
+  @override
+  String get chatDeleteTitle => 'Delete conversation';
+
+  @override
+  String get chatDeleteConfirm =>
+      'This conversation will be permanently deleted.';
+
+  @override
+  String get chatUntitled => 'New chat';
+
+  @override
+  String get refreshFailed =>
+      'Couldn\'t refresh. Check your connection and try again.';
+
+  @override
   String get summary => 'Summary';
 
   @override
@@ -282,10 +337,69 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get summaryPlaceholder =>
-      'Summary engine is ready in this Flutter baseline. Connect a local LLM or cloud provider to produce summaries here.';
+      'No summary yet. Tap Generate to create structured meeting minutes from this transcript.';
 
   @override
   String get noSummaryYet => 'No summary generated yet.';
+
+  @override
+  String get summaryUnavailable =>
+      'Couldn\'t produce a readable summary this time. Tap Generate to try again, or switch to Cloud in Settings.';
+
+  @override
+  String get summaryExecutiveSummary => 'Executive Summary';
+
+  @override
+  String get summaryAgenda => 'Agenda';
+
+  @override
+  String get summaryDecisions => 'Decisions';
+
+  @override
+  String get summaryActionItems => 'Action Items';
+
+  @override
+  String get summaryOpenQuestions => 'Open Questions';
+
+  @override
+  String get summaryNotes => 'Notes';
+
+  @override
+  String get summaryAttendees => 'Attendees';
+
+  @override
+  String get summaryAbsentees => 'Absentees';
+
+  @override
+  String get summaryRecorder => 'Recorder';
+
+  @override
+  String get summaryNextMeeting => 'Next Meeting';
+
+  @override
+  String get summaryProviderLocalLabel => 'On-device';
+
+  @override
+  String get summaryProviderCloudLabel => 'Cloud';
+
+  @override
+  String get summaryUnassigned => 'Unassigned';
+
+  @override
+  String get localSummaryModel => 'On-device summary model';
+
+  @override
+  String get localSummaryModelDownload => 'Download';
+
+  @override
+  String get localSummaryModelReady => 'Downloaded';
+
+  @override
+  String get localSummaryModelDownloading => 'Downloading…';
+
+  @override
+  String get localSummaryModelUnsupported =>
+      'On-device summary needs a more capable device. Use Cloud instead.';
 
   @override
   String get chunks => 'Chunks';

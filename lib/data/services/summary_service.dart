@@ -1,6 +1,12 @@
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 
+/// Marker for summary errors that carry a user-facing [message] (no class names
+/// or stack traces), so the UI can surface it directly.
+abstract interface class SummaryFailure {
+  String get message;
+}
+
 // Kept as an interface so app state can inject local/cloud summary engines.
 // ignore: one_member_abstracts
 abstract class SummaryService {

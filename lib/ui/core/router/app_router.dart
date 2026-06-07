@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:voicescribe_mobile/ui/core/router/app_shell.dart';
+import 'package:voicescribe_mobile/ui/features/ai/views/ai_screen.dart';
 import 'package:voicescribe_mobile/ui/features/auth/bloc/auth_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/auth/views/auth_screen.dart';
 import 'package:voicescribe_mobile/ui/features/bootstrap/bloc/bootstrap_bloc.dart';
@@ -74,6 +75,14 @@ GoRouter createAppRouter({
               GoRoute(
                 path: '/transcript',
                 builder: (context, state) => const TranscriptScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/ai',
+                builder: (context, state) => const AiScreen(),
               ),
             ],
           ),

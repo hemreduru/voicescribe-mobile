@@ -192,10 +192,14 @@ class TranscriptDetailBloc
         _syncQueueService.scheduleSync();
       }
     } catch (error) {
+      // Only ever surface a clean, user-facing message — never an exception
+      // class name or stack trace.
       emit(
         state.copyWith(
           generatingSummary: false,
-          errorMessage: error.toString(),
+          errorMessage: error is SummaryFailure
+              ? error.message
+              : 'Özet oluşturulamadı. Lütfen tekrar deneyin.',
         ),
       );
     }

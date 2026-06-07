@@ -21,6 +21,7 @@ void main() {
       authRepository: auth,
       syncQueueService: sync,
       transcriptionService: transcription,
+      localLlmModelService: FakeLocalLlmModelService(),
     );
   });
 
@@ -104,6 +105,7 @@ void main() {
       authRepository: auth,
       syncQueueService: sync,
       transcriptionService: transcription,
+      localLlmModelService: FakeLocalLlmModelService(),
     );
     addTearDown(() async {
       await scopedBloc.close();

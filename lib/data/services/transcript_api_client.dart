@@ -50,7 +50,11 @@ class TranscriptApiClient {
     required String path,
     Map<String, Object?>? payload,
     String? token,
+    Duration? readTimeout,
   }) async {
+    // LLM summarization can take much longer than CRUD calls, so callers may
+    // widen the read timeout; defaults stay at 20s for normal requests.
+    final responseTimeout = readTimeout ?? const Duration(seconds: 20);
     final uri = Uri.parse('${EnvConfig.apiBaseUrl}$path');
     final client = HttpClient()
       ..connectionTimeout = const Duration(seconds: 10);
@@ -74,13 +78,11 @@ class TranscriptApiClient {
         request.add(utf8.encode(jsonEncode(payload)));
       }
 
-      final response = await request.close().timeout(
-        const Duration(seconds: 20),
-      );
+      final response = await request.close().timeout(responseTimeout);
       final body = await utf8.decoder
           .bind(response)
           .join()
-          .timeout(const Duration(seconds: 20));
+          .timeout(responseTimeout);
 
       Map<String, Object?>? parsed;
       if (body.trim().isNotEmpty) {

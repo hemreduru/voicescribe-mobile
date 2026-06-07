@@ -116,6 +116,108 @@ abstract class AppLocalizations {
   /// **'Transcript'**
   String get transcript;
 
+  /// No description provided for @ai.
+  ///
+  /// In en, this message translates to:
+  /// **'AI'**
+  String get ai;
+
+  /// No description provided for @aiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Assistant'**
+  String get aiTitle;
+
+  /// No description provided for @aiSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask questions about your own recordings'**
+  String get aiSubtitle;
+
+  /// No description provided for @chatNewChat.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get chatNewChat;
+
+  /// No description provided for @chatSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get chatSources;
+
+  /// No description provided for @chatThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking…'**
+  String get chatThinking;
+
+  /// No description provided for @chatInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about your recordings…'**
+  String get chatInputHint;
+
+  /// No description provided for @chatSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get chatSend;
+
+  /// No description provided for @chatEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat with your recordings'**
+  String get chatEmptyTitle;
+
+  /// No description provided for @chatEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask anything about your transcripts. Answers cite the recording they came from.'**
+  String get chatEmptyMessage;
+
+  /// No description provided for @chatNoSessionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get chatNoSessionsTitle;
+
+  /// No description provided for @chatNoSessionsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new chat to ask questions across all your recordings.'**
+  String get chatNoSessionsMessage;
+
+  /// No description provided for @chatSelectOrNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a conversation or start a new chat.'**
+  String get chatSelectOrNew;
+
+  /// No description provided for @chatDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete conversation'**
+  String get chatDeleteTitle;
+
+  /// No description provided for @chatDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation will be permanently deleted.'**
+  String get chatDeleteConfirm;
+
+  /// No description provided for @chatUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get chatUntitled;
+
+  /// No description provided for @refreshFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh. Check your connection and try again.'**
+  String get refreshFailed;
+
   /// No description provided for @summary.
   ///
   /// In en, this message translates to:
@@ -609,7 +711,7 @@ abstract class AppLocalizations {
   /// No description provided for @summaryPlaceholder.
   ///
   /// In en, this message translates to:
-  /// **'Summary engine is ready in this Flutter baseline. Connect a local LLM or cloud provider to produce summaries here.'**
+  /// **'No summary yet. Tap Generate to create structured meeting minutes from this transcript.'**
   String get summaryPlaceholder;
 
   /// No description provided for @noSummaryYet.
@@ -617,6 +719,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No summary generated yet.'**
   String get noSummaryYet;
+
+  /// No description provided for @summaryUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t produce a readable summary this time. Tap Generate to try again, or switch to Cloud in Settings.'**
+  String get summaryUnavailable;
+
+  /// No description provided for @summaryExecutiveSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Executive Summary'**
+  String get summaryExecutiveSummary;
+
+  /// No description provided for @summaryAgenda.
+  ///
+  /// In en, this message translates to:
+  /// **'Agenda'**
+  String get summaryAgenda;
+
+  /// No description provided for @summaryDecisions.
+  ///
+  /// In en, this message translates to:
+  /// **'Decisions'**
+  String get summaryDecisions;
+
+  /// No description provided for @summaryActionItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Action Items'**
+  String get summaryActionItems;
+
+  /// No description provided for @summaryOpenQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Questions'**
+  String get summaryOpenQuestions;
+
+  /// No description provided for @summaryNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get summaryNotes;
+
+  /// No description provided for @summaryAttendees.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendees'**
+  String get summaryAttendees;
+
+  /// No description provided for @summaryAbsentees.
+  ///
+  /// In en, this message translates to:
+  /// **'Absentees'**
+  String get summaryAbsentees;
+
+  /// No description provided for @summaryRecorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorder'**
+  String get summaryRecorder;
+
+  /// No description provided for @summaryNextMeeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Meeting'**
+  String get summaryNextMeeting;
+
+  /// No description provided for @summaryProviderLocalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'On-device'**
+  String get summaryProviderLocalLabel;
+
+  /// No description provided for @summaryProviderCloudLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud'**
+  String get summaryProviderCloudLabel;
+
+  /// No description provided for @summaryUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get summaryUnassigned;
+
+  /// No description provided for @localSummaryModel.
+  ///
+  /// In en, this message translates to:
+  /// **'On-device summary model'**
+  String get localSummaryModel;
+
+  /// No description provided for @localSummaryModelDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get localSummaryModelDownload;
+
+  /// No description provided for @localSummaryModelReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded'**
+  String get localSummaryModelReady;
+
+  /// No description provided for @localSummaryModelDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading…'**
+  String get localSummaryModelDownloading;
+
+  /// No description provided for @localSummaryModelUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'On-device summary needs a more capable device. Use Cloud instead.'**
+  String get localSummaryModelUnsupported;
 
   /// No description provided for @chunks.
   ///

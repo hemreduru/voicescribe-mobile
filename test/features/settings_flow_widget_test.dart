@@ -124,7 +124,7 @@ void main() {
         .toList();
 
     expect(labels, isNotEmpty);
-    expect(labels, ['Recording', 'Transcript', 'Settings']);
+    expect(labels, ['Recording', 'Transcript', 'AI', 'Settings']);
     expect(labels.last, 'Settings');
 
     await tester.tap(find.text('Settings').last);
@@ -221,6 +221,7 @@ List<BlocProvider<dynamic>> _createBlocProviders(_Fakes fakes) {
         authRepository: fakes.auth,
         syncQueueService: fakes.sync,
         transcriptionService: fakes.transcription,
+        localLlmModelService: fakes.localLlm,
       )..add(const SettingsSubscriptionRequested()),
     ),
   ];
@@ -308,6 +309,7 @@ class _Fakes {
       recording = FakeRecordingService(),
       transcription = FakeTranscriptionService(),
       summary = const LocalSummaryService(),
+      localLlm = FakeLocalLlmModelService(),
       sync = FakeSyncQueueService();
 
   final FakeTranscriptRepository transcripts;
@@ -315,5 +317,6 @@ class _Fakes {
   final FakeRecordingService recording;
   final FakeTranscriptionService transcription;
   final LocalSummaryService summary;
+  final FakeLocalLlmModelService localLlm;
   final FakeSyncQueueService sync;
 }

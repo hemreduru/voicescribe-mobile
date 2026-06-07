@@ -118,6 +118,10 @@ class SettingsScreen extends StatelessWidget {
                         SettingsSummaryLengthChanged(value),
                       ),
                     ),
+                    if (preferences.summaryProvider == 'local') ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      _LocalSummaryModelRow(state: state),
+                    ],
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -464,4 +468,84 @@ class _TranscriptionModelSelector extends StatelessWidget {
     'small' => 'Small',
     _ => 'Base',
   };
+}
+
+class _LocalSummaryModelRow extends StatelessWidget {
+  const _LocalSummaryModelRow({required this.state});
+
+  final SettingsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final entry = state.localLlmEntry;
+
+    if (entry == null) {
+      return const SizedBox.shrink();
+    }
+
+    if (!entry.isSupported) {
+      return ActionRow(
+        icon: Icons.memory,
+        title: l10n.localSummaryModel,
+        subtitle: l10n.localSummaryModelUnsupported,
+        trailing: const SizedBox.shrink(),
+      );
+    }
+
+    final progress = state.localLlmDownloadProgress;
+    final Widget trailing;
+    if (state.localLlmDownloading) {
+      trailing = Text(
+        progress == null ? l10n.localSummaryModelDownloading : '${progress.round()}%',
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    } else if (entry.isDownloaded) {
+      trailing = StatusPill(
+        icon: Icons.check_circle,
+        label: l10n.localSummaryModelReady,
+        color: theme.colorScheme.tertiary,
+        compact: true,
+      );
+    } else {
+      trailing = AppButton(
+        label: l10n.localSummaryModelDownload,
+        icon: Icons.download_outlined,
+        variant: AppButtonVariant.outline,
+        onPressed: () => context.read<SettingsBloc>().add(
+          const SettingsLocalLlmDownloadRequested(),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ActionRow(
+          icon: Icons.memory,
+          title: '${l10n.localSummaryModel} · ${entry.label}',
+          subtitle: _formatSize(entry.totalBytes),
+          trailing: trailing,
+        ),
+        if (state.localLlmDownloading) ...[
+          const SizedBox(height: AppSpacing.sm),
+          LinearProgressIndicator(
+            value: progress == null ? null : (progress / 100).clamp(0.0, 1.0),
+          ),
+        ],
+        if (state.localLlmErrorMessage != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          AppErrorText(message: state.localLlmErrorMessage!),
+        ],
+      ],
+    );
+  }
+
+  String _formatSize(int bytes) {
+    final mb = bytes / (1024 * 1024);
+    return '${mb.toStringAsFixed(0)} MB';
+  }
 }

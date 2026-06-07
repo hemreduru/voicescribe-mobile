@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
+import 'package:voicescribe_mobile/domain/models/meeting_summary.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
@@ -23,6 +24,7 @@ import 'package:voicescribe_mobile/ui/core/widgets/premium_widgets.dart';
 import 'package:voicescribe_mobile/ui/features/recording/bloc/recording_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/transcript/bloc/transcript_detail_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/transcript/bloc/transcript_list_bloc.dart';
+import 'package:voicescribe_mobile/ui/features/transcript/widgets/meeting_summary_view.dart';
 
 class TranscriptScreen extends StatelessWidget {
   const TranscriptScreen({super.key});
@@ -352,11 +354,11 @@ Future<void> _refreshFromBackend(BuildContext context) async {
   );
   try {
     await completer.future;
-  } catch (error) {
+  } catch (_) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.refreshFailed)),
+      );
     }
   }
 }
@@ -940,7 +942,6 @@ class _SummaryTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -957,17 +958,56 @@ class _SummaryTab extends StatelessWidget {
           expanded: true,
         ),
         const SizedBox(height: AppSpacing.lg),
-        AppCard(
-          child: Text(
-            state.summary?.summaryText ?? l10n.summaryPlaceholder,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: state.summary == null
-                  ? theme.colorScheme.onSurfaceVariant
-                  : theme.colorScheme.onSurface,
-            ),
+        _summaryBody(context),
+      ],
+    );
+  }
+
+  Widget _summaryBody(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final summary = state.summary;
+
+    if (summary == null) {
+      return AppCard(
+        child: Text(
+          l10n.summaryPlaceholder,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-      ],
+      );
+    }
+
+    final structured = MeetingSummary.tryParse(summary.summaryText);
+    if (structured != null) {
+      return MeetingSummaryView(
+        summary: structured,
+        providerKey: summary.providerKey,
+      );
+    }
+
+    // A summary that was meant to be structured but didn't parse must NEVER be
+    // shown as raw JSON. Show a clean, actionable message instead.
+    if (MeetingSummary.looksLikeJson(summary.summaryText)) {
+      return AppCard(
+        child: Text(
+          l10n.summaryUnavailable,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    // Genuine legacy plain-text summaries render as text.
+    return AppCard(
+      child: Text(
+        summary.summaryText,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: theme.colorScheme.onSurface,
+        ),
+      ),
     );
   }
 }

@@ -3,12 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:voicescribe_mobile/data/repositories/chat_repository.dart';
 import 'package:voicescribe_mobile/data/repositories/sqflite_transcript_repository.dart';
 import 'package:voicescribe_mobile/data/repositories/voice_scribe_auth_repository.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/background_work_service.dart';
+import 'package:voicescribe_mobile/data/services/llm/cloud_summary_service.dart';
+import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
+import 'package:voicescribe_mobile/data/services/llm/local_llm_summary_service.dart';
+import 'package:voicescribe_mobile/data/services/summary/summary_service_router.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
+import 'package:voicescribe_mobile/data/services/transcript_api_client.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -73,8 +79,35 @@ class VoiceScribeRoot extends StatelessWidget {
           create: (_) => WhisperTranscriptionService(),
           dispose: (service) => service.dispose(),
         ),
+        RepositoryProvider<LocalLlmModelService>(
+          create: (context) => LocalLlmModelService(
+            transcriptionService: context.read<TranscriptionService>(),
+            apiClient: const TranscriptApiClient(),
+            tokenProvider: () =>
+                context.read<AuthRepository>().currentSession()?.accessToken,
+          ),
+          dispose: (service) => service.dispose(),
+        ),
+        // Routes summary generation to the on-device (local) or backend (cloud)
+        // engine based on the user's summaryProvider preference.
         RepositoryProvider<SummaryService>(
-          create: (_) => const LocalSummaryService(),
+          create: (context) => SummaryServiceRouter(
+            local: LocalLlmSummaryService(
+              modelService: context.read<LocalLlmModelService>(),
+            ),
+            cloud: CloudSummaryService(
+              apiClient: const TranscriptApiClient(),
+              tokenProvider: () =>
+                  context.read<AuthRepository>().currentSession()?.accessToken,
+            ),
+          ),
+        ),
+        RepositoryProvider<ChatRepository>(
+          create: (context) => ChatRepository(
+            apiClient: const TranscriptApiClient(),
+            tokenProvider: () =>
+                context.read<AuthRepository>().currentSession()?.accessToken,
+          ),
         ),
         RepositoryProvider<SyncQueueService>(
           create: (_) => SyncQueueService(),
@@ -126,6 +159,7 @@ class VoiceScribeRoot extends StatelessWidget {
               authRepository: context.read<AuthRepository>(),
               syncQueueService: context.read<SyncQueueService>(),
               transcriptionService: context.read<TranscriptionService>(),
+              localLlmModelService: context.read<LocalLlmModelService>(),
             )..add(const SettingsSubscriptionRequested()),
           ),
         ],
