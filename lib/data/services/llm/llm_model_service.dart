@@ -7,9 +7,9 @@ import 'package:voicescribe_mobile/data/services/whisper_service.dart'
 import 'package:voicescribe_mobile/ui/core/utils/env_config.dart';
 import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 
-/// Approximate on-disk size of Gemma 3 1B int4 (~529 MB) for progress/labels
-/// before the real size is known.
-const int _gemma1bFallbackBytes = 555 * 1024 * 1024;
+/// Approximate on-disk size of Gemma 3 1B int8 (~1.0 GB) shown for labels
+/// before the real size is fetched from the backend config.
+const int _gemma1bFallbackBytes = 1005 * 1024 * 1024;
 
 class LocalLlmModelCatalogEntry {
   const LocalLlmModelCatalogEntry({
@@ -95,6 +95,11 @@ class LocalLlmModelService {
     try {
       // isModelInstalled requires the plugin to be initialized first.
       await _ensureRuntime();
+      // Resolve the backend config first so the check uses the *currently
+      // configured* model filename, not the bundled fallback — otherwise
+      // switching the server-side model would still report the old one as
+      // downloaded. Best-effort: fall back to the cached/default name offline.
+      await _resolveConfigSafe();
       return await FlutterGemma.isModelInstalled(modelFileName);
     } catch (error) {
       AppLogger.warning('[LocalLLM] isModelInstalled check failed: $error');
@@ -102,7 +107,21 @@ class LocalLlmModelService {
     }
   }
 
+  /// Resolves the backend model config, swallowing errors so callers that only
+  /// need the filename (e.g. the downloaded-state check) still work offline.
+  Future<void> _resolveConfigSafe() async {
+    try {
+      await _resolveConfig();
+    } catch (error) {
+      AppLogger.warning('[LocalLLM] model config resolve failed: $error');
+    }
+  }
+
   Future<LocalLlmModelCatalogEntry> catalogEntry() async {
+    // Resolve the backend config up front so label/size/downloaded-state all
+    // reflect the currently configured model (best-effort; offline keeps fallbacks).
+    await _ensureRuntime();
+    await _resolveConfigSafe();
     return LocalLlmModelCatalogEntry(
       label: modelLabel,
       totalBytes: _config?.sizeBytes ?? _gemma1bFallbackBytes,

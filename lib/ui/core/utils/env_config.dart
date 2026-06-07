@@ -20,12 +20,12 @@ class EnvConfig {
     _values['API_BASE_URL'] = _defaultApiBaseUrl;
     _values['MODEL_DOWNLOAD_URL'] =
         'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin';
-    // On-device summarization model (Gemma 3 1B int4, ~657MB). The download URL
+    // On-device summarization model (Gemma 3 1B int8, ~1.0GB). The download URL
     // and gated-model token are fetched from the backend at download time
     // (/api/v1/local-summary-model); this URL is only a fallback for the local
     // "is it downloaded?" filename check. The token is intentionally NOT bundled.
     _values['LLM_MODEL_DOWNLOAD_URL'] =
-        'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_block128_ekv4096.task';
+        'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q8_ekv4096.task';
     _values['APP_ENV'] = 'production';
     _values['DEBUG_MODE'] = 'false';
 
@@ -50,7 +50,7 @@ class EnvConfig {
   /// Download URL for the on-device summarization model (Gemma 3 1B `.task`).
   static String get llmModelDownloadUrl =>
       _values['LLM_MODEL_DOWNLOAD_URL'] ??
-      'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_block128_ekv4096.task';
+      'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q8_ekv4096.task';
 
   /// HuggingFace token used to download gated models (the Gemma `.task` is gated).
   /// Empty string means no token configured.

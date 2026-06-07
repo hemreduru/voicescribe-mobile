@@ -13,9 +13,10 @@ class LocalLlmRuntime {
     // Context window; kept modest for speed (input is capped before this).
     int maxTokens = 2048,
   }) async {
-    // GPU backend (requires the OpenCL <uses-native-library> entries in
-    // AndroidManifest). CPU inference of these models is impractically slow
-    // (minutes); GPU brings it to seconds, matching Google AI Edge Gallery.
+    // GPU backend (needs the OpenCL <uses-native-library> entries in the
+    // manifest). We use the int8 (q8) Gemma .task: the int4 q4_block128 variant
+    // SIGSEGVs in the OpenCL executor on some devices, and CPU is too slow
+    // (minutes); int8 on GPU is the stable, fast path.
     final model = await FlutterGemma.getActiveModel(
       maxTokens: maxTokens,
       preferredBackend: PreferredBackend.gpu,
