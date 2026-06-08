@@ -82,35 +82,7 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                AppSectionCard(
-                  title: l10n.summarySettings,
-                  subtitle: l10n.summaryPreferences,
-                  children: [
-                    AppSegmentedField<String>(
-                      label: l10n.summaryProvider,
-                      value: preferences.summaryProvider,
-                      segments: [
-                        AppSegment(
-                          value: 'local',
-                          label: l10n.local,
-                          icon: Icons.storage_outlined,
-                        ),
-                        AppSegment(
-                          value: 'cloud',
-                          label: l10n.cloud,
-                          icon: Icons.cloud_outlined,
-                        ),
-                      ],
-                      onChanged: (value) => context.read<SettingsBloc>().add(
-                        SettingsSummaryProviderChanged(value),
-                      ),
-                    ),
-                    if (preferences.summaryProvider == 'local') ...[
-                      const SizedBox(height: AppSpacing.lg),
-                      _LocalSummaryModelRow(state: state),
-                    ],
-                  ],
-                ),
+                _AiLocationSection(state: state),
                 const SizedBox(height: AppSpacing.lg),
                 AppSectionCard(
                   title: l10n.transcriptionModelSettings,
@@ -455,6 +427,94 @@ class _TranscriptionModelSelector extends StatelessWidget {
     'small' => 'Small',
     _ => 'Base',
   };
+}
+
+/// Plain-language "where does AI run" chooser. The single toggle drives both
+/// summaries and chat; the on-device option is disabled (with a reason) on
+/// devices that aren't powerful enough, and the model-download row is surfaced
+/// as a first-class action when on-device is selected.
+class _AiLocationSection extends StatelessWidget {
+  const _AiLocationSection({required this.state});
+
+  final SettingsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final preferences = state.preferences;
+    final entry = state.localLlmEntry;
+    // Assume supported until the catalog entry resolves, so we don't flash a
+    // disabled state on first paint.
+    final localSupported = entry?.isSupported ?? true;
+    final selected = preferences.summaryProvider;
+
+    return AppSectionCard(
+      title: l10n.aiLocationTitle,
+      subtitle: l10n.summaryPreferences,
+      children: [
+        AppSegmentedField<String>(
+          label: l10n.aiLocationLabel,
+          value: selected,
+          minSegmentWidth: 132,
+          segments: [
+            AppSegment(
+              value: 'local',
+              label: l10n.aiLocationOnDevice,
+              icon: Icons.smartphone_outlined,
+              enabled: localSupported,
+            ),
+            AppSegment(
+              value: 'cloud',
+              label: l10n.aiLocationCloud,
+              icon: Icons.cloud_outlined,
+            ),
+          ],
+          onChanged: (value) {
+            if (value == 'local' && !localSupported) return;
+            context.read<SettingsBloc>().add(
+              SettingsSummaryProviderChanged(value),
+            );
+          },
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          selected == 'local'
+              ? l10n.aiLocationOnDeviceDesc
+              : l10n.aiLocationCloudDesc,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        if (!localSupported) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AppSpacing.xs + 2),
+              Expanded(
+                child: Text(
+                  l10n.aiLocationOnDeviceUnavailable,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+        if (selected == 'local') ...[
+          const SizedBox(height: AppSpacing.lg),
+          _LocalSummaryModelRow(state: state),
+        ],
+      ],
+    );
+  }
 }
 
 class _LocalSummaryModelRow extends StatelessWidget {

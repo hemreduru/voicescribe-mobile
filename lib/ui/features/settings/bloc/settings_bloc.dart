@@ -493,6 +493,16 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     try {
       final entry = await _localLlmModelService.catalogEntry();
       emit(state.copyWith(localLlmEntry: entry));
+      // Smart default: a device that can't run on-device AI shouldn't be left
+      // pointing summary + chat at the local engine (it would just fail), so
+      // fall back to cloud automatically. The user can still switch back if the
+      // device later qualifies.
+      if (!entry.isSupported && state.preferences.summaryProvider == 'local') {
+        await _savePreferences(
+          emit,
+          state.preferences.copyWith(summaryProvider: 'cloud'),
+        );
+      }
     } catch (error) {
       emit(state.copyWith(localLlmErrorMessage: error.toString()));
     }

@@ -231,6 +231,30 @@ class AppLocalizationsTr extends AppLocalizations {
   String get summaryProvider => 'Özet Sağlayıcısı';
 
   @override
+  String get aiLocationTitle => 'Yapay zekâ nerede çalışsın?';
+
+  @override
+  String get aiLocationLabel => 'Çalışma yeri';
+
+  @override
+  String get aiLocationOnDevice => 'Bu telefonda';
+
+  @override
+  String get aiLocationCloud => 'Bulutta';
+
+  @override
+  String get aiLocationOnDeviceDesc =>
+      'Her şey telefonunda çalışır; internet gerekmez ve hiçbir şey cihazdan çıkmaz. Güçlü bir telefon ve tek seferlik ~1 GB model indirme gerekir. Hem özet hem yapay zekâ sohbeti için geçerlidir.';
+
+  @override
+  String get aiLocationCloudDesc =>
+      'Daha güçlü ve çok daha hızlı yapay zekâ; uzun toplantılarda daha iyi sonuç verir. İnternet ve giriş gerekir, kayıt önce eşitlenir. Hem özet hem yapay zekâ sohbeti için geçerlidir.';
+
+  @override
+  String get aiLocationOnDeviceUnavailable =>
+      'Bu telefon cihaz içi yapay zekâ için yeterince güçlü değil — bunun yerine Bulut\'u kullanın.';
+
+  @override
   String get summaryPreferences =>
       'Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.';
 

@@ -522,6 +522,48 @@ abstract class AppLocalizations {
   /// **'Summary Provider'**
   String get summaryProvider;
 
+  /// No description provided for @aiLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should AI run?'**
+  String get aiLocationTitle;
+
+  /// No description provided for @aiLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AI location'**
+  String get aiLocationLabel;
+
+  /// No description provided for @aiLocationOnDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone'**
+  String get aiLocationOnDevice;
+
+  /// No description provided for @aiLocationCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'In the cloud'**
+  String get aiLocationCloud;
+
+  /// No description provided for @aiLocationOnDeviceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything runs on your phone — no internet needed and nothing leaves the device. Needs a powerful phone and a one-time ~1 GB model download. Applies to both summaries and AI chat.'**
+  String get aiLocationOnDeviceDesc;
+
+  /// No description provided for @aiLocationCloudDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'More capable, much faster AI that handles long meetings better. Needs internet and sign-in, and the recording is synced first. Applies to both summaries and AI chat.'**
+  String get aiLocationCloudDesc;
+
+  /// No description provided for @aiLocationOnDeviceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone isn\'t powerful enough for on-device AI — use the cloud instead.'**
+  String get aiLocationOnDeviceUnavailable;
+
   /// No description provided for @summaryPreferences.
   ///
   /// In en, this message translates to:

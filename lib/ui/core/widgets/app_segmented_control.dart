@@ -6,11 +6,20 @@ import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
 
 class AppSegment<T> {
-  const AppSegment({required this.value, required this.label, this.icon});
+  const AppSegment({
+    required this.value,
+    required this.label,
+    this.icon,
+    this.enabled = true,
+  });
 
   final T value;
   final String label;
   final IconData? icon;
+
+  /// When false the segment is shown dimmed and cannot be selected (e.g. an
+  /// on-device option on a device that isn't powerful enough).
+  final bool enabled;
 }
 
 class AppSegmentedControl<T> extends StatelessWidget {
@@ -124,7 +133,9 @@ class _SegmentedTrack<T> extends StatelessWidget {
                         child: _SegmentButton<T>(
                           segment: segment,
                           selected: segment.value == value,
-                          onPressed: () => onChanged(segment.value),
+                          onPressed: segment.enabled
+                              ? () => onChanged(segment.value)
+                              : null,
                         ),
                       ),
                   ],
@@ -147,20 +158,25 @@ class _SegmentButton<T> extends StatelessWidget {
 
   final AppSegment<T> segment;
   final bool selected;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = selected
+    final enabled = onPressed != null;
+    final baseColor = selected
         ? theme.colorScheme.primary
         : theme.colorScheme.onSurfaceVariant;
+    final color = enabled ? baseColor : baseColor.withValues(alpha: 0.38);
 
     return Semantics(
       button: true,
       selected: selected,
+      enabled: enabled,
       child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+        cursor: enabled
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.forbidden,
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(AppRadii.md),
