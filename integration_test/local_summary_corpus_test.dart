@@ -28,11 +28,14 @@ const int _inputBudget = 2200;
 
 // Same subset bundled under test_assets/corpus/.
 const List<String> _corpus = <String>[
-  't01_corporate_tr_500', // TR, coherent
-  't02_corporate_en_1500', // EN -> expect TR output (translation)
-  't03_tech_mixed_2500', // TR/EN mixed
+  't01_corporate_tr_500', // 500 — TR, coherent
+  't02_corporate_en_1500', // 1500 — EN -> expect TR output (translation)
+  't03_tech_mixed_2500', // 2500 — TR/EN mixed
+  't04_tech_tr_5000', // 5000 — TR (truncated to input budget)
+  't05_education_en_10000', // 10000 — EN -> TR (truncated)
+  't06_education_tr_15000', // 15000 — huge, must not crash
   't11_casual_tr_1500_noise', // Whisper garbage (TR)
-  't06_education_tr_15000', // huge -> truncated, must not crash
+  't12_casual_mixed_500_noise', // Whisper garbage (mixed)
 ];
 
 String _detectLang(String s) {
