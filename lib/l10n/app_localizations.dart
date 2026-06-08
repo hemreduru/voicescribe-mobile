@@ -380,24 +380,6 @@ abstract class AppLocalizations {
   /// **'Cloud'**
   String get cloud;
 
-  /// No description provided for @short.
-  ///
-  /// In en, this message translates to:
-  /// **'Short'**
-  String get short;
-
-  /// No description provided for @medium.
-  ///
-  /// In en, this message translates to:
-  /// **'Medium'**
-  String get medium;
-
-  /// No description provided for @long.
-  ///
-  /// In en, this message translates to:
-  /// **'Long'**
-  String get long;
-
   /// No description provided for @settings.
   ///
   /// In en, this message translates to:
@@ -540,16 +522,10 @@ abstract class AppLocalizations {
   /// **'Summary Provider'**
   String get summaryProvider;
 
-  /// No description provided for @summaryLength.
-  ///
-  /// In en, this message translates to:
-  /// **'Summary Length'**
-  String get summaryLength;
-
   /// No description provided for @summaryPreferences.
   ///
   /// In en, this message translates to:
-  /// **'Manage where summaries run and how much detail they include.'**
+  /// **'Choose where summaries and AI chat run.'**
   String get summaryPreferences;
 
   /// No description provided for @transcriptionModelSettings.

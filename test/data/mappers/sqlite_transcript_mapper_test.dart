@@ -45,14 +45,12 @@ void main() {
       'themeMode': 'sepia',
       'localePreference': 'de',
       'summaryProvider': 'remote',
-      'summaryLength': 'huge',
       'transcriptionModel': 'mega',
     });
 
     expect(preferences.themeMode, 'system');
     expect(preferences.localePreference, 'system');
     expect(preferences.summaryProvider, 'local');
-    expect(preferences.summaryLength, 'medium');
     expect(preferences.transcriptionModel, 'base');
   });
 }

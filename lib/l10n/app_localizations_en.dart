@@ -154,15 +154,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloud => 'Cloud';
 
   @override
-  String get short => 'Short';
-
-  @override
-  String get medium => 'Medium';
-
-  @override
-  String get long => 'Long';
-
-  @override
   String get settings => 'Settings';
 
   @override
@@ -241,11 +232,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get summaryProvider => 'Summary Provider';
 
   @override
-  String get summaryLength => 'Summary Length';
-
-  @override
-  String get summaryPreferences =>
-      'Manage where summaries run and how much detail they include.';
+  String get summaryPreferences => 'Choose where summaries and AI chat run.';
 
   @override
   String get transcriptionModelSettings => 'Transcription Model';

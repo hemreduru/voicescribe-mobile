@@ -52,7 +52,6 @@ class LocalLlmSummaryService implements SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
-    required String length,
   }) async {
     final input = transcriptText.trim();
     if (input.isEmpty) {
@@ -62,10 +61,7 @@ class LocalLlmSummaryService implements SummaryService {
     final stopwatch = Stopwatch()..start();
     await _modelService.ensureReady();
 
-    final prompt = MeetingMinutesPrompt.system(
-      length: length,
-      locale: deviceLanguageCode(),
-    );
+    final prompt = MeetingMinutesPrompt.system(locale: deviceLanguageCode());
     final boundedInput = input.length > _localInputCharBudget
         ? input.substring(0, _localInputCharBudget)
         : input;

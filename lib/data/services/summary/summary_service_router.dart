@@ -21,7 +21,6 @@ class SummaryServiceRouter implements SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
-    required String length,
   }) {
     final engine = AppPreferences.normalizeSummaryProvider(provider) == 'cloud'
         ? _cloud
@@ -30,7 +29,6 @@ class SummaryServiceRouter implements SummaryService {
       transcript: transcript,
       transcriptText: transcriptText,
       provider: provider,
-      length: length,
     );
   }
 }

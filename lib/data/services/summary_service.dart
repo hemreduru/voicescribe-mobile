@@ -7,6 +7,13 @@ abstract interface class SummaryFailure {
   String get message;
 }
 
+/// Single, fixed summary format sent to the backend. The app no longer exposes a
+/// short/medium/long choice; "medium" maps to a rich-but-not-bloated summary
+/// (short exec summary + all decisions + all action items + open questions). The
+/// backend still expects a `length` field, so this constant preserves that
+/// contract while keeping the choice out of the UI.
+const String kFixedSummaryLength = 'medium';
+
 // Kept as an interface so app state can inject local/cloud summary engines.
 // ignore: one_member_abstracts
 abstract class SummaryService {
@@ -14,7 +21,6 @@ abstract class SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
-    required String length,
   });
 }
 
@@ -26,7 +32,6 @@ class LocalSummaryService implements SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
-    required String length,
   }) async {
     final normalized = normalizeWhitespace(transcriptText);
     final sentences = normalized
@@ -34,11 +39,7 @@ class LocalSummaryService implements SummaryService {
         .where((item) => item.trim().isNotEmpty)
         .toList();
 
-    final takeCount = switch (length) {
-      'short' => 1,
-      'long' => 4,
-      _ => 2,
-    };
+    const takeCount = 2;
 
     final selected = sentences.isEmpty
         ? [normalized]

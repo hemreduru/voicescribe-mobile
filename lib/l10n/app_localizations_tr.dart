@@ -153,15 +153,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get cloud => 'Bulut';
 
   @override
-  String get short => 'Kısa';
-
-  @override
-  String get medium => 'Orta';
-
-  @override
-  String get long => 'Uzun';
-
-  @override
   String get settings => 'Ayarlar';
 
   @override
@@ -240,11 +231,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get summaryProvider => 'Özet Sağlayıcısı';
 
   @override
-  String get summaryLength => 'Özet Uzunluğu';
-
-  @override
   String get summaryPreferences =>
-      'Özetlerin nerede çalışacağını ve ne kadar detay içereceğini yönetin.';
+      'Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.';
 
   @override
   String get transcriptionModelSettings => 'Transkripsiyon Modeli';

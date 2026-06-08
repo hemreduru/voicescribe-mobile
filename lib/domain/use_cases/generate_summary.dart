@@ -24,7 +24,6 @@ class GenerateSummaryUseCase {
       transcript: transcript,
       transcriptText: transcriptText,
       provider: preferences.summaryProvider,
-      length: preferences.summaryLength,
     );
     final pending = summary.copyWith(syncStatus: SyncStatus.pending);
     await _repository.saveSummary(pending);

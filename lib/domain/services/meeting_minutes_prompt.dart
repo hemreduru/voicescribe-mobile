@@ -10,7 +10,7 @@ class MeetingMinutesPrompt {
   /// System instruction handed to the on-device model. [locale] is the user's
   /// phone language; the summary is written in that language regardless of the
   /// transcript's language.
-  static String system({String length = 'medium', String locale = 'tr'}) {
+  static String system({String locale = 'tr'}) {
     const schema =
         '{"schema_version":$kMeetingSummarySchemaVersion,"title":"kısa başlık","executive_summary":["2-4 cümle, her biri ayrı"],"decisions":["alınan kararlar"],"action_items":[{"owner":"kişi veya null","task":"yapılacak iş","due_date":"tarih veya null"}],"open_questions":["karara bağlanmayan konular"]}';
     final language = _languageName(locale);

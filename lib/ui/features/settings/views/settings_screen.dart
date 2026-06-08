@@ -105,19 +105,6 @@ class SettingsScreen extends StatelessWidget {
                         SettingsSummaryProviderChanged(value),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    AppSegmentedField<String>(
-                      label: l10n.summaryLength,
-                      value: preferences.summaryLength,
-                      segments: [
-                        AppSegment(value: 'short', label: l10n.short),
-                        AppSegment(value: 'medium', label: l10n.medium),
-                        AppSegment(value: 'long', label: l10n.long),
-                      ],
-                      onChanged: (value) => context.read<SettingsBloc>().add(
-                        SettingsSummaryLengthChanged(value),
-                      ),
-                    ),
                     if (preferences.summaryProvider == 'local') ...[
                       const SizedBox(height: AppSpacing.lg),
                       _LocalSummaryModelRow(state: state),
