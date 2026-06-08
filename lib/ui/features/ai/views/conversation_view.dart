@@ -7,6 +7,7 @@ import 'package:voicescribe_mobile/domain/models/chat.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/design_system.dart';
+import 'package:voicescribe_mobile/ui/core/widgets/app_skeleton.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_text_field.dart';
 import 'package:voicescribe_mobile/ui/features/ai/bloc/chat_cubit.dart';
 
@@ -109,7 +110,10 @@ class _ConversationBodyState extends State<_ConversationBody> {
           children: [
             Expanded(
               child: state.loading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: AppSkeletonList(itemCount: 4),
+                    )
                   : state.messages.isEmpty && !showThinking
                   ? const _ConversationEmptyState()
                   : ListView.builder(
