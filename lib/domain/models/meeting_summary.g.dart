@@ -19,19 +19,15 @@ _MeetingSummary _$MeetingSummaryFromJson(Map<String, dynamic> json) =>
       executiveSummary: json['executive_summary'] == null
           ? const <String>[]
           : const _FlexibleStringList().fromJson(json['executive_summary']),
-      agendaItems:
-          (json['agenda_items'] as List<dynamic>?)
-              ?.map((e) => AgendaItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const <AgendaItem>[],
+      agendaItems: json['agenda_items'] == null
+          ? const <AgendaItem>[]
+          : const _FlexibleAgendaItemList().fromJson(json['agenda_items']),
       decisions: json['decisions'] == null
           ? const <String>[]
           : const _FlexibleStringList().fromJson(json['decisions']),
-      actionItems:
-          (json['action_items'] as List<dynamic>?)
-              ?.map((e) => ActionItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const <ActionItem>[],
+      actionItems: json['action_items'] == null
+          ? const <ActionItem>[]
+          : const _FlexibleActionItemList().fromJson(json['action_items']),
       openQuestions: json['open_questions'] == null
           ? const <String>[]
           : const _FlexibleStringList().fromJson(json['open_questions']),
@@ -51,9 +47,9 @@ Map<String, dynamic> _$MeetingSummaryToJson(
   'executive_summary': const _FlexibleStringList().toJson(
     instance.executiveSummary,
   ),
-  'agenda_items': instance.agendaItems,
+  'agenda_items': const _FlexibleAgendaItemList().toJson(instance.agendaItems),
   'decisions': const _FlexibleStringList().toJson(instance.decisions),
-  'action_items': instance.actionItems,
+  'action_items': const _FlexibleActionItemList().toJson(instance.actionItems),
   'open_questions': const _FlexibleStringList().toJson(instance.openQuestions),
   'next_meeting': instance.nextMeeting,
   'notes': const _FlexibleStringList().toJson(instance.notes),
