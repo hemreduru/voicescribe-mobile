@@ -4,6 +4,15 @@ import 'package:flutter_gemma/flutter_gemma.dart';
 ///
 /// Assumes a model has already been installed and set active (see
 /// `LocalLlmModelService.ensureReady`).
+///
+/// NOTE: flutter_gemma (v0.13.x) exposes no constrained-decoding / JSON-schema /
+/// grammar / response-format option on `createSession` — only sampling params
+/// and a `systemInstruction`. So valid-JSON output cannot be guaranteed by the
+/// runtime; the guarantee lives at the boundary instead (the tightened few-shot
+/// prompt in `MeetingMinutesPrompt.system` plus the tolerant
+/// `MeetingSummary.tryParse` repair/normalize layer). If a future version adds
+/// schema-constrained output, bind the MeetingSummary schema here — that would
+/// be the strongest lever.
 class LocalLlmRuntime {
   const LocalLlmRuntime();
 
@@ -25,6 +34,10 @@ class LocalLlmRuntime {
     try {
       // Greedy decoding (topK=1) makes small models loop/repeat; sample with a
       // modest topK/topP + temperature to keep output coherent and terminating.
+      // 0.6 is the current stable point; a lower value (≈0.3–0.4) may improve
+      // JSON adherence but risks repetition loops on these tiny models, so any
+      // change should be validated with an on-device corpus sweep
+      // (integration_test/local_summary_small_test.dart) before lowering.
       session = await model.createSession(
         temperature: 0.6,
         topK: 40,
