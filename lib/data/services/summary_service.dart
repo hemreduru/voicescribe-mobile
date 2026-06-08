@@ -7,6 +7,21 @@ abstract interface class SummaryFailure {
   String get message;
 }
 
+/// Progress of a multi-step summary (on-device map-reduce over a long
+/// transcript). [current] is the 1-based step just completed, [total] the total
+/// step count; when [total] is 1 there is nothing useful to show.
+class SummaryProgress {
+  const SummaryProgress({required this.current, required this.total});
+
+  final int current;
+  final int total;
+
+  bool get isMultiStep => total > 1;
+}
+
+/// Optional callback invoked as a summary advances through its steps.
+typedef SummaryProgressCallback = void Function(SummaryProgress progress);
+
 /// Single, fixed summary format sent to the backend. The app no longer exposes a
 /// short/medium/long choice; "medium" maps to a rich-but-not-bloated summary
 /// (short exec summary + all decisions + all action items + open questions). The
@@ -21,6 +36,7 @@ abstract class SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
+    SummaryProgressCallback? onProgress,
   });
 }
 
@@ -32,6 +48,7 @@ class LocalSummaryService implements SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
+    SummaryProgressCallback? onProgress,
   }) async {
     final normalized = normalizeWhitespace(transcriptText);
     final sentences = normalized

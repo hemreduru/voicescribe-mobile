@@ -324,6 +324,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get generateSummary => 'Özet Oluştur';
 
   @override
+  String summarizingProgress(Object current, Object total) {
+    return 'Özetleniyor… ($current/$total)';
+  }
+
+  @override
   String get summaryPlaceholder =>
       'Henüz özet yok. Bu transkriptten yapılandırılmış toplantı notları oluşturmak için Özet Oluştur\'a dokun.';
 

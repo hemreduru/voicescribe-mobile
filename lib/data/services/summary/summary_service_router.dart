@@ -21,6 +21,7 @@ class SummaryServiceRouter implements SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
+    SummaryProgressCallback? onProgress,
   }) {
     final engine = AppPreferences.normalizeSummaryProvider(provider) == 'cloud'
         ? _cloud
@@ -29,6 +30,7 @@ class SummaryServiceRouter implements SummaryService {
       transcript: transcript,
       transcriptText: transcriptText,
       provider: provider,
+      onProgress: onProgress,
     );
   }
 }

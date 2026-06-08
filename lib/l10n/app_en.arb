@@ -119,6 +119,13 @@
   "latestTranscript": "Latest Transcript",
   "readyToSummarize": "Ready to summarize",
   "generateSummary": "Generate Summary",
+  "summarizingProgress": "Summarizing… ({current}/{total})",
+  "@summarizingProgress": {
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
   "summaryPlaceholder": "No summary yet. Tap Generate to create structured meeting minutes from this transcript.",
   "noSummaryYet": "No summary generated yet.",
   "summaryUnavailable": "Couldn't produce a readable summary this time. Tap Generate to try again, or switch to Cloud in Settings.",

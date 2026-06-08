@@ -684,6 +684,12 @@ abstract class AppLocalizations {
   /// **'Generate Summary'**
   String get generateSummary;
 
+  /// No description provided for @summarizingProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarizing… ({current}/{total})'**
+  String summarizingProgress(Object current, Object total);
+
   /// No description provided for @summaryPlaceholder.
   ///
   /// In en, this message translates to:

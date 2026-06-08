@@ -39,6 +39,9 @@ class CloudSummaryService implements SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
+    // The cloud backend chunks long transcripts itself, so there is no
+    // client-side multi-step progress to report.
+    SummaryProgressCallback? onProgress,
   }) async {
     final remoteId = transcript.remoteId;
     if (remoteId == null || remoteId.trim().isEmpty) {

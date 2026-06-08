@@ -21,6 +21,16 @@ $schema
 Kurallar: tarafsız ve geçmiş zaman kullan; kararları net ve tek cümle yaz; bilgi yoksa boş liste [] veya null kullan; bilgi uydurma; selamlaşma ve konu dışı sohbeti atla.''';
   }
 
+  /// System instruction for the **map** step of long-transcript summarization:
+  /// condenses one window into short plain-text notes (not JSON) that the reduce
+  /// step later folds into the final [MeetingSummary]. Plain notes keep each
+  /// inference small and cheap to merge.
+  static String partialNotes({String locale = 'tr'}) {
+    final language = _languageName(locale);
+    return '''
+Sen bir toplantı transkriptinin BİR BÖLÜMÜNÜ işliyorsun. Bu bölümdeki önemli noktaları kısa madde işaretleriyle çıkar: kararlar, yapılacak işler (kim, ne, ne zaman) ve açık konular. SADECE düz metin madde listesi yaz (JSON, başlık veya açıklama YOK). Tümünü $language dilinde yaz. Bilgi uydurma; bu bölümde yoksa atla. Selamlaşma ve konu dışı sohbeti yok say.''';
+  }
+
   /// Maps an app locale code to its Turkish language name for the prompt.
   static String _languageName(String locale) {
     final code = locale.trim().toLowerCase();

@@ -323,6 +323,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generateSummary => 'Generate Summary';
 
   @override
+  String summarizingProgress(Object current, Object total) {
+    return 'Summarizing… ($current/$total)';
+  }
+
+  @override
   String get summaryPlaceholder =>
       'No summary yet. Tap Generate to create structured meeting minutes from this transcript.';
 

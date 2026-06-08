@@ -49,6 +49,7 @@ class TranscriptDetailState {
     this.mergedText = '',
     this.tabIndex = 0,
     this.generatingSummary = false,
+    this.summaryProgress,
     this.errorMessage,
     this.completedChunkCount = 0,
     this.totalChunkCount = 0,
@@ -62,6 +63,10 @@ class TranscriptDetailState {
   final String mergedText;
   final int tabIndex;
   final bool generatingSummary;
+
+  /// Progress of an in-flight on-device summary (map-reduce over a long
+  /// transcript). Null for a single-pass run with nothing useful to show.
+  final SummaryProgress? summaryProgress;
   final String? errorMessage;
   final int completedChunkCount;
   final int totalChunkCount;
@@ -76,6 +81,8 @@ class TranscriptDetailState {
     String? mergedText,
     int? tabIndex,
     bool? generatingSummary,
+    SummaryProgress? summaryProgress,
+    bool clearSummaryProgress = false,
     String? errorMessage,
     bool clearErrorMessage = false,
     int? completedChunkCount,
@@ -90,6 +97,9 @@ class TranscriptDetailState {
       mergedText: mergedText ?? this.mergedText,
       tabIndex: tabIndex ?? this.tabIndex,
       generatingSummary: generatingSummary ?? this.generatingSummary,
+      summaryProgress: clearSummaryProgress
+          ? null
+          : summaryProgress ?? this.summaryProgress,
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
@@ -170,7 +180,13 @@ class TranscriptDetailBloc
     if (transcript == null || snapshot == null || state.mergedText.isEmpty) {
       return;
     }
-    emit(state.copyWith(generatingSummary: true, clearErrorMessage: true));
+    emit(
+      state.copyWith(
+        generatingSummary: true,
+        clearSummaryProgress: true,
+        clearErrorMessage: true,
+      ),
+    );
     try {
       final summary =
           await GenerateSummaryUseCase(
@@ -180,12 +196,20 @@ class TranscriptDetailBloc
             transcript: transcript,
             transcriptText: state.mergedText,
             preferences: snapshot.preferences,
+            // Surface multi-step progress (long-transcript map-reduce) so the
+            // UI can show "Özetleniyor… (3/7)". Fires while this handler awaits.
+            onProgress: (progress) {
+              if (progress.isMultiStep) {
+                emit(state.copyWith(summaryProgress: progress));
+              }
+            },
           );
       emit(
         state.copyWith(
           summary: summary,
           clearSummary: summary == null,
           generatingSummary: false,
+          clearSummaryProgress: true,
         ),
       );
       if (summary != null) {
@@ -197,6 +221,7 @@ class TranscriptDetailBloc
       emit(
         state.copyWith(
           generatingSummary: false,
+          clearSummaryProgress: true,
           errorMessage: error is SummaryFailure
               ? error.message
               : 'Özet oluşturulamadı. Lütfen tekrar deneyin.',

@@ -119,6 +119,13 @@
   "latestTranscript": "Son Transkript",
   "readyToSummarize": "Özet için hazır",
   "generateSummary": "Özet Oluştur",
+  "summarizingProgress": "Özetleniyor… ({current}/{total})",
+  "@summarizingProgress": {
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
   "summaryPlaceholder": "Henüz özet yok. Bu transkriptten yapılandırılmış toplantı notları oluşturmak için Özet Oluştur'a dokun.",
   "noSummaryYet": "Üretilmiş özet henüz yok.",
   "summaryUnavailable": "Bu sefer okunabilir bir özet üretilemedi. Tekrar denemek için Özet Oluştur'a dokun veya Ayarlar'dan Bulut'a geç.",
