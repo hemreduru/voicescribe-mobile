@@ -169,6 +169,11 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     );
     try {
       final snapshot = await _transcriptRepository.loadSnapshot();
+      // Cutoff for the orphan-file sweep below: the sweep runs unawaited after
+      // the app is ready, so any chunk file written *after* this snapshot (a
+      // recording the user started right away) is unknown to it and must not
+      // be treated as an orphan.
+      final snapshotLoadedAt = DateTime.now();
 
       // Apply the persisted transcription language before the model loads so
       // the very first recording already uses the user's choice.
@@ -199,7 +204,7 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
       // Best-effort housekeeping: deleting orphaned chunk audio must never
       // gate the app becoming usable, so run it after the app is ready and
       // don't await it (a slow/stuck filesystem can't wedge startup).
-      unawaited(_cleanupOrphanChunkFiles(snapshot));
+      unawaited(_cleanupOrphanChunkFiles(snapshot, before: snapshotLoadedAt));
     } catch (error) {
       emit(
         state.copyWith(
@@ -212,7 +217,10 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     }
   }
 
-  Future<void> _cleanupOrphanChunkFiles(TranscriptSnapshot snapshot) async {
+  Future<void> _cleanupOrphanChunkFiles(
+    TranscriptSnapshot snapshot, {
+    required DateTime before,
+  }) async {
     final knownPaths = <String>{
       for (final chunk in snapshot.chunks)
         if (chunk.audioPath != null && chunk.audioPath!.isNotEmpty)
@@ -225,16 +233,28 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
         return;
       }
       await for (final entity in chunksDir.list()) {
-        if (entity is File && !knownPaths.contains(entity.path)) {
-          try {
-            await entity.delete();
-          } catch (error, stackTrace) {
-            AppLogger.warning(
-              '[Bootstrap] Failed to delete orphan chunk file: ${entity.path}',
-              error,
-              stackTrace,
-            );
+        if (entity is! File || knownPaths.contains(entity.path)) {
+          continue;
+        }
+        // A file newer than the snapshot belongs to a recording that started
+        // after it was taken — not an orphan. It gets re-evaluated (against a
+        // fresh snapshot) on the next launch.
+        try {
+          final modifiedAt = await entity.lastModified();
+          if (!modifiedAt.isBefore(before)) {
+            continue;
           }
+        } catch (_) {
+          continue; // Stat failed; leave the file alone.
+        }
+        try {
+          await entity.delete();
+        } catch (error, stackTrace) {
+          AppLogger.warning(
+            '[Bootstrap] Failed to delete orphan chunk file: ${entity.path}',
+            error,
+            stackTrace,
+          );
         }
       }
     } catch (error, stackTrace) {

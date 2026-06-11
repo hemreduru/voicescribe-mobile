@@ -155,8 +155,16 @@ class AudioRecordingService implements RecordingService {
     _isRecording = false;
 
     await _emitTask;
+    // The final flush must never throw out of stop(): a failed write here
+    // (e.g. storage filled up at the very end) would leave the caller's
+    // "recording" state stuck because the stop sequence never finished. The
+    // audio already on disk is unaffected; only the tail chunk is lost.
     for (final chunk in _chunker.finish()) {
-      await _emitChunk(chunk);
+      try {
+        await _emitChunk(chunk);
+      } catch (error, stack) {
+        _onEmitFailure(chunk.index, error, stack);
+      }
     }
     _levelsController.add(0);
   }

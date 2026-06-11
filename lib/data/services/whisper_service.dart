@@ -391,7 +391,10 @@ class WhisperTranscriptionService implements TranscriptionService {
     );
 
     final audioSeconds = await _audioSecondsForWav(audioPath);
-    Exception? lastError;
+    // Object, not Exception: the plugin can throw `Error`s (OOM, StateError)
+    // and a failed cast here would mask the real failure with a TypeError.
+    Object? lastError;
+    StackTrace? lastStackTrace;
 
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -420,8 +423,9 @@ class WhisperTranscriptionService implements TranscriptionService {
         }
         AppLogger.info('[Transcription] Completed chunk: $chunkId');
         return result;
-      } catch (error) {
-        lastError = error as Exception;
+      } catch (error, stackTrace) {
+        lastError = error;
+        lastStackTrace = stackTrace;
         if (attempt < maxAttempts) {
           AppLogger.warning(
             '[Transcription] Attempt $attempt failed for chunk: $chunkId | '
@@ -436,7 +440,7 @@ class WhisperTranscriptionService implements TranscriptionService {
       }
     }
 
-    throw lastError!;
+    Error.throwWithStackTrace(lastError!, lastStackTrace!);
   }
 
   Future<TranscriptionResult> _executeSingle({

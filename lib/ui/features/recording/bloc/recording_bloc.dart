@@ -408,7 +408,14 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     }
     final recordedDurationSeconds = state.durationSeconds;
     _stopTimer();
-    await _recordingService.stop();
+    try {
+      await _recordingService.stop();
+    } catch (error, stackTrace) {
+      // Even if the recorder fails to stop cleanly, the session must still be
+      // finalized below — otherwise the UI stays stuck in a recording state
+      // with no way out.
+      AppLogger.error('[Recording] Recorder stop failed', error, stackTrace);
+    }
 
     final current = state.currentTranscript;
     if (current == null) {

@@ -195,10 +195,30 @@ class SyncQueueService {
     required bool force,
     required bool throwOnFailure,
   }) async {
+    // Claim the in-progress slot *before* any await: the debounce timer, the
+    // periodic timer and the connectivity listener can all fire in the same
+    // tick, and a check-after-await would let two full cycles run in parallel
+    // (duplicate pushes, each marking the other's rows as failed).
     if (_syncInProgress) {
       return;
     }
+    _syncInProgress = true;
+    try {
+      await _runSyncLocked(
+        trigger: trigger,
+        force: force,
+        throwOnFailure: throwOnFailure,
+      );
+    } finally {
+      _syncInProgress = false;
+    }
+  }
 
+  Future<void> _runSyncLocked({
+    required SyncTrigger trigger,
+    required bool force,
+    required bool throwOnFailure,
+  }) async {
     final accessTokenProvider = _accessTokenProvider;
     if (accessTokenProvider == null) {
       if (throwOnFailure) {
@@ -239,7 +259,6 @@ class SyncQueueService {
       return;
     }
 
-    _syncInProgress = true;
     _emitEvent(
       SyncEvent(
         type: SyncEventType.started,
@@ -284,8 +303,6 @@ class SyncQueueService {
       if (throwOnFailure) {
         rethrow;
       }
-    } finally {
-      _syncInProgress = false;
     }
   }
 

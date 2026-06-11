@@ -36,6 +36,11 @@ class DatabaseProvider {
     );
   }
 
+  // Foreign keys are intentionally NOT declared/enforced (sqflite leaves
+  // PRAGMA foreign_keys off by default). Enabling them with ON DELETE CASCADE
+  // would let a hard delete of a synced transcript cascade away *unsynced*
+  // chunk rows — exactly the data loss clearCache()'s synced-only filter
+  // guards against. Row lifecycles are managed explicitly per table instead.
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE transcripts (
@@ -74,8 +79,7 @@ class DatabaseProvider {
         syncStatus TEXT DEFAULT 'pending',
         lastSyncedAt TEXT,
         syncError TEXT,
-        deletedAt TEXT,
-        FOREIGN KEY (transcriptId) REFERENCES transcripts (id) ON DELETE CASCADE
+        deletedAt TEXT
       )
     ''');
 
@@ -93,8 +97,7 @@ class DatabaseProvider {
         syncStatus TEXT DEFAULT 'pending',
         lastSyncedAt TEXT,
         syncError TEXT,
-        deletedAt TEXT,
-        FOREIGN KEY (transcriptId) REFERENCES transcripts (id) ON DELETE CASCADE
+        deletedAt TEXT
       )
     ''');
 
