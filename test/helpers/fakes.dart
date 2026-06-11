@@ -28,6 +28,9 @@ class FakeTranscriptRepository implements TranscriptRepository {
   Future<void> refresh() async => emit();
 
   @override
+  Future<void> reloadFromCache() async => emit();
+
+  @override
   Future<void> saveTranscript(Transcript transcript) async {
     final existing = snapshot.transcripts
         .where((item) => item.id != transcript.id)

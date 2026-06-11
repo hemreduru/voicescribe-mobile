@@ -30,6 +30,12 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
   final Connectivity _connectivity;
   final SyncMergePolicy _mergePolicy;
   final _snapshotController = StreamController<TranscriptSnapshot>.broadcast();
+  Timer? _snapshotEmitDebounce;
+
+  /// Burst writes (each recorded chunk lands as saveChunk + saveTranscript,
+  /// then again when its transcription completes) are coalesced into one
+  /// snapshot reload, instead of re-querying the entire database per write.
+  static const Duration _snapshotEmitCoalesce = Duration(milliseconds: 50);
 
   @override
   Stream<TranscriptSnapshot> watchSnapshot() => _snapshotController.stream;
@@ -79,6 +85,9 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
   }
 
   @override
+  Future<void> reloadFromCache() => _emitSnapshot();
+
+  @override
   Future<bool> fetchFromServer({required String token}) async {
     try {
       final serverTranscripts = await _apiClient.fetchTranscripts(token: token);
@@ -121,7 +130,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
       SqliteTranscriptMapper.transcriptToRow(transcript),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    await _emitSnapshot();
+    _scheduleSnapshotEmit();
   }
 
   @override
@@ -150,7 +159,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
       where: 'transcriptId = ?',
       whereArgs: [id],
     );
-    await _emitSnapshot();
+    _scheduleSnapshotEmit();
   }
 
   @override
@@ -161,7 +170,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
       SqliteTranscriptMapper.chunkToRow(chunk),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    await _emitSnapshot();
+    _scheduleSnapshotEmit();
   }
 
   @override
@@ -172,7 +181,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
       SqliteTranscriptMapper.summaryToRow(summary),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    await _emitSnapshot();
+    _scheduleSnapshotEmit();
   }
 
   @override
@@ -187,7 +196,7 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
       where: 'id = ?',
       whereArgs: [id],
     );
-    await _emitSnapshot();
+    _scheduleSnapshotEmit();
   }
 
   @override
@@ -201,10 +210,11 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
         'value': entry.value,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
-    await _emitSnapshot();
+    _scheduleSnapshotEmit();
   }
 
   Future<void> dispose() async {
+    _snapshotEmitDebounce?.cancel();
     await _snapshotController.close();
   }
 
@@ -388,10 +398,23 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
     return decision != MergeDecision.keepLocal;
   }
 
+  /// Schedules a coalesced snapshot emission. Multiple writes within the
+  /// window produce a single full reload.
+  void _scheduleSnapshotEmit() {
+    if (_snapshotController.isClosed) {
+      return;
+    }
+    _snapshotEmitDebounce?.cancel();
+    _snapshotEmitDebounce = Timer(_snapshotEmitCoalesce, () {
+      unawaited(_emitSnapshot());
+    });
+  }
+
   Future<void> _emitSnapshot() async {
     if (_snapshotController.isClosed) {
       return;
     }
+    _snapshotEmitDebounce?.cancel();
     _snapshotController.add(await loadSnapshot());
   }
 

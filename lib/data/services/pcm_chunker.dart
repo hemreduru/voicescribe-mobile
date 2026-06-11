@@ -101,23 +101,7 @@ class PcmChunker {
     }
   }
 
-  double levelFor(Uint8List pcm16Data) {
-    if (pcm16Data.length < bytesPerSample) {
-      return 0;
-    }
-    var sumSquares = 0.0;
-    var samples = 0;
-    for (var i = 0; i + 1 < pcm16Data.length; i += bytesPerSample) {
-      final sample = _readInt16(pcm16Data, i) / 32768.0;
-      sumSquares += sample * sample;
-      samples++;
-    }
-    if (samples == 0) {
-      return 0;
-    }
-    final rms = math.sqrt(sumSquares / samples);
-    return (rms / 0.25).clamp(0.0, 1.0);
-  }
+  double levelFor(Uint8List pcm16Data) => _averageLevelFor(pcm16Data);
 
   int get _sampleCount => _buffer.length ~/ bytesPerSample;
 
@@ -194,10 +178,15 @@ class PcmChunker {
   }
 
   int _countSilentSamples(List<int> data) {
+    // Convert once, outside the loop — converting per sample re-copied the
+    // whole tail for every iteration (~0.5 GB of transient allocations per
+    // chunk close on a 1 s overlap), causing GC jank while recording.
+    final bytes = data is Uint8List ? data : Uint8List.fromList(data);
+    final threshold = silenceThreshold * silenceThreshold * 0.0625;
     var count = 0;
-    for (var i = 0; i + 1 < data.length; i += bytesPerSample) {
-      final sample = _readInt16(Uint8List.fromList(data), i) / 32768.0;
-      if (sample * sample <= silenceThreshold * silenceThreshold * 0.0625) {
+    for (var i = 0; i + 1 < bytes.length; i += bytesPerSample) {
+      final sample = _readInt16(bytes, i) / 32768.0;
+      if (sample * sample <= threshold) {
         count++;
       }
     }

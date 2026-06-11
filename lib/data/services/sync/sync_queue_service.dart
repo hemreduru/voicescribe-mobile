@@ -88,7 +88,7 @@ class SyncQueueService {
   StreamSubscription<dynamic>? _connectivitySubscription;
   AccessTokenProvider? _accessTokenProvider;
   SyncCompletionCallback? _onSyncComplete;
-  bool _syncInProgress = false;
+  Future<void>? _activeSync;
   Timer? _syncDebounceTimer;
   Timer? _periodicSyncTimer;
   int _consecutiveFailureCount = 0;
@@ -195,14 +195,21 @@ class SyncQueueService {
     required bool force,
     required bool throwOnFailure,
   }) async {
-    // Claim the in-progress slot *before* any await: the debounce timer, the
-    // periodic timer and the connectivity listener can all fire in the same
-    // tick, and a check-after-await would let two full cycles run in parallel
-    // (duplicate pushes, each marking the other's rows as failed).
-    if (_syncInProgress) {
-      return;
+    // Single-flight: the debounce timer, the periodic timer and the
+    // connectivity listener can all fire in the same tick, and a
+    // check-after-await guard would let two full cycles run in parallel
+    // (duplicate pushes, each marking the other's rows as failed). The slot is
+    // claimed *before* any await. Automatic triggers are dropped while a cycle
+    // runs; a manual sync (throwOnFailure) waits its turn and then runs its
+    // own full cycle, so user-initiated changes are never silently skipped.
+    while (_activeSync != null) {
+      if (!throwOnFailure) {
+        return;
+      }
+      await _activeSync!.catchError((_) {});
     }
-    _syncInProgress = true;
+    final completer = Completer<void>();
+    _activeSync = completer.future;
     try {
       await _runSyncLocked(
         trigger: trigger,
@@ -210,7 +217,8 @@ class SyncQueueService {
         throwOnFailure: throwOnFailure,
       );
     } finally {
-      _syncInProgress = false;
+      _activeSync = null;
+      completer.complete();
     }
   }
 

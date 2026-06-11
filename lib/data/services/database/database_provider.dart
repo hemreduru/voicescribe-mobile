@@ -30,7 +30,7 @@ class DatabaseProvider {
 
     return openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -107,6 +107,30 @@ class DatabaseProvider {
         value TEXT
       )
     ''');
+
+    await _createIndexes(db);
+  }
+
+  /// Indexes for the hot query paths: per-transcript chunk lookups, sync-queue
+  /// scans (`syncStatus IN (...)`), and the merge policy's per-pulled-row
+  /// `remoteId`/`localId` probes — all full table scans without these.
+  Future<void> _createIndexes(Database db) async {
+    const indexes = {
+      'idx_chunks_transcriptId': 'transcript_chunks (transcriptId)',
+      'idx_chunks_syncStatus': 'transcript_chunks (syncStatus)',
+      'idx_chunks_remoteId': 'transcript_chunks (remoteId)',
+      'idx_transcripts_remoteId': 'transcripts (remoteId)',
+      'idx_transcripts_localId': 'transcripts (localId)',
+      'idx_transcripts_syncStatus': 'transcripts (syncStatus)',
+      'idx_summaries_transcriptId': 'summaries (transcriptId)',
+      'idx_summaries_syncStatus': 'summaries (syncStatus)',
+      'idx_summaries_remoteId': 'summaries (remoteId)',
+    };
+    for (final entry in indexes.entries) {
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS ${entry.key} ON ${entry.value}',
+      );
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -128,6 +152,13 @@ class DatabaseProvider {
     if (oldVersion < 7) {
       await _migrateV6ToV7(db);
     }
+    if (oldVersion < 8) {
+      await _migrateV7ToV8(db);
+    }
+  }
+
+  Future<void> _migrateV7ToV8(Database db) async {
+    await _createIndexes(db);
   }
 
   Future<void> _migrateV6ToV7(Database db) async {

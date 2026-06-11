@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -149,7 +150,9 @@ class TranscriptListBloc
        super(const TranscriptListState()) {
     on<TranscriptListSubscriptionRequested>(_onSubscriptionRequested);
     on<_TranscriptListSnapshotChanged>(_onSnapshotChanged);
-    on<TranscriptListQueryChanged>(_onQueryChanged);
+    // restartable + the delay below debounce per-keystroke rebuilds: filtering
+    // re-scans every transcript's merged text, so don't do it on each key.
+    on<TranscriptListQueryChanged>(_onQueryChanged, transformer: restartable());
     on<TranscriptListSortChanged>(_onSortChanged);
     on<TranscriptListFilterChanged>(_onFilterChanged);
     on<TranscriptListSelectionToggled>(_onSelectionToggled);
@@ -183,10 +186,16 @@ class TranscriptListBloc
     emit(_stateFor(snapshot: event.snapshot));
   }
 
-  void _onQueryChanged(
+  static const Duration _searchDebounce = Duration(milliseconds: 250);
+
+  Future<void> _onQueryChanged(
     TranscriptListQueryChanged event,
     Emitter<TranscriptListState> emit,
-  ) {
+  ) async {
+    await Future<void>.delayed(_searchDebounce);
+    if (emit.isDone) {
+      return;
+    }
     emit(_stateFor(query: event.query));
   }
 
@@ -320,6 +329,12 @@ class TranscriptListBloc
     );
   }
 
+  /// Merged transcript text per id, keyed by (updatedAt, chunk counts) so it
+  /// is only rebuilt when that transcript actually changed. Joining every
+  /// chunk's text for every transcript on each snapshot/search rebuild is the
+  /// list screen's single biggest cost once history grows.
+  final Map<String, _MergedTextCacheEntry> _mergedTextCache = {};
+
   List<TranscriptListItem> _buildItems({
     required TranscriptSnapshot snapshot,
     required String query,
@@ -328,14 +343,31 @@ class TranscriptListBloc
   }) {
     final normalizedQuery = query.trim().toLowerCase();
     final items = <TranscriptListItem>[];
+    final liveIds = <String>{};
     for (final transcript in snapshot.transcripts) {
+      liveIds.add(transcript.id);
       if (!_matchesFilter(transcript.status, filter)) {
         continue;
       }
       final chunks = snapshot.chunksFor(transcript.id);
-      final mergedText = mergeTranscriptChunks(chunks);
       final totalChunkCount = chunks.length;
       final completedChunkCount = chunks.where((c) => c.text.isNotEmpty).length;
+      final cached = _mergedTextCache[transcript.id];
+      final String mergedText;
+      if (cached != null &&
+          cached.updatedAt == transcript.updatedAt &&
+          cached.totalChunks == totalChunkCount &&
+          cached.completedChunks == completedChunkCount) {
+        mergedText = cached.mergedText;
+      } else {
+        mergedText = mergeTranscriptChunks(chunks);
+        _mergedTextCache[transcript.id] = _MergedTextCacheEntry(
+          updatedAt: transcript.updatedAt,
+          totalChunks: totalChunkCount,
+          completedChunks: completedChunkCount,
+          mergedText: mergedText,
+        );
+      }
       final title = (transcript.title ?? '').toLowerCase();
       final matchesQuery =
           normalizedQuery.isEmpty ||
@@ -353,6 +385,8 @@ class TranscriptListBloc
         ),
       );
     }
+
+    _mergedTextCache.removeWhere((id, _) => !liveIds.contains(id));
 
     items.sort((a, b) {
       final aTranscript = a.transcript;
@@ -391,6 +425,20 @@ class TranscriptListBloc
     await _snapshotSubscription?.cancel();
     return super.close();
   }
+}
+
+class _MergedTextCacheEntry {
+  const _MergedTextCacheEntry({
+    required this.updatedAt,
+    required this.totalChunks,
+    required this.completedChunks,
+    required this.mergedText,
+  });
+
+  final DateTime updatedAt;
+  final int totalChunks;
+  final int completedChunks;
+  final String mergedText;
 }
 
 TranscriptDisplayStatus displayStatusFor(TranscriptStatus status) {

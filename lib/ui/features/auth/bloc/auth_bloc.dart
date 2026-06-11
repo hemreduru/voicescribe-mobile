@@ -233,15 +233,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (session?.isAuthenticated != true) {
       return;
     }
-    try {
-      await _syncQueueService.start(
-        accessTokenProvider: () async =>
-            _authRepository.currentSession()?.accessToken,
-        onSyncComplete: _transcriptRepository.refresh,
-      );
-    } catch (_) {
-      // Connectivity can be unavailable in tests or unsupported platforms.
-    }
+    // Fire-and-forget: start() runs a full initial push+pull cycle, and a slow
+    // network must not delay the auth state (and with it the first frame the
+    // user can interact with). Failures are non-fatal — connectivity can be
+    // unavailable in tests or unsupported platforms.
+    unawaited(
+      _syncQueueService
+          .start(
+            accessTokenProvider: () async =>
+                _authRepository.currentSession()?.accessToken,
+            // The sync cycle's pull already merged server rows into SQLite;
+            // only a cache reload is needed — refresh() here would re-download
+            // the full transcript list after every cycle (every 5 minutes).
+            onSyncComplete: _transcriptRepository.reloadFromCache,
+          )
+          .catchError((Object _) {}),
+    );
   }
 
   String _passwordFor(String raw) {

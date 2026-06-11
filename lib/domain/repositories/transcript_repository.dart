@@ -7,6 +7,11 @@ abstract class TranscriptRepository {
 
   Future<void> refresh();
 
+  /// Re-reads the local cache and emits a fresh snapshot on [watchSnapshot],
+  /// without any network round-trip. Use after an external writer (e.g. the
+  /// sync queue) changed the database directly.
+  Future<void> reloadFromCache();
+
   Future<void> saveTranscript(Transcript transcript);
 
   Future<void> deleteTranscript(String id);

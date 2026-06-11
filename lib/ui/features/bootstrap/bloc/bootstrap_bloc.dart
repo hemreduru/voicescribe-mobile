@@ -189,9 +189,15 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
         _transcriptRepository,
       ).execute(snapshot);
       await _transcriptionService.ensureModel();
-      // After local bootstrap, fetch the latest server data into cache.
-      // This is a no-op when offline because refresh() falls back gracefully.
-      await _transcriptRepository.refresh();
+      // Fetch the latest server data into cache in the background — the app is
+      // offline-first, so becoming usable must never wait on the network (a
+      // slow server would otherwise hold the splash screen for up to the full
+      // HTTP timeout). The snapshot stream delivers the refreshed data.
+      unawaited(
+        _transcriptRepository.refresh().catchError((Object error) {
+          AppLogger.warning('[Bootstrap] Background refresh failed: $error');
+        }),
+      );
       emit(
         state.copyWith(
           modelState: ModelBootstrapState.ready,
