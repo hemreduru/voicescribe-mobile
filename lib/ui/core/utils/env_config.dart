@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kReleaseMode;
+
 class EnvConfig {
   static bool _initialized = false;
   static final Map<String, String> _values = <String, String>{};
@@ -32,7 +34,33 @@ class EnvConfig {
     _loadDotEnvFile();
     _applyDartDefines();
 
+    _assertProductionBaseUrl();
+
     _initialized = true;
+  }
+
+  /// All built-in API hosts are development machines. A release build that
+  /// still points at one of them means the `API_BASE_URL` dart-define was
+  /// forgotten — fail fast at launch instead of silently trying to reach a
+  /// LAN backend in the field.
+  static void _assertProductionBaseUrl() {
+    if (!kReleaseMode) {
+      return;
+    }
+    final host = Uri.tryParse(apiBaseUrl)?.host.toLowerCase() ?? '';
+    const devHosts = <String>{
+      'vsbackend.test',
+      'localhost',
+      '127.0.0.1',
+      _androidHostLoopback,
+      _localBackendLanHost,
+    };
+    if (devHosts.contains(host)) {
+      throw StateError(
+        'Release build is configured with the development API host "$host". '
+        'Build with --dart-define=API_BASE_URL=https://<production-host>.',
+      );
+    }
   }
 
   static String get apiBaseUrl {
