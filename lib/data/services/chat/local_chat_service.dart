@@ -25,9 +25,9 @@ class LocalChatService {
     required TranscriptRepository repository,
     required LocalLlmModelService modelService,
     LocalLlmRuntime runtime = const LocalLlmRuntime(),
-  })  : _repository = repository,
-        _modelService = modelService,
-        _runtime = runtime;
+  }) : _repository = repository,
+       _modelService = modelService,
+       _runtime = runtime;
 
   final TranscriptRepository _repository;
   final LocalLlmModelService _modelService;
@@ -50,19 +50,22 @@ class LocalChatService {
     final retrieved = _retrieve(q, snapshot);
 
     final promptSources = retrieved
-        .map((r) => <String, String>{
-              'title': r.title,
-              'date': r.date ?? '',
-              'text': r.text,
-            })
+        .map(
+          (r) => <String, String>{
+            'title': r.title,
+            'date': r.date ?? '',
+            'text': r.text,
+          },
+        )
         .toList();
 
     final recent = history
         .where((m) => m.content.trim().isNotEmpty)
         .map((m) => (role: m.role, content: m.content))
         .toList();
-    final boundedHistory =
-        recent.length > 6 ? recent.sublist(recent.length - 6) : recent;
+    final boundedHistory = recent.length > 6
+        ? recent.sublist(recent.length - 6)
+        : recent;
 
     final userPrompt = ChatPrompt.buildUserPrompt(
       sources: promptSources,
@@ -92,7 +95,9 @@ class LocalChatService {
 
     final cleaned = raw.trim();
     if (cleaned.isEmpty) {
-      throw const LocalChatException('Boş bir yanıt alındı. Lütfen tekrar deneyin.');
+      throw const LocalChatException(
+        'Boş bir yanıt alındı. Lütfen tekrar deneyin.',
+      );
     }
 
     final sources = retrieved
@@ -137,8 +142,9 @@ class LocalChatService {
       final byScore = b.score.compareTo(a.score);
       if (byScore != 0) return byScore;
       // Tie-break: most recent first.
-      return (b.t.recordedAt ?? b.t.createdAt)
-          .compareTo(a.t.recordedAt ?? a.t.createdAt);
+      return (b.t.recordedAt ?? b.t.createdAt).compareTo(
+        a.t.recordedAt ?? a.t.createdAt,
+      );
     });
 
     // If nothing matched keywords, fall back to the most recent transcripts so
@@ -152,7 +158,10 @@ class LocalChatService {
           : s.text;
       return (
         title: (s.t.title ?? '').trim().isEmpty ? 'Adsız kayıt' : s.t.title!,
-        date: (s.t.recordedAt ?? s.t.createdAt).toIso8601String().split('T').first,
+        date: (s.t.recordedAt ?? s.t.createdAt)
+            .toIso8601String()
+            .split('T')
+            .first,
         text: text,
       );
     }).toList();

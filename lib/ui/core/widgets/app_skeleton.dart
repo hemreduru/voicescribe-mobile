@@ -7,7 +7,11 @@ import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 
 /// A single rounded placeholder bar sized as a fraction of the available width.
 class AppSkeletonBar extends StatelessWidget {
-  const AppSkeletonBar({required this.widthFactor, this.height = 12, super.key});
+  const AppSkeletonBar({
+    required this.widthFactor,
+    this.height = 12,
+    super.key,
+  });
 
   final double widthFactor;
   final double height;
@@ -98,9 +102,10 @@ class _AppSkeletonShimmerState extends State<AppSkeletonShimmer>
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
-      opacity: Tween<double>(begin: 0.4, end: 0.9).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-      ),
+      opacity: Tween<double>(
+        begin: 0.4,
+        end: 0.9,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
       child: widget.child,
     );
   }

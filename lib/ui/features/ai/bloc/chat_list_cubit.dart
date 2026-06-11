@@ -40,20 +40,26 @@ class ChatListCubit extends Cubit<ChatListState> {
     } on ChatException catch (e) {
       emit(state.copyWith(loading: false, errorMessage: e.message));
     } catch (_) {
-      emit(state.copyWith(loading: false, errorMessage: 'Sohbetler yüklenemedi.'));
+      emit(
+        state.copyWith(loading: false, errorMessage: 'Sohbetler yüklenemedi.'),
+      );
     }
   }
 
   Future<void> delete(int id) async {
     // Optimistic removal.
     final previous = state.sessions;
-    emit(state.copyWith(
-      sessions: previous.where((s) => s.id != id).toList(growable: false),
-    ));
+    emit(
+      state.copyWith(
+        sessions: previous.where((s) => s.id != id).toList(growable: false),
+      ),
+    );
     try {
       await _repository.deleteSession(id);
     } catch (_) {
-      emit(state.copyWith(sessions: previous, errorMessage: 'Sohbet silinemedi.'));
+      emit(
+        state.copyWith(sessions: previous, errorMessage: 'Sohbet silinemedi.'),
+      );
     }
   }
 }

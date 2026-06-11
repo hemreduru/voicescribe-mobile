@@ -495,6 +495,62 @@ void main() {
     expect(rows.first['syncStatus'], SyncStatus.synced.key);
     expect(httpClient.pushCalls, greaterThan(0));
   });
+
+  test(
+    'a 401 push invokes onAuthFailure, keeps local data and does not retry',
+    () async {
+      connectivity = FakeConnectivity();
+      httpClient = FakeSyncHttpClient(
+        pushResult: const SyncHttpResult(statusCode: 401, body: ''),
+        pullResult: const SyncHttpResult(
+          statusCode: 200,
+          body:
+              '{"data":{"serverTime":"2026-05-17T12:00:00Z","transcripts":[],"transcript_chunks":[],"summaries":[]}}',
+        ),
+      );
+      service = SyncQueueService(
+        connectivity: connectivity,
+        httpClient: httpClient,
+      );
+
+      await db.insert('transcripts', {
+        'id': 'local-expired',
+        'localId': 'local-expired',
+        'title': 'Expired token',
+        'durationSeconds': 4,
+        'statusKey': TranscriptStatus.completed.key,
+        'createdAt': '2026-05-17T10:00:00Z',
+        'updatedAt': '2026-05-17T10:00:00Z',
+        'syncStatus': SyncStatus.pending.key,
+      });
+
+      var authFailures = 0;
+      await service.start(
+        accessTokenProvider: () async => 'dead-token',
+        onAuthFailure: () async => authFailures += 1,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(authFailures, 1);
+      // No row was lost; it stays retryable for after the next login.
+      final rows = await db.query(
+        'transcripts',
+        where: 'id = ?',
+        whereArgs: ['local-expired'],
+      );
+      expect(rows, hasLength(1));
+      expect(rows.first['syncStatus'], SyncStatus.failed.key);
+      // A dead token must not trigger the retry loop: exactly one push.
+      expect(httpClient.pushCalls, 1);
+
+      // A manual sync surfaces the auth failure to its caller.
+      await expectLater(
+        service.runManualSync(),
+        throwsA(isA<SyncAuthException>()),
+      );
+      expect(authFailures, 2);
+    },
+  );
 }
 
 Future<void> _clearAllTables(Database db) async {

@@ -16,6 +16,19 @@ import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 
 typedef AccessTokenProvider = Future<String?> Function();
 typedef SyncCompletionCallback = Future<void> Function();
+typedef AuthFailureCallback = Future<void> Function();
+
+/// The server rejected the sync token (401/403). Surfaced to the auth layer
+/// via the `onAuthFailure` callback so the user is sent back to login instead
+/// of the queue retrying a dead token forever.
+class SyncAuthException implements Exception {
+  const SyncAuthException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
 
 enum SyncTrigger {
   auto('auto'),
@@ -88,6 +101,7 @@ class SyncQueueService {
   StreamSubscription<dynamic>? _connectivitySubscription;
   AccessTokenProvider? _accessTokenProvider;
   SyncCompletionCallback? _onSyncComplete;
+  AuthFailureCallback? _onAuthFailure;
   Future<void>? _activeSync;
   Timer? _syncDebounceTimer;
   Timer? _periodicSyncTimer;
@@ -97,6 +111,11 @@ class SyncQueueService {
   static const Duration _maxRetryDelay = Duration(minutes: 2);
   static const Duration _periodicSyncInterval = Duration(minutes: 5);
   static const int _circuitBreakerThreshold = 3;
+  // Rows per push request and batches per cycle: bounds both the request body
+  // size (slow-network timeouts) and the total work a single cycle can do
+  // (25 × 200 = 5000 rows before the next cycle picks up the rest).
+  static const int _pushBatchRowLimit = 200;
+  static const int _maxPushBatchesPerCycle = 25;
   // Cache TTL for soft-deleted rows only. Active synced rows are kept
   // indefinitely as an offline cache.
   static const Duration _deletedCacheTtl = Duration(minutes: 60);
@@ -109,9 +128,11 @@ class SyncQueueService {
   Future<void> start({
     required AccessTokenProvider accessTokenProvider,
     SyncCompletionCallback? onSyncComplete,
+    AuthFailureCallback? onAuthFailure,
   }) async {
     _accessTokenProvider = accessTokenProvider;
     _onSyncComplete = onSyncComplete;
+    _onAuthFailure = onAuthFailure;
     await triggerSyncIfOnline(force: true);
     _startPeriodicSync();
     _connectivitySubscription ??= _connectivity.onConnectivityChanged.listen((
@@ -298,7 +319,14 @@ class SyncQueueService {
     } catch (error) {
       _consecutiveFailureCount += 1;
       await _markAnySyncingAsFailed(db: db, error: error.toString());
-      scheduleSync(delay: _retryDelayFor(_consecutiveFailureCount));
+      if (error is SyncAuthException) {
+        // The token is dead — retrying is pointless. Hand control to the auth
+        // layer (drops the session, sends the user to login); local data stays
+        // untouched and syncs after the next successful login.
+        unawaited(_onAuthFailure?.call());
+      } else {
+        scheduleSync(delay: _retryDelayFor(_consecutiveFailureCount));
+      }
       _emitEvent(
         SyncEvent(
           type: SyncEventType.failure,
@@ -321,35 +349,45 @@ class SyncQueueService {
     // Recover rows left in syncing after app/process interruptions.
     await _markAnySyncingAsFailed(db: db, error: 'interrupted_previous_sync');
 
-    final pushBatch = await _buildPushBatch(db);
     final stats = _SyncWorkStats();
-    SyncHttpResult? pushResponse;
 
-    final hasPushChanges = pushBatch.payload.values.any(
-      (rows) => rows.isNotEmpty,
-    );
-    if (hasPushChanges) {
+    // Push in bounded batches: a long offline backlog as one giant request
+    // would exceed the HTTP window on slow networks and fail forever. Failed
+    // rows are retried in the first batch only (once per cycle); later batches
+    // take pending rows, so conflict-failed rows can't loop within a cycle.
+    var includeFailed = true;
+    for (var batch = 0; batch < _maxPushBatchesPerCycle; batch++) {
+      final pushBatch = await _buildPushBatch(db, includeFailed: includeFailed);
+      includeFailed = false;
+      final hasPushChanges = pushBatch.payload.values.any(
+        (rows) => rows.isNotEmpty,
+      );
+      if (!hasPushChanges) {
+        break;
+      }
       await _markBatchSyncing(db, pushBatch.idsByTable);
-      pushResponse = await _httpClient.postJson(
+      final pushResponse = await _httpClient.postJson(
         url: '${EnvConfig.apiBaseUrl}/api/v1/sync/push',
         token: token,
         payload: pushBatch.payload,
       );
-    }
-
-    final pullPayload = await _fetchPullPayload(db: db, token: token);
-    late final _CleanupResult cleanupResult;
-    late final Set<String> evictedAudioPaths;
-    await db.transaction((txn) async {
-      if (hasPushChanges) {
-        final response = pushResponse;
-        if (response == null) {
-          throw StateError('push_response_missing');
-        }
-        if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (_isAuthFailureStatus(pushResponse.statusCode)) {
+        await _markBatchFailed(
+          db: db,
+          idsByTable: pushBatch.idsByTable,
+          error: 'push_unauthorized_${pushResponse.statusCode}',
+        );
+        throw SyncAuthException(
+          'push_http_${pushResponse.statusCode}: sync token rejected',
+        );
+      }
+      final pushOk =
+          pushResponse.statusCode >= 200 && pushResponse.statusCode < 300;
+      await db.transaction((txn) async {
+        if (pushOk) {
           await _applyPushResponse(
             db: txn,
-            responseBody: response.body,
+            responseBody: pushResponse.body,
             pushBatch: pushBatch,
             stats: stats,
           );
@@ -357,10 +395,19 @@ class SyncQueueService {
           await _markBatchFailed(
             db: txn,
             idsByTable: pushBatch.idsByTable,
-            error: 'push_http_${response.statusCode}: ${response.body}',
+            error: 'push_http_${pushResponse.statusCode}: ${pushResponse.body}',
           );
         }
+      });
+      if (!pushOk) {
+        break;
       }
+    }
+
+    final pullPayload = await _fetchPullPayload(db: db, token: token);
+    late final _CleanupResult cleanupResult;
+    late final Set<String> evictedAudioPaths;
+    await db.transaction((txn) async {
       await _mergePulledRows(txn: txn, pullPayload: pullPayload, stats: stats);
       await _writeSetting(txn, _lastPullAtSettingKey, pullPayload.serverTime);
       cleanupResult = await _cleanupExpiredSyncedRows(
@@ -393,6 +440,11 @@ class SyncQueueService {
       },
     );
 
+    if (_isAuthFailureStatus(response.statusCode)) {
+      throw SyncAuthException(
+        'pull_http_${response.statusCode}: sync token rejected',
+      );
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StateError('pull_http_${response.statusCode}: ${response.body}');
     }
@@ -448,7 +500,10 @@ class SyncQueueService {
     }
   }
 
-  Future<_PushBatch> _buildPushBatch(Database db) async {
+  Future<_PushBatch> _buildPushBatch(
+    Database db, {
+    required bool includeFailed,
+  }) async {
     final payload = <String, List<Map<String, Object?>>>{};
     final idsByTable = <String, Set<String>>{};
     final clientToLocalByTable = <String, Map<String, String>>{};
@@ -456,8 +511,11 @@ class SyncQueueService {
     for (final table in syncTables) {
       final rows = await db.query(
         table,
-        where: 'syncStatus IN (?, ?)',
-        whereArgs: [SyncStatus.pending.key, SyncStatus.failed.key],
+        where: includeFailed ? 'syncStatus IN (?, ?)' : 'syncStatus = ?',
+        whereArgs: includeFailed
+            ? [SyncStatus.pending.key, SyncStatus.failed.key]
+            : [SyncStatus.pending.key],
+        limit: _pushBatchRowLimit,
       );
       final mapped = <Map<String, Object?>>[];
       final ids = <String>{};
@@ -809,6 +867,10 @@ class SyncQueueService {
       'value': value,
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
+
+  bool _isAuthFailureStatus(int statusCode) =>
+      statusCode == HttpStatus.unauthorized ||
+      statusCode == HttpStatus.forbidden;
 
   Duration _retryDelayFor(int failureCount) {
     final exponent = math.min(failureCount, 5);

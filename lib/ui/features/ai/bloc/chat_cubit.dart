@@ -44,9 +44,9 @@ class ChatCubit extends Cubit<ChatState> {
     this._repository, {
     LocalChatService? localChat,
     TranscriptRepository? transcriptRepository,
-  })  : _localChat = localChat,
-        _transcriptRepository = transcriptRepository,
-        super(const ChatState());
+  }) : _localChat = localChat,
+       _transcriptRepository = transcriptRepository,
+       super(const ChatState());
 
   final ChatRepository _repository;
   final LocalChatService? _localChat;
@@ -95,11 +95,13 @@ class ChatCubit extends Cubit<ChatState> {
       content: text,
       createdAt: DateTime.now(),
     );
-    emit(state.copyWith(
-      messages: [...state.messages, optimistic],
-      sending: true,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(
+        messages: [...state.messages, optimistic],
+        sending: true,
+        clearError: true,
+      ),
+    );
 
     if (await _useLocal()) {
       await _sendLocal(text, optimistic);
@@ -117,18 +119,22 @@ class ChatCubit extends Cubit<ChatState> {
         result.userMessage,
         result.assistantMessage,
       ];
-      emit(state.copyWith(
-        sessionId: result.session.id,
-        messages: reconciled,
-        sending: false,
-      ));
+      emit(
+        state.copyWith(
+          sessionId: result.session.id,
+          messages: reconciled,
+          sending: false,
+        ),
+      );
     } on ChatException catch (e) {
       emit(state.copyWith(sending: false, errorMessage: e.message));
     } catch (_) {
-      emit(state.copyWith(
-        sending: false,
-        errorMessage: 'Yanıt alınamadı. Lütfen tekrar dene.',
-      ));
+      emit(
+        state.copyWith(
+          sending: false,
+          errorMessage: 'Yanıt alınamadı. Lütfen tekrar dene.',
+        ),
+      );
     }
   }
 
@@ -152,21 +158,25 @@ class ChatCubit extends Cubit<ChatState> {
         sources: result.sources,
         createdAt: now.add(const Duration(milliseconds: 1)),
       );
-      emit(state.copyWith(
-        messages: [
-          ...state.messages.where((m) => m.id != optimistic.id),
-          userMessage,
-          assistantMessage,
-        ],
-        sending: false,
-      ));
+      emit(
+        state.copyWith(
+          messages: [
+            ...state.messages.where((m) => m.id != optimistic.id),
+            userMessage,
+            assistantMessage,
+          ],
+          sending: false,
+        ),
+      );
     } on LocalChatException catch (e) {
       emit(state.copyWith(sending: false, errorMessage: e.message));
     } catch (_) {
-      emit(state.copyWith(
-        sending: false,
-        errorMessage: 'Yanıt alınamadı. Lütfen tekrar dene.',
-      ));
+      emit(
+        state.copyWith(
+          sending: false,
+          errorMessage: 'Yanıt alınamadı. Lütfen tekrar dene.',
+        ),
+      );
     }
   }
 }

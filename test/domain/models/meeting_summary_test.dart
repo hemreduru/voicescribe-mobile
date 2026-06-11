@@ -66,7 +66,10 @@ void main() {
 
     test('tolerates partial JSON with missing/defaulted fields', () {
       final summary = MeetingSummary.tryParse(
-        jsonEncode({'title': 'Kısmi', 'decisions': ['Tek karar']}),
+        jsonEncode({
+          'title': 'Kısmi',
+          'decisions': ['Tek karar'],
+        }),
       );
       expect(summary, isNotNull);
       expect(summary!.title, 'Kısmi');
@@ -113,7 +116,10 @@ void main() {
 
     test('extracts JSON despite trailing model garbage (repetition loop)', () {
       final raw =
-          '${jsonEncode({'title': 'Toplantı', 'decisions': <Object?>['Karar']})}'
+          '${jsonEncode({
+            'title': 'Toplantı',
+            'decisions': <Object?>['Karar'],
+          })}'
           '2222222222222222222222222';
       final summary = MeetingSummary.tryParse(raw);
       expect(summary, isNotNull);
@@ -124,7 +130,10 @@ void main() {
     test('strips <think> reasoning before the JSON', () {
       final raw =
           '<think>Let me analyze the meeting...</think>\n'
-          '${jsonEncode({'title': 'Sprint', 'decisions': <Object?>['X ertelendi']})}';
+          '${jsonEncode({
+            'title': 'Sprint',
+            'decisions': <Object?>['X ertelendi'],
+          })}';
       final summary = MeetingSummary.tryParse(raw);
       expect(summary, isNotNull);
       expect(summary!.title, 'Sprint');
@@ -153,13 +162,16 @@ void main() {
       );
       // Genuine prose without a JSON object stays plain text.
       expect(
-        MeetingSummary.looksLikeJson('Toplantıda bütçe konuşuldu ve onaylandı.'),
+        MeetingSummary.looksLikeJson(
+          'Toplantıda bütçe konuşuldu ve onaylandı.',
+        ),
         isFalse,
       );
     });
 
     test('recovers a JSON object hidden behind leading prose', () {
-      const raw = 'İşte toplantı özeti:\n{"title":"Saha Denetimi","decisions":["Onaylandı"]}';
+      const raw =
+          'İşte toplantı özeti:\n{"title":"Saha Denetimi","decisions":["Onaylandı"]}';
       final summary = MeetingSummary.tryParse(raw);
       expect(summary, isNotNull);
       expect(summary!.title, 'Saha Denetimi');
@@ -281,8 +293,7 @@ void main() {
 
   group('MeetingSummary.tryParse — near-JSON repair', () {
     test('trailing commas are tolerated', () {
-      const raw =
-          '{"title":"T","decisions":["a","b",],"action_items":[],}';
+      const raw = '{"title":"T","decisions":["a","b",],"action_items":[],}';
       final summary = MeetingSummary.tryParse(raw);
       expect(summary, isNotNull);
       expect(summary!.decisions, ['a', 'b']);
@@ -337,8 +348,7 @@ void main() {
     });
 
     test('the first of several consecutive objects is used', () {
-      const raw =
-          '{"title":"Birinci","decisions":["a"]}{"title":"İkinci"}';
+      const raw = '{"title":"Birinci","decisions":["a"]}{"title":"İkinci"}';
       final summary = MeetingSummary.tryParse(raw);
       expect(summary, isNotNull);
       expect(summary!.title, 'Birinci');

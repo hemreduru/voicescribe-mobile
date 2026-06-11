@@ -38,7 +38,9 @@ class ChatRepository {
   String _token() {
     final token = _tokenProvider()?.trim();
     if (token == null || token.isEmpty) {
-      throw const ChatException('Bu özellik için giriş yapmış olmanız gerekiyor.');
+      throw const ChatException(
+        'Bu özellik için giriş yapmış olmanız gerekiyor.',
+      );
     }
     return token;
   }
@@ -95,7 +97,8 @@ class ChatRepository {
         );
       }
       throw ChatException(
-        response.message ?? 'Yapay zekâ şu an yanıt veremedi. Lütfen tekrar dene.',
+        response.message ??
+            'Yapay zekâ şu an yanıt veremedi. Lütfen tekrar dene.',
       );
     }
     final data = response.data;

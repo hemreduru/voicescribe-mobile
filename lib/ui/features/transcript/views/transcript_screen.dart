@@ -357,9 +357,9 @@ Future<void> _refreshFromBackend(BuildContext context) async {
     await completer.future;
   } catch (_) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.refreshFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.refreshFailed)));
     }
   }
 }

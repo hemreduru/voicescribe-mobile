@@ -33,7 +33,9 @@ class ChatPrompt {
       for (var i = 0; i < sources.length; i++) {
         final s = sources[i];
         final date = (s['date'] ?? '').isEmpty ? 'tarih yok' : s['date'];
-        parts.add('[${i + 1}] Başlık: "${s['title']}" | Tarih: $date\n${s['text']}');
+        parts.add(
+          '[${i + 1}] Başlık: "${s['title']}" | Tarih: $date\n${s['text']}',
+        );
       }
     }
 
@@ -46,8 +48,10 @@ class ChatPrompt {
     }
 
     parts.add('\nSORU: $question');
-    parts.add('Yukarıdaki kaynaklara dayanarak yanıtla ve kullandığın '
-        'kaynakları belirt.');
+    parts.add(
+      'Yukarıdaki kaynaklara dayanarak yanıtla ve kullandığın '
+      'kaynakları belirt.',
+    );
 
     return parts.join('\n');
   }

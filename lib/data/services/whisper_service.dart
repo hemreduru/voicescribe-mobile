@@ -545,24 +545,35 @@ class WhisperTranscriptionService implements TranscriptionService {
     return length >= _minimumUsableModelBytes;
   }
 
+  /// Downloads the model with HTTP Range resume: an interrupted attempt keeps
+  /// its `.part` file and the next attempt continues from where it stopped —
+  /// crucial for the multi-hundred-MB models on mobile networks. A per-chunk
+  /// stall timeout ensures a dead connection fails (and is resumable later)
+  /// instead of hanging bootstrap forever.
   Future<void> _downloadModel({
     required WhisperModel model,
     required File outputFile,
   }) async {
+    const stallTimeout = Duration(seconds: 30);
     final tempFile = File('${outputFile.path}.part');
-    if (await tempFile.exists()) {
-      await tempFile.delete();
-    }
     await outputFile.parent.create(recursive: true);
+    final resumeOffset = await tempFile.exists() ? await tempFile.length() : 0;
 
     final client = HttpClient();
+    var completed = false;
     try {
       final request = await client.getUrl(model.modelUri);
       request.headers.set(
         HttpHeaders.userAgentHeader,
         'VoiceScribe-Flutter/1.0',
       );
-      final response = await request.close();
+      if (resumeOffset > 0) {
+        request.headers.set(HttpHeaders.rangeHeader, 'bytes=$resumeOffset-');
+      }
+      final response = await request.close().timeout(stallTimeout);
+
+      final resumed =
+          resumeOffset > 0 && response.statusCode == HttpStatus.partialContent;
       if (response.statusCode < 200 || response.statusCode > 299) {
         throw HttpException(
           'Model download failed: HTTP ${response.statusCode}',
@@ -570,33 +581,52 @@ class WhisperTranscriptionService implements TranscriptionService {
         );
       }
 
+      final baseOffset = resumed ? resumeOffset : 0;
       final totalBytes = response.contentLength > 0
-          ? response.contentLength
+          ? baseOffset + response.contentLength
           : null;
-      var downloadedBytes = 0;
-      final sink = tempFile.openWrite();
+      var downloadedBytes = baseOffset;
+      var lastNotifiedBytes = 0;
+      final sink = tempFile.openWrite(
+        mode: resumed ? FileMode.append : FileMode.write,
+      );
       try {
-        await for (final chunk in response) {
+        // timeout() on the stream fires when no chunk arrives within the
+        // window — a stalled transfer, not a slow one.
+        await for (final chunk in response.timeout(
+          stallTimeout,
+          onTimeout: (sink) => sink.addError(
+            TimeoutException('Model download stalled', stallTimeout),
+          ),
+        )) {
           downloadedBytes += chunk.length;
           sink.add(chunk);
-          _progressController.add(
-            ModelDownloadProgress(
-              bytesDownloaded: downloadedBytes,
-              totalBytes: totalBytes,
-            ),
-          );
+          // Throttle progress events: one per ~512 KB instead of one per
+          // network packet (thousands of UI rebuilds for a large model).
+          if (downloadedBytes - lastNotifiedBytes >= 512 * 1024) {
+            lastNotifiedBytes = downloadedBytes;
+            _progressController.add(
+              ModelDownloadProgress(
+                bytesDownloaded: downloadedBytes,
+                totalBytes: totalBytes,
+              ),
+            );
+          }
         }
       } finally {
         await sink.close();
       }
 
       if (totalBytes != null && await tempFile.length() != totalBytes) {
+        // Corrupt partial state — discard so the next attempt starts clean.
+        await tempFile.delete();
         throw const FileSystemException('Downloaded model size mismatch');
       }
       if (await outputFile.exists()) {
         await outputFile.delete();
       }
       await tempFile.rename(outputFile.path);
+      completed = true;
       _progressController.add(
         ModelDownloadProgress(
           bytesDownloaded: await outputFile.length(),
@@ -605,7 +635,9 @@ class WhisperTranscriptionService implements TranscriptionService {
       );
     } finally {
       client.close(force: true);
-      if (await tempFile.exists()) {
+      // Keep the .part file on failure — it is the resume point for the next
+      // attempt. (A size-mismatch above deletes it explicitly.)
+      if (completed && await tempFile.exists()) {
         await tempFile.delete();
       }
     }

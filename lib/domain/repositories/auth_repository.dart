@@ -18,4 +18,10 @@ abstract class AuthRepository {
   });
 
   Future<void> logout();
+
+  /// Drops the local session without calling the backend — used when the
+  /// server already rejected the token (401/403). Unlike [logout], this never
+  /// touches cached transcript data, so unsynced work survives a forced
+  /// re-login.
+  Future<void> expireSession();
 }

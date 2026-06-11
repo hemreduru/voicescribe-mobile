@@ -94,7 +94,9 @@ class _AiViewState extends State<_AiView> {
 
         final selectionKey = _composingNew
             ? 'new'
-            : (_selectedSessionId == null ? null : 'session-$_selectedSessionId');
+            : (_selectedSessionId == null
+                  ? null
+                  : 'session-$_selectedSessionId');
 
         return Scaffold(
           body: AdaptiveMasterDetail<String>(
@@ -136,10 +138,7 @@ class _SessionsPane extends StatelessWidget {
         builder: (context, state) {
           return AppPageListView(
             children: [
-              SectionHeader(
-                title: l10n.aiTitle,
-                subtitle: l10n.aiSubtitle,
-              ),
+              SectionHeader(title: l10n.aiTitle, subtitle: l10n.aiSubtitle),
               const SizedBox(height: AppSpacing.md),
               AppButton(
                 label: l10n.chatNewChat,
@@ -222,9 +221,9 @@ class _SessionCard extends StatelessWidget {
     final when = session.lastMessageAt ?? session.createdAt;
     final subtitle = when == null
         ? null
-        : DateFormat.yMMMd(Localizations.localeOf(context).toString())
-              .add_Hm()
-              .format(when);
+        : DateFormat.yMMMd(
+            Localizations.localeOf(context).toString(),
+          ).add_Hm().format(when);
 
     return AppCard(
       selected: selected,
@@ -238,7 +237,9 @@ class _SessionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  session.title.trim().isEmpty ? l10n.chatUntitled : session.title,
+                  session.title.trim().isEmpty
+                      ? l10n.chatUntitled
+                      : session.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -282,12 +283,18 @@ class _NoSessionsState extends StatelessWidget {
       padding: const EdgeInsets.only(top: AppSpacing.xl),
       child: Column(
         children: [
-          Icon(Icons.forum_outlined, size: 44, color: theme.colorScheme.primary),
+          Icon(
+            Icons.forum_outlined,
+            size: 44,
+            color: theme.colorScheme.primary,
+          ),
           const SizedBox(height: AppSpacing.md),
           Text(
             l10n.chatNoSessionsTitle,
             textAlign: TextAlign.center,
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
@@ -316,7 +323,11 @@ class _NoSelectionState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.auto_awesome, size: 48, color: theme.colorScheme.primary),
+            Icon(
+              Icons.auto_awesome,
+              size: 48,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               l10n.chatSelectOrNew,

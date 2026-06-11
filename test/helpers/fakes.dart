@@ -154,6 +154,12 @@ class FakeAuthRepository implements AuthRepository {
     _controller.add(null);
   }
 
+  @override
+  Future<void> expireSession() async {
+    _session = null;
+    _controller.add(null);
+  }
+
   Future<void> dispose() => _controller.close();
 }
 
@@ -374,6 +380,7 @@ class FakeSyncQueueService extends SyncQueueService {
   Future<void> start({
     required AccessTokenProvider accessTokenProvider,
     SyncCompletionCallback? onSyncComplete,
+    AuthFailureCallback? onAuthFailure,
   }) async {
     onComplete = onSyncComplete;
   }

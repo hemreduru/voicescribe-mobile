@@ -38,8 +38,12 @@ class SyncHttpClient {
       final bodyBytes = utf8.encode(jsonEncode(payload));
       request.contentLength = bodyBytes.length;
       request.add(bodyBytes);
+      // Scale the window with the upload size (~1 s per 32 KB on top of the
+      // 15 s base, capped at 2 min) so a large-but-progressing push over a
+      // slow uplink isn't cut off mid-transfer.
+      final uploadSeconds = 15 + (bodyBytes.length ~/ (32 * 1024));
       final response = await request.close().timeout(
-        const Duration(seconds: 15),
+        Duration(seconds: uploadSeconds > 120 ? 120 : uploadSeconds),
       );
       final body = await utf8.decoder
           .bind(response)

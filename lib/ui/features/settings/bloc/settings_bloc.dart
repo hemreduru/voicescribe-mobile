@@ -252,9 +252,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     await _loadModelCatalog(emit);
     await _loadLocalLlmEntry(emit);
     await _localLlmProgressSubscription?.cancel();
-    _localLlmProgressSubscription = _localLlmModelService.downloadProgress.listen(
-      (progress) => add(_SettingsLocalLlmProgressChanged(progress.percent)),
-    );
+    _localLlmProgressSubscription = _localLlmModelService.downloadProgress
+        .listen(
+          (progress) => add(_SettingsLocalLlmProgressChanged(progress.percent)),
+        );
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
       (snapshot) => add(_SettingsSnapshotChanged(snapshot)),
     );

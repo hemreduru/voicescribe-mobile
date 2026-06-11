@@ -69,6 +69,9 @@ class VoiceScribeAuthRepository implements AuthRepository {
     await _setSession(null);
   }
 
+  @override
+  Future<void> expireSession() => _setSession(null);
+
   Future<void> dispose() async {
     await _sessionController.close();
   }

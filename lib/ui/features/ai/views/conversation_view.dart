@@ -179,13 +179,19 @@ class _MessageBubble extends StatelessWidget {
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(AppRadii.lg),
                       topRight: const Radius.circular(AppRadii.lg),
-                      bottomLeft: Radius.circular(isUser ? AppRadii.lg : AppRadii.xs),
-                      bottomRight: Radius.circular(isUser ? AppRadii.xs : AppRadii.lg),
+                      bottomLeft: Radius.circular(
+                        isUser ? AppRadii.lg : AppRadii.xs,
+                      ),
+                      bottomRight: Radius.circular(
+                        isUser ? AppRadii.xs : AppRadii.lg,
+                      ),
                     ),
                   ),
                   child: Text(
                     message.content,
-                    style: theme.textTheme.bodyLarge?.copyWith(color: textColor),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: textColor,
+                    ),
                   ),
                 ),
               ),
@@ -210,7 +216,9 @@ class _SourceList extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final dateFmt = DateFormat.yMMMd(Localizations.localeOf(context).toString());
+    final dateFmt = DateFormat.yMMMd(
+      Localizations.localeOf(context).toString(),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

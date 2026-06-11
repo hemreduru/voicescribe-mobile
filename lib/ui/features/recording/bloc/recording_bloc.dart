@@ -436,10 +436,15 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       status: TranscriptStatus.deriveFromChunks(state.currentChunks),
       durationSeconds: recordedDurationSeconds,
     );
+    // Keep the session active only while its transcription backlog is still
+    // draining (progress/ETA UI); otherwise release it immediately so snapshot
+    // merges stop preserving the in-memory copy.
+    final stillDraining = stopped.status == TranscriptStatus.transcribing;
     emit(
       _replaceTranscript(
         state.copyWith(
-          currentTranscript: stopped,
+          currentTranscript: stillDraining ? stopped : null,
+          currentChunks: stillDraining ? state.currentChunks : const [],
           isRecording: false,
           isPaused: false,
           durationSeconds: 0,
@@ -558,9 +563,10 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       final updated = transcript.markPendingSync(
         status: TranscriptStatus.transcribing,
       );
-      emit(
-        _replaceTranscript(state.copyWith(currentTranscript: updated), updated),
-      );
+      // Note: deliberately NOT promoted to currentTranscript — retrying chunks
+      // of an old session must not make it the "active" one (that would skew
+      // progress/ETA and pin it as the preserved session in snapshot merges).
+      emit(_replaceTranscript(state, updated));
       unawaited(
         _enqueueSave(() => _transcriptRepository.saveTranscript(updated)),
       );
@@ -766,19 +772,35 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     if (transcript == null) {
       return;
     }
+    // Derive the status from the chunk's *own* transcript — using the active
+    // session's chunk list here would mark a recovered/retried old transcript
+    // as `empty` (no active session) or from the wrong chunk set entirely.
+    final ownerChunks = allChunks
+        .where((item) => item.transcriptId == updatedChunk.transcriptId)
+        .toList(growable: false);
     final updatedTranscript = transcript.markPendingSync(
-      status: TranscriptStatus.deriveFromChunks(currentChunks),
+      status: TranscriptStatus.deriveFromChunks(ownerChunks),
     );
     final livePreview = appendPreview == null || appendPreview.trim().isEmpty
         ? state.liveTranscriptPreview
         : _appendPreview(state.liveTranscriptPreview, appendPreview);
+    // Once the stopped session's backlog has fully drained, release it as the
+    // "active" session: keeping it pinned would make snapshot merges preserve
+    // (and even resurrect after a delete) the stale in-memory copy forever.
+    final isActiveSession = state.currentTranscript?.id == updatedTranscript.id;
+    final sessionDone =
+        isActiveSession &&
+        !state.isRecording &&
+        updatedTranscript.status != TranscriptStatus.transcribing;
     emit(
       _replaceTranscript(
         state.copyWith(
           allChunks: allChunks,
-          currentChunks: currentChunks,
-          currentTranscript: updatedTranscript,
-          liveTranscriptPreview: livePreview,
+          currentChunks: sessionDone ? const [] : currentChunks,
+          currentTranscript: sessionDone
+              ? null
+              : (isActiveSession ? updatedTranscript : state.currentTranscript),
+          liveTranscriptPreview: sessionDone ? '' : livePreview,
           errorMessage: errorMessage,
           // Refresh the device-specific speed each time a chunk completes so the
           // live ETA converges on real hardware performance.
@@ -819,6 +841,18 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     final savedTranscript = snapshot.transcripts
         .where((item) => item.id == active.id)
         .firstOrNull;
+    if (savedTranscript == null && !currentState.isRecording) {
+      // The session's row is gone from the DB (deleted from another screen)
+      // and we're no longer capturing into it — stop preserving the stale
+      // in-memory copy, or it would be resurrected into every snapshot.
+      return currentState.copyWith(
+        transcripts: snapshot.transcripts,
+        allChunks: snapshot.chunks,
+        currentTranscript: null,
+        currentChunks: const [],
+        liveTranscriptPreview: '',
+      );
+    }
     final preservedTranscript = active.copyWith(
       remoteId: active.remoteId ?? savedTranscript?.remoteId,
       lastSyncedAt: active.lastSyncedAt ?? savedTranscript?.lastSyncedAt,

@@ -246,6 +246,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             // only a cache reload is needed — refresh() here would re-download
             // the full transcript list after every cycle (every 5 minutes).
             onSyncComplete: _transcriptRepository.reloadFromCache,
+            // Token rejected by the server: drop the session (the watchSession
+            // stream flips the UI to login). Local data is preserved — only
+            // logout() clears the cache.
+            onAuthFailure: _authRepository.expireSession,
           )
           .catchError((Object _) {}),
     );

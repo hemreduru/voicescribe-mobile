@@ -545,7 +545,9 @@ class _LocalSummaryModelRow extends StatelessWidget {
     final Widget trailing;
     if (state.localLlmDownloading) {
       trailing = Text(
-        progress == null ? l10n.localSummaryModelDownloading : '${progress.round()}%',
+        progress == null
+            ? l10n.localSummaryModelDownloading
+            : '${progress.round()}%',
         style: theme.textTheme.labelLarge?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
