@@ -67,7 +67,6 @@ void main() {
         transcript: _transcript(remoteId: '42'),
         transcriptText: 'Toplantı metni.',
         provider: 'cloud',
-        length: 'medium',
       );
 
       expect(client.lastPath, '/api/v1/transcripts/42/summaries');
@@ -78,6 +77,8 @@ void main() {
       expect(summary.processingTimeMs, 1200);
       // The local id is sent so a later sync push updates the same row.
       expect(client.lastPayload?['client_local_id'], summary.id);
+      // The fixed length is still sent to preserve the backend contract.
+      expect(client.lastPayload?['length'], 'medium');
     });
 
     test('throws when the transcript is not synced yet', () async {
@@ -91,7 +92,6 @@ void main() {
           transcript: _transcript(),
           transcriptText: 'metin',
           provider: 'cloud',
-          length: 'medium',
         ),
         throwsA(isA<CloudSummaryException>()),
       );
@@ -110,7 +110,6 @@ void main() {
           transcript: _transcript(remoteId: '42'),
           transcriptText: 'metin',
           provider: 'cloud',
-          length: 'medium',
         ),
         throwsA(
           isA<CloudSummaryException>().having(
@@ -133,7 +132,6 @@ void main() {
           transcript: _transcript(remoteId: '42'),
           transcriptText: 'metin',
           provider: 'cloud',
-          length: 'medium',
         ),
         throwsA(isA<CloudSummaryException>()),
       );

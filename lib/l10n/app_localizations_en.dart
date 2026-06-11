@@ -154,15 +154,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloud => 'Cloud';
 
   @override
-  String get short => 'Short';
-
-  @override
-  String get medium => 'Medium';
-
-  @override
-  String get long => 'Long';
-
-  @override
   String get settings => 'Settings';
 
   @override
@@ -241,11 +232,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get summaryProvider => 'Summary Provider';
 
   @override
-  String get summaryLength => 'Summary Length';
+  String get aiLocationTitle => 'Where should AI run?';
 
   @override
-  String get summaryPreferences =>
-      'Manage where summaries run and how much detail they include.';
+  String get aiLocationLabel => 'AI location';
+
+  @override
+  String get aiLocationOnDevice => 'On this phone';
+
+  @override
+  String get aiLocationCloud => 'In the cloud';
+
+  @override
+  String get aiLocationOnDeviceDesc =>
+      'Everything runs on your phone — no internet needed and nothing leaves the device. Needs a powerful phone and a one-time ~1 GB model download. Applies to both summaries and AI chat.';
+
+  @override
+  String get aiLocationCloudDesc =>
+      'More capable, much faster AI that handles long meetings better. Needs internet and sign-in, and the recording is synced first. Applies to both summaries and AI chat.';
+
+  @override
+  String get aiLocationOnDeviceUnavailable =>
+      'This phone isn\'t powerful enough for on-device AI — use the cloud instead.';
+
+  @override
+  String get summaryPreferences => 'Choose where summaries and AI chat run.';
 
   @override
   String get transcriptionModelSettings => 'Transcription Model';
@@ -334,6 +345,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get generateSummary => 'Generate Summary';
+
+  @override
+  String summarizingProgress(Object current, Object total) {
+    return 'Summarizing… ($current/$total)';
+  }
 
   @override
   String get summaryPlaceholder =>

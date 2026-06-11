@@ -7,6 +7,28 @@ abstract interface class SummaryFailure {
   String get message;
 }
 
+/// Progress of a multi-step summary (on-device map-reduce over a long
+/// transcript). [current] is the 1-based step just completed, [total] the total
+/// step count; when [total] is 1 there is nothing useful to show.
+class SummaryProgress {
+  const SummaryProgress({required this.current, required this.total});
+
+  final int current;
+  final int total;
+
+  bool get isMultiStep => total > 1;
+}
+
+/// Optional callback invoked as a summary advances through its steps.
+typedef SummaryProgressCallback = void Function(SummaryProgress progress);
+
+/// Single, fixed summary format sent to the backend. The app no longer exposes a
+/// short/medium/long choice; "medium" maps to a rich-but-not-bloated summary
+/// (short exec summary + all decisions + all action items + open questions). The
+/// backend still expects a `length` field, so this constant preserves that
+/// contract while keeping the choice out of the UI.
+const String kFixedSummaryLength = 'medium';
+
 // Kept as an interface so app state can inject local/cloud summary engines.
 // ignore: one_member_abstracts
 abstract class SummaryService {
@@ -14,7 +36,7 @@ abstract class SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
-    required String length,
+    SummaryProgressCallback? onProgress,
   });
 }
 
@@ -26,7 +48,7 @@ class LocalSummaryService implements SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
-    required String length,
+    SummaryProgressCallback? onProgress,
   }) async {
     final normalized = normalizeWhitespace(transcriptText);
     final sentences = normalized
@@ -34,11 +56,7 @@ class LocalSummaryService implements SummaryService {
         .where((item) => item.trim().isNotEmpty)
         .toList();
 
-    final takeCount = switch (length) {
-      'short' => 1,
-      'long' => 4,
-      _ => 2,
-    };
+    const takeCount = 2;
 
     final selected = sentences.isEmpty
         ? [normalized]

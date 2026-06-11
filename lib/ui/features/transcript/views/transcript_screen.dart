@@ -19,6 +19,7 @@ import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_segmented_control.dart';
+import 'package:voicescribe_mobile/ui/core/widgets/app_skeleton.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_text_field.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/premium_widgets.dart';
 import 'package:voicescribe_mobile/ui/features/recording/bloc/recording_bloc.dart';
@@ -253,7 +254,7 @@ class _TranscriptMaster extends StatelessWidget {
             child: RefreshIndicator(
               onRefresh: () => _refreshFromBackend(context),
               child: state.snapshot == null
-                  ? const _TranscriptListSkeleton()
+                  ? const AppSkeletonList()
                   : state.items.isEmpty
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -737,6 +738,7 @@ class _TranscriptDetailScope extends StatelessWidget {
               previous.mergedText != current.mergedText ||
               previous.tabIndex != current.tabIndex ||
               previous.generatingSummary != current.generatingSummary ||
+              previous.summaryProgress != current.summaryProgress ||
               previous.completedChunkCount != current.completedChunkCount ||
               previous.totalChunkCount != current.totalChunkCount,
           builder: (context, state) => builder(context, state, recordingState),
@@ -836,7 +838,10 @@ class _TranscriptDetailPaneBody extends StatelessWidget {
             ),
             Expanded(
               child: state.transcript == null
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: AppSkeletonList(itemCount: 4),
+                    )
                   : AppPageListView(
                       children: _transcriptDetailChildren(
                         context,
@@ -957,6 +962,17 @@ class _SummaryTab extends StatelessWidget {
           isLoading: state.generatingSummary,
           expanded: true,
         ),
+        if (state.generatingSummary && state.summaryProgress != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.summarizingProgress(
+              state.summaryProgress!.current,
+              state.summaryProgress!.total,
+            ),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
         const SizedBox(height: AppSpacing.lg),
         _summaryBody(context),
       ],
@@ -1203,81 +1219,3 @@ bool _isTurkish(BuildContext context) {
 
 /// A lightweight shimmer placeholder shown while the first transcript snapshot
 /// loads, so the list fades in instead of popping from blank to content.
-class _TranscriptListSkeleton extends StatefulWidget {
-  const _TranscriptListSkeleton();
-
-  @override
-  State<_TranscriptListSkeleton> createState() =>
-      _TranscriptListSkeletonState();
-}
-
-class _TranscriptListSkeletonState extends State<_TranscriptListSkeleton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  )..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: 6,
-      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm + 2),
-      itemBuilder: (context, index) => FadeTransition(
-        opacity: Tween<double>(begin: 0.4, end: 0.9).animate(
-          CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-        ),
-        child: const _SkeletonCard(),
-      ),
-    );
-  }
-}
-
-class _SkeletonCard extends StatelessWidget {
-  const _SkeletonCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(
-      context,
-    ).colorScheme.onSurface.withValues(alpha: 0.08);
-    Widget bar(double widthFactor, double height) => FractionallySizedBox(
-      alignment: Alignment.centerLeft,
-      widthFactor: widthFactor,
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(AppRadii.sm),
-        ),
-      ),
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          bar(0.6, 16),
-          const SizedBox(height: AppSpacing.sm),
-          bar(0.9, 12),
-          const SizedBox(height: AppSpacing.xs),
-          bar(0.75, 12),
-        ],
-      ),
-    );
-  }
-}

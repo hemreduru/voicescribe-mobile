@@ -39,7 +39,9 @@ class CloudSummaryService implements SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
-    required String length,
+    // The cloud backend chunks long transcripts itself, so there is no
+    // client-side multi-step progress to report.
+    SummaryProgressCallback? onProgress,
   }) async {
     final remoteId = transcript.remoteId;
     if (remoteId == null || remoteId.trim().isEmpty) {
@@ -65,7 +67,9 @@ class CloudSummaryService implements SummaryService {
       path: '/api/v1/transcripts/$remoteId/summaries',
       payload: <String, Object?>{
         'transcript_text': transcriptText,
-        'length': length,
+        // Fixed format; the UI no longer offers a length choice. The backend
+        // contract still expects this field (see kFixedSummaryLength).
+        'length': kFixedSummaryLength,
         'client_local_id': localId,
         // Phone language → summary is written in this language regardless of the
         // transcript's language.

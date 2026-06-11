@@ -10,6 +10,7 @@ import 'package:voicescribe_mobile/ui/core/widgets/adaptive_master_detail.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
+import 'package:voicescribe_mobile/ui/core/widgets/app_skeleton.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/premium_widgets.dart';
 import 'package:voicescribe_mobile/ui/features/ai/bloc/chat_list_cubit.dart';
 import 'package:voicescribe_mobile/ui/features/ai/views/conversation_view.dart';
@@ -152,8 +153,8 @@ class _SessionsPane extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               if (state.loading && state.sessions.isEmpty)
                 const Padding(
-                  padding: EdgeInsets.only(top: AppSpacing.xl),
-                  child: Center(child: CircularProgressIndicator()),
+                  padding: EdgeInsets.only(top: AppSpacing.lg),
+                  child: AppSkeletonList(itemCount: 4, lineCount: 1),
                 )
               else if (state.sessions.isEmpty)
                 const _NoSessionsState()

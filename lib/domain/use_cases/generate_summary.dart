@@ -16,6 +16,7 @@ class GenerateSummaryUseCase {
     required Transcript transcript,
     required String transcriptText,
     required AppPreferences preferences,
+    SummaryProgressCallback? onProgress,
   }) async {
     if (transcriptText.trim().isEmpty) {
       return null;
@@ -24,7 +25,7 @@ class GenerateSummaryUseCase {
       transcript: transcript,
       transcriptText: transcriptText,
       provider: preferences.summaryProvider,
-      length: preferences.summaryLength,
+      onProgress: onProgress,
     );
     final pending = summary.copyWith(syncStatus: SyncStatus.pending);
     await _repository.saveSummary(pending);

@@ -22,12 +22,6 @@ final class SettingsSummaryProviderChanged extends SettingsEvent {
   final String value;
 }
 
-final class SettingsSummaryLengthChanged extends SettingsEvent {
-  const SettingsSummaryLengthChanged(this.value);
-
-  final String value;
-}
-
 final class SettingsThemeModeChanged extends SettingsEvent {
   const SettingsThemeModeChanged(this.value);
 
@@ -212,7 +206,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_SettingsSessionChanged>(_onSessionChanged);
     on<_SettingsSyncEventChanged>(_onSyncEventChanged);
     on<SettingsSummaryProviderChanged>(_onSummaryProviderChanged);
-    on<SettingsSummaryLengthChanged>(_onSummaryLengthChanged);
     on<SettingsThemeModeChanged>(_onThemeModeChanged);
     on<SettingsLocalePreferenceChanged>(_onLocalePreferenceChanged);
     on<SettingsTranscriptionModelChanged>(_onTranscriptionModelChanged);
@@ -344,18 +337,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       emit,
       state.preferences.copyWith(
         summaryProvider: AppPreferences.normalizeSummaryProvider(event.value),
-      ),
-    );
-  }
-
-  Future<void> _onSummaryLengthChanged(
-    SettingsSummaryLengthChanged event,
-    Emitter<SettingsState> emit,
-  ) {
-    return _savePreferences(
-      emit,
-      state.preferences.copyWith(
-        summaryLength: AppPreferences.normalizeSummaryLength(event.value),
       ),
     );
   }
@@ -512,6 +493,16 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     try {
       final entry = await _localLlmModelService.catalogEntry();
       emit(state.copyWith(localLlmEntry: entry));
+      // Smart default: a device that can't run on-device AI shouldn't be left
+      // pointing summary + chat at the local engine (it would just fail), so
+      // fall back to cloud automatically. The user can still switch back if the
+      // device later qualifies.
+      if (!entry.isSupported && state.preferences.summaryProvider == 'local') {
+        await _savePreferences(
+          emit,
+          state.preferences.copyWith(summaryProvider: 'cloud'),
+        );
+      }
     } catch (error) {
       emit(state.copyWith(localLlmErrorMessage: error.toString()));
     }

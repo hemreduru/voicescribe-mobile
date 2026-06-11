@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MeetingSummary {
 
-@JsonKey(name: 'schema_version') int get schemaVersion; String get title; String? get subtitle; MeetingMetadata get metadata;@JsonKey(name: 'executive_summary')@_FlexibleStringList() List<String> get executiveSummary;@JsonKey(name: 'agenda_items') List<AgendaItem> get agendaItems;@_FlexibleStringList() List<String> get decisions;@JsonKey(name: 'action_items') List<ActionItem> get actionItems;@JsonKey(name: 'open_questions')@_FlexibleStringList() List<String> get openQuestions;@JsonKey(name: 'next_meeting') String? get nextMeeting;@_FlexibleStringList() List<String> get notes;
+@JsonKey(name: 'schema_version') int get schemaVersion; String get title; String? get subtitle; MeetingMetadata get metadata;@JsonKey(name: 'executive_summary')@_FlexibleStringList() List<String> get executiveSummary;@JsonKey(name: 'agenda_items')@_FlexibleAgendaItemList() List<AgendaItem> get agendaItems;@_FlexibleStringList() List<String> get decisions;@JsonKey(name: 'action_items')@_FlexibleActionItemList() List<ActionItem> get actionItems;@JsonKey(name: 'open_questions')@_FlexibleStringList() List<String> get openQuestions;@JsonKey(name: 'next_meeting') String? get nextMeeting;@_FlexibleStringList() List<String> get notes;
 /// Create a copy of MeetingSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $MeetingSummaryCopyWith<$Res>  {
   factory $MeetingSummaryCopyWith(MeetingSummary value, $Res Function(MeetingSummary) _then) = _$MeetingSummaryCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'schema_version') int schemaVersion, String title, String? subtitle, MeetingMetadata metadata,@JsonKey(name: 'executive_summary')@_FlexibleStringList() List<String> executiveSummary,@JsonKey(name: 'agenda_items') List<AgendaItem> agendaItems,@_FlexibleStringList() List<String> decisions,@JsonKey(name: 'action_items') List<ActionItem> actionItems,@JsonKey(name: 'open_questions')@_FlexibleStringList() List<String> openQuestions,@JsonKey(name: 'next_meeting') String? nextMeeting,@_FlexibleStringList() List<String> notes
+@JsonKey(name: 'schema_version') int schemaVersion, String title, String? subtitle, MeetingMetadata metadata,@JsonKey(name: 'executive_summary')@_FlexibleStringList() List<String> executiveSummary,@JsonKey(name: 'agenda_items')@_FlexibleAgendaItemList() List<AgendaItem> agendaItems,@_FlexibleStringList() List<String> decisions,@JsonKey(name: 'action_items')@_FlexibleActionItemList() List<ActionItem> actionItems,@JsonKey(name: 'open_questions')@_FlexibleStringList() List<String> openQuestions,@JsonKey(name: 'next_meeting') String? nextMeeting,@_FlexibleStringList() List<String> notes
 });
 
 
@@ -172,7 +172,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'schema_version')  int schemaVersion,  String title,  String? subtitle,  MeetingMetadata metadata, @JsonKey(name: 'executive_summary')@_FlexibleStringList()  List<String> executiveSummary, @JsonKey(name: 'agenda_items')  List<AgendaItem> agendaItems, @_FlexibleStringList()  List<String> decisions, @JsonKey(name: 'action_items')  List<ActionItem> actionItems, @JsonKey(name: 'open_questions')@_FlexibleStringList()  List<String> openQuestions, @JsonKey(name: 'next_meeting')  String? nextMeeting, @_FlexibleStringList()  List<String> notes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'schema_version')  int schemaVersion,  String title,  String? subtitle,  MeetingMetadata metadata, @JsonKey(name: 'executive_summary')@_FlexibleStringList()  List<String> executiveSummary, @JsonKey(name: 'agenda_items')@_FlexibleAgendaItemList()  List<AgendaItem> agendaItems, @_FlexibleStringList()  List<String> decisions, @JsonKey(name: 'action_items')@_FlexibleActionItemList()  List<ActionItem> actionItems, @JsonKey(name: 'open_questions')@_FlexibleStringList()  List<String> openQuestions, @JsonKey(name: 'next_meeting')  String? nextMeeting, @_FlexibleStringList()  List<String> notes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MeetingSummary() when $default != null:
 return $default(_that.schemaVersion,_that.title,_that.subtitle,_that.metadata,_that.executiveSummary,_that.agendaItems,_that.decisions,_that.actionItems,_that.openQuestions,_that.nextMeeting,_that.notes);case _:
@@ -193,7 +193,7 @@ return $default(_that.schemaVersion,_that.title,_that.subtitle,_that.metadata,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'schema_version')  int schemaVersion,  String title,  String? subtitle,  MeetingMetadata metadata, @JsonKey(name: 'executive_summary')@_FlexibleStringList()  List<String> executiveSummary, @JsonKey(name: 'agenda_items')  List<AgendaItem> agendaItems, @_FlexibleStringList()  List<String> decisions, @JsonKey(name: 'action_items')  List<ActionItem> actionItems, @JsonKey(name: 'open_questions')@_FlexibleStringList()  List<String> openQuestions, @JsonKey(name: 'next_meeting')  String? nextMeeting, @_FlexibleStringList()  List<String> notes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'schema_version')  int schemaVersion,  String title,  String? subtitle,  MeetingMetadata metadata, @JsonKey(name: 'executive_summary')@_FlexibleStringList()  List<String> executiveSummary, @JsonKey(name: 'agenda_items')@_FlexibleAgendaItemList()  List<AgendaItem> agendaItems, @_FlexibleStringList()  List<String> decisions, @JsonKey(name: 'action_items')@_FlexibleActionItemList()  List<ActionItem> actionItems, @JsonKey(name: 'open_questions')@_FlexibleStringList()  List<String> openQuestions, @JsonKey(name: 'next_meeting')  String? nextMeeting, @_FlexibleStringList()  List<String> notes)  $default,) {final _that = this;
 switch (_that) {
 case _MeetingSummary():
 return $default(_that.schemaVersion,_that.title,_that.subtitle,_that.metadata,_that.executiveSummary,_that.agendaItems,_that.decisions,_that.actionItems,_that.openQuestions,_that.nextMeeting,_that.notes);case _:
@@ -213,7 +213,7 @@ return $default(_that.schemaVersion,_that.title,_that.subtitle,_that.metadata,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'schema_version')  int schemaVersion,  String title,  String? subtitle,  MeetingMetadata metadata, @JsonKey(name: 'executive_summary')@_FlexibleStringList()  List<String> executiveSummary, @JsonKey(name: 'agenda_items')  List<AgendaItem> agendaItems, @_FlexibleStringList()  List<String> decisions, @JsonKey(name: 'action_items')  List<ActionItem> actionItems, @JsonKey(name: 'open_questions')@_FlexibleStringList()  List<String> openQuestions, @JsonKey(name: 'next_meeting')  String? nextMeeting, @_FlexibleStringList()  List<String> notes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'schema_version')  int schemaVersion,  String title,  String? subtitle,  MeetingMetadata metadata, @JsonKey(name: 'executive_summary')@_FlexibleStringList()  List<String> executiveSummary, @JsonKey(name: 'agenda_items')@_FlexibleAgendaItemList()  List<AgendaItem> agendaItems, @_FlexibleStringList()  List<String> decisions, @JsonKey(name: 'action_items')@_FlexibleActionItemList()  List<ActionItem> actionItems, @JsonKey(name: 'open_questions')@_FlexibleStringList()  List<String> openQuestions, @JsonKey(name: 'next_meeting')  String? nextMeeting, @_FlexibleStringList()  List<String> notes)?  $default,) {final _that = this;
 switch (_that) {
 case _MeetingSummary() when $default != null:
 return $default(_that.schemaVersion,_that.title,_that.subtitle,_that.metadata,_that.executiveSummary,_that.agendaItems,_that.decisions,_that.actionItems,_that.openQuestions,_that.nextMeeting,_that.notes);case _:
@@ -228,7 +228,7 @@ return $default(_that.schemaVersion,_that.title,_that.subtitle,_that.metadata,_t
 @JsonSerializable()
 
 class _MeetingSummary extends MeetingSummary {
-  const _MeetingSummary({@JsonKey(name: 'schema_version') this.schemaVersion = kMeetingSummarySchemaVersion, this.title = '', this.subtitle, this.metadata = const MeetingMetadata(), @JsonKey(name: 'executive_summary')@_FlexibleStringList() final  List<String> executiveSummary = const <String>[], @JsonKey(name: 'agenda_items') final  List<AgendaItem> agendaItems = const <AgendaItem>[], @_FlexibleStringList() final  List<String> decisions = const <String>[], @JsonKey(name: 'action_items') final  List<ActionItem> actionItems = const <ActionItem>[], @JsonKey(name: 'open_questions')@_FlexibleStringList() final  List<String> openQuestions = const <String>[], @JsonKey(name: 'next_meeting') this.nextMeeting, @_FlexibleStringList() final  List<String> notes = const <String>[]}): _executiveSummary = executiveSummary,_agendaItems = agendaItems,_decisions = decisions,_actionItems = actionItems,_openQuestions = openQuestions,_notes = notes,super._();
+  const _MeetingSummary({@JsonKey(name: 'schema_version') this.schemaVersion = kMeetingSummarySchemaVersion, this.title = '', this.subtitle, this.metadata = const MeetingMetadata(), @JsonKey(name: 'executive_summary')@_FlexibleStringList() final  List<String> executiveSummary = const <String>[], @JsonKey(name: 'agenda_items')@_FlexibleAgendaItemList() final  List<AgendaItem> agendaItems = const <AgendaItem>[], @_FlexibleStringList() final  List<String> decisions = const <String>[], @JsonKey(name: 'action_items')@_FlexibleActionItemList() final  List<ActionItem> actionItems = const <ActionItem>[], @JsonKey(name: 'open_questions')@_FlexibleStringList() final  List<String> openQuestions = const <String>[], @JsonKey(name: 'next_meeting') this.nextMeeting, @_FlexibleStringList() final  List<String> notes = const <String>[]}): _executiveSummary = executiveSummary,_agendaItems = agendaItems,_decisions = decisions,_actionItems = actionItems,_openQuestions = openQuestions,_notes = notes,super._();
   factory _MeetingSummary.fromJson(Map<String, dynamic> json) => _$MeetingSummaryFromJson(json);
 
 @override@JsonKey(name: 'schema_version') final  int schemaVersion;
@@ -243,7 +243,7 @@ class _MeetingSummary extends MeetingSummary {
 }
 
  final  List<AgendaItem> _agendaItems;
-@override@JsonKey(name: 'agenda_items') List<AgendaItem> get agendaItems {
+@override@JsonKey(name: 'agenda_items')@_FlexibleAgendaItemList() List<AgendaItem> get agendaItems {
   if (_agendaItems is EqualUnmodifiableListView) return _agendaItems;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_agendaItems);
@@ -257,7 +257,7 @@ class _MeetingSummary extends MeetingSummary {
 }
 
  final  List<ActionItem> _actionItems;
-@override@JsonKey(name: 'action_items') List<ActionItem> get actionItems {
+@override@JsonKey(name: 'action_items')@_FlexibleActionItemList() List<ActionItem> get actionItems {
   if (_actionItems is EqualUnmodifiableListView) return _actionItems;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_actionItems);
@@ -312,7 +312,7 @@ abstract mixin class _$MeetingSummaryCopyWith<$Res> implements $MeetingSummaryCo
   factory _$MeetingSummaryCopyWith(_MeetingSummary value, $Res Function(_MeetingSummary) _then) = __$MeetingSummaryCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'schema_version') int schemaVersion, String title, String? subtitle, MeetingMetadata metadata,@JsonKey(name: 'executive_summary')@_FlexibleStringList() List<String> executiveSummary,@JsonKey(name: 'agenda_items') List<AgendaItem> agendaItems,@_FlexibleStringList() List<String> decisions,@JsonKey(name: 'action_items') List<ActionItem> actionItems,@JsonKey(name: 'open_questions')@_FlexibleStringList() List<String> openQuestions,@JsonKey(name: 'next_meeting') String? nextMeeting,@_FlexibleStringList() List<String> notes
+@JsonKey(name: 'schema_version') int schemaVersion, String title, String? subtitle, MeetingMetadata metadata,@JsonKey(name: 'executive_summary')@_FlexibleStringList() List<String> executiveSummary,@JsonKey(name: 'agenda_items')@_FlexibleAgendaItemList() List<AgendaItem> agendaItems,@_FlexibleStringList() List<String> decisions,@JsonKey(name: 'action_items')@_FlexibleActionItemList() List<ActionItem> actionItems,@JsonKey(name: 'open_questions')@_FlexibleStringList() List<String> openQuestions,@JsonKey(name: 'next_meeting') String? nextMeeting,@_FlexibleStringList() List<String> notes
 });
 
 

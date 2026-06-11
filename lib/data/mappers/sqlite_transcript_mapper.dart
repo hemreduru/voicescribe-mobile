@@ -132,9 +132,6 @@ class SqliteTranscriptMapper {
       summaryProvider: AppPreferences.normalizeSummaryProvider(
         settings['summaryProvider'] ?? 'local',
       ),
-      summaryLength: AppPreferences.normalizeSummaryLength(
-        settings['summaryLength'] ?? 'medium',
-      ),
       themeMode: AppPreferences.normalizeThemeMode(
         settings['themeMode'] ?? 'system',
       ),
@@ -153,7 +150,6 @@ class SqliteTranscriptMapper {
   static Map<String, String> preferencesToSettings(AppPreferences preferences) {
     return {
       'summaryProvider': preferences.summaryProvider,
-      'summaryLength': preferences.summaryLength,
       'themeMode': preferences.themeMode,
       'localePreference': preferences.localePreference,
       'transcriptionModel': preferences.transcriptionModel,

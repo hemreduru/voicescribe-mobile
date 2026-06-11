@@ -10,15 +10,27 @@ class MeetingMinutesPrompt {
   /// System instruction handed to the on-device model. [locale] is the user's
   /// phone language; the summary is written in that language regardless of the
   /// transcript's language.
-  static String system({String length = 'medium', String locale = 'tr'}) {
-    const schema =
-        '{"schema_version":$kMeetingSummarySchemaVersion,"title":"kısa başlık","executive_summary":["2-4 cümle, her biri ayrı"],"decisions":["alınan kararlar"],"action_items":[{"owner":"kişi veya null","task":"yapılacak iş","due_date":"tarih veya null"}],"open_questions":["karara bağlanmayan konular"]}';
+  static String system({String locale = 'tr'}) {
+    // A single concrete example doubles as the schema spec — for a small model a
+    // filled example anchors valid-JSON output more reliably than abstract field
+    // descriptions, and is ~24% shorter than the prior prose+schema+rules form.
+    const example =
+        '{"schema_version":$kMeetingSummarySchemaVersion,"title":"Bütçe Toplantısı","executive_summary":["Bütçe 50 bin TL olarak onaylandı.","Rapor cuma günü gönderilecek."],"decisions":["Bütçe 50 bin TL olarak onaylandı."],"action_items":[{"owner":"Ayşe","task":"Raporu gönder","due_date":"Cuma"}],"open_questions":["Tedarikçi seçimi netleşmedi"]}';
     final language = _languageName(locale);
     return '''
-Sen deneyimli bir toplantı tutanağı yazarısın. Verilen toplantı transkriptini özetle ve SADECE aşağıdaki JSON nesnesini döndür (markdown, kod bloğu veya açıklama YOK). Tüm çıktıyı $language dilinde yaz; transkript hangi dilde olursa olsun içeriği $language diline çevir. Özel isimleri ve sayıları olduğu gibi koru.
-Şema:
-$schema
-Kurallar: tarafsız ve geçmiş zaman kullan; kararları net ve tek cümle yaz; bilgi yoksa boş liste [] veya null kullan; bilgi uydurma; selamlaşma ve konu dışı sohbeti atla.''';
+Toplantı transkriptini özetle ve SADECE aşağıdaki örnekteki gibi tek bir JSON döndür (markdown/açıklama YOK, tüm alanları doldur). Çıktı dili: $language.
+Örnek: $example
+Kurallar: geçmiş zaman; her kararı tek cümle; bilgi yoksa [] veya null; bilgi uydurma; selamlaşmayı atla.''';
+  }
+
+  /// System instruction for the **map** step of long-transcript summarization:
+  /// condenses one window into short plain-text notes (not JSON) that the reduce
+  /// step later folds into the final [MeetingSummary]. Plain notes keep each
+  /// inference small and cheap to merge.
+  static String partialNotes({String locale = 'tr'}) {
+    final language = _languageName(locale);
+    return '''
+Sen bir toplantı transkriptinin BİR BÖLÜMÜNÜ işliyorsun. Bu bölümdeki önemli noktaları kısa madde işaretleriyle çıkar: kararlar, yapılacak işler (kim, ne, ne zaman) ve açık konular. SADECE düz metin madde listesi yaz (JSON, başlık veya açıklama YOK). Tümünü $language dilinde yaz. Bilgi uydurma; bu bölümde yoksa atla. Selamlaşma ve konu dışı sohbeti yok say.''';
   }
 
   /// Maps an app locale code to its Turkish language name for the prompt.

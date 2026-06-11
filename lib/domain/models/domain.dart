@@ -143,7 +143,6 @@ abstract class Summary with _$Summary {
 abstract class AppPreferences with _$AppPreferences {
   const factory AppPreferences({
     @Default('local') String summaryProvider,
-    @Default('medium') String summaryLength,
     @Default('system') String themeMode,
     @Default('system') String localePreference,
     @Default('base') String transcriptionModel,
@@ -156,14 +155,6 @@ abstract class AppPreferences with _$AppPreferences {
     return switch (value) {
       'cloud' => 'cloud',
       _ => 'local',
-    };
-  }
-
-  static String normalizeSummaryLength(String value) {
-    return switch (value) {
-      'short' => 'short',
-      'long' => 'long',
-      _ => 'medium',
     };
   }
 
