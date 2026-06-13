@@ -5,6 +5,7 @@ import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/local_llm_runtime.dart';
 import 'package:voicescribe_mobile/data/services/llm/local_summary_chunker.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/models/meeting_summary.dart';
 import 'package:voicescribe_mobile/domain/services/meeting_minutes_prompt.dart';
@@ -29,12 +30,18 @@ const int _maxReduceDepth = 2;
 const Duration _localInferenceTimeout = Duration(minutes: 4);
 
 /// Thrown when the on-device model cannot produce a usable structured summary.
-/// The UI surfaces [message]; no garbage is persisted.
+/// The UI localizes [code]; [message] is for logs. No garbage is persisted.
 class LocalSummaryException implements Exception, SummaryFailure {
-  const LocalSummaryException(this.message);
+  const LocalSummaryException(
+    this.message, {
+    this.code = AppErrorCode.summaryLocalFailed,
+  });
 
   @override
   final String message;
+
+  @override
+  final AppErrorCode code;
 
   @override
   String toString() => 'LocalSummaryException: $message';
@@ -49,10 +56,10 @@ class LocalSummaryException implements Exception, SummaryFailure {
 class LocalLlmSummaryService implements SummaryService {
   LocalLlmSummaryService({
     required LocalLlmModelService modelService,
-    LocalLlmRuntime runtime = const LocalLlmRuntime(),
+    LocalLlmRuntime? runtime,
     Uuid uuid = const Uuid(),
   }) : _modelService = modelService,
-       _runtime = runtime,
+       _runtime = runtime ?? LocalLlmRuntime(),
        _uuid = uuid;
 
   final LocalLlmModelService _modelService;
@@ -68,16 +75,28 @@ class LocalLlmSummaryService implements SummaryService {
   }) async {
     final input = transcriptText.trim();
     if (input.isEmpty) {
-      throw const LocalSummaryException('Özetlenecek transkript metni yok.');
+      throw const LocalSummaryException(
+        'No transcript text to summarize.',
+        code: AppErrorCode.summaryEmptyTranscript,
+      );
     }
 
     final stopwatch = Stopwatch()..start();
     await _modelService.ensureReady();
 
     final locale = deviceLanguageCode();
-    final parsed = input.length <= _localInputCharBudget
-        ? await _summarizeSinglePass(input, locale, onProgress)
-        : await _summarizeLong(input, locale, transcript, onProgress);
+    // Lease the model for the whole run: a long transcript performs many
+    // map-reduce inferences and reloading the model per window costs seconds
+    // each time. The lease is released (model unloaded) when the run ends.
+    _runtime.acquire();
+    final MeetingSummary parsed;
+    try {
+      parsed = input.length <= _localInputCharBudget
+          ? await _summarizeSinglePass(input, locale, onProgress)
+          : await _summarizeLong(input, locale, transcript, onProgress);
+    } finally {
+      await _runtime.release();
+    }
     stopwatch.stop();
 
     return Summary(
@@ -104,8 +123,7 @@ class LocalLlmSummaryService implements SummaryService {
     final parsed = await _structuredWithRetry(prompt, input);
     if (parsed == null) {
       throw const LocalSummaryException(
-        'Cihaz üstü model bu sefer geçerli bir özet üretemedi. Lütfen tekrar '
-        'deneyin veya Bulut özetine geçin.',
+        'On-device model produced no valid structured summary.',
       );
     }
     return parsed;
@@ -143,8 +161,7 @@ class LocalLlmSummaryService implements SummaryService {
     }
     if (notes.isEmpty) {
       throw const LocalSummaryException(
-        'Cihaz üstü model bu sefer geçerli bir özet üretemedi. Lütfen tekrar '
-        'deneyin veya Bulut özetine geçin.',
+        'On-device model produced no usable notes for any window.',
       );
     }
 
@@ -218,8 +235,8 @@ class LocalLlmSummaryService implements SummaryService {
           .timeout(_localInferenceTimeout);
     } on TimeoutException {
       throw const LocalSummaryException(
-        'Özet beklenenden uzun sürdü. Lütfen tekrar deneyin veya Bulut özetini '
-        'kullanın.',
+        'On-device inference timed out.',
+        code: AppErrorCode.summaryTimeout,
       );
     }
   }

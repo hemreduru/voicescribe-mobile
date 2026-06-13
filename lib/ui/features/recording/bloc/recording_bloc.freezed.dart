@@ -14,7 +14,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RecordingState {
 
- List<Transcript> get transcripts; List<TranscriptChunk> get allChunks; Transcript? get currentTranscript; List<TranscriptChunk> get currentChunks; bool get isRecording; bool get isPaused; int get durationSeconds; int get chunkCount; double get audioLevel; String get liveTranscriptPreview; String? get errorMessage; String? get userMessage; Set<String> get retryingChunkIds;// Measured processing-seconds-per-audio-second for the active model on this
+ List<Transcript> get transcripts; List<TranscriptChunk> get allChunks; Transcript? get currentTranscript; List<TranscriptChunk> get currentChunks; bool get isRecording; bool get isPaused; int get durationSeconds; int get chunkCount; double get audioLevel; String get liveTranscriptPreview; String? get errorMessage;// Machine-readable user-facing failure; the UI maps it to the active
+// locale. [userMessage] is the raw fallback for unrecognized errors.
+ AppErrorCode? get userErrorCode; String? get userMessage; Set<String> get retryingChunkIds;// Measured processing-seconds-per-audio-second for the active model on this
 // device, sourced from the transcription service to drive the live ETA.
  double get realtimeFactor;
 /// Create a copy of RecordingState
@@ -27,16 +29,16 @@ $RecordingStateCopyWith<RecordingState> get copyWith => _$RecordingStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordingState&&const DeepCollectionEquality().equals(other.transcripts, transcripts)&&const DeepCollectionEquality().equals(other.allChunks, allChunks)&&(identical(other.currentTranscript, currentTranscript) || other.currentTranscript == currentTranscript)&&const DeepCollectionEquality().equals(other.currentChunks, currentChunks)&&(identical(other.isRecording, isRecording) || other.isRecording == isRecording)&&(identical(other.isPaused, isPaused) || other.isPaused == isPaused)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.chunkCount, chunkCount) || other.chunkCount == chunkCount)&&(identical(other.audioLevel, audioLevel) || other.audioLevel == audioLevel)&&(identical(other.liveTranscriptPreview, liveTranscriptPreview) || other.liveTranscriptPreview == liveTranscriptPreview)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&const DeepCollectionEquality().equals(other.retryingChunkIds, retryingChunkIds)&&(identical(other.realtimeFactor, realtimeFactor) || other.realtimeFactor == realtimeFactor));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecordingState&&const DeepCollectionEquality().equals(other.transcripts, transcripts)&&const DeepCollectionEquality().equals(other.allChunks, allChunks)&&(identical(other.currentTranscript, currentTranscript) || other.currentTranscript == currentTranscript)&&const DeepCollectionEquality().equals(other.currentChunks, currentChunks)&&(identical(other.isRecording, isRecording) || other.isRecording == isRecording)&&(identical(other.isPaused, isPaused) || other.isPaused == isPaused)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.chunkCount, chunkCount) || other.chunkCount == chunkCount)&&(identical(other.audioLevel, audioLevel) || other.audioLevel == audioLevel)&&(identical(other.liveTranscriptPreview, liveTranscriptPreview) || other.liveTranscriptPreview == liveTranscriptPreview)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.userErrorCode, userErrorCode) || other.userErrorCode == userErrorCode)&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&const DeepCollectionEquality().equals(other.retryingChunkIds, retryingChunkIds)&&(identical(other.realtimeFactor, realtimeFactor) || other.realtimeFactor == realtimeFactor));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(transcripts),const DeepCollectionEquality().hash(allChunks),currentTranscript,const DeepCollectionEquality().hash(currentChunks),isRecording,isPaused,durationSeconds,chunkCount,audioLevel,liveTranscriptPreview,errorMessage,userMessage,const DeepCollectionEquality().hash(retryingChunkIds),realtimeFactor);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(transcripts),const DeepCollectionEquality().hash(allChunks),currentTranscript,const DeepCollectionEquality().hash(currentChunks),isRecording,isPaused,durationSeconds,chunkCount,audioLevel,liveTranscriptPreview,errorMessage,userErrorCode,userMessage,const DeepCollectionEquality().hash(retryingChunkIds),realtimeFactor);
 
 @override
 String toString() {
-  return 'RecordingState(transcripts: $transcripts, allChunks: $allChunks, currentTranscript: $currentTranscript, currentChunks: $currentChunks, isRecording: $isRecording, isPaused: $isPaused, durationSeconds: $durationSeconds, chunkCount: $chunkCount, audioLevel: $audioLevel, liveTranscriptPreview: $liveTranscriptPreview, errorMessage: $errorMessage, userMessage: $userMessage, retryingChunkIds: $retryingChunkIds, realtimeFactor: $realtimeFactor)';
+  return 'RecordingState(transcripts: $transcripts, allChunks: $allChunks, currentTranscript: $currentTranscript, currentChunks: $currentChunks, isRecording: $isRecording, isPaused: $isPaused, durationSeconds: $durationSeconds, chunkCount: $chunkCount, audioLevel: $audioLevel, liveTranscriptPreview: $liveTranscriptPreview, errorMessage: $errorMessage, userErrorCode: $userErrorCode, userMessage: $userMessage, retryingChunkIds: $retryingChunkIds, realtimeFactor: $realtimeFactor)';
 }
 
 
@@ -47,7 +49,7 @@ abstract mixin class $RecordingStateCopyWith<$Res>  {
   factory $RecordingStateCopyWith(RecordingState value, $Res Function(RecordingState) _then) = _$RecordingStateCopyWithImpl;
 @useResult
 $Res call({
- List<Transcript> transcripts, List<TranscriptChunk> allChunks, Transcript? currentTranscript, List<TranscriptChunk> currentChunks, bool isRecording, bool isPaused, int durationSeconds, int chunkCount, double audioLevel, String liveTranscriptPreview, String? errorMessage, String? userMessage, Set<String> retryingChunkIds, double realtimeFactor
+ List<Transcript> transcripts, List<TranscriptChunk> allChunks, Transcript? currentTranscript, List<TranscriptChunk> currentChunks, bool isRecording, bool isPaused, int durationSeconds, int chunkCount, double audioLevel, String liveTranscriptPreview, String? errorMessage, AppErrorCode? userErrorCode, String? userMessage, Set<String> retryingChunkIds, double realtimeFactor
 });
 
 
@@ -64,7 +66,7 @@ class _$RecordingStateCopyWithImpl<$Res>
 
 /// Create a copy of RecordingState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? transcripts = null,Object? allChunks = null,Object? currentTranscript = freezed,Object? currentChunks = null,Object? isRecording = null,Object? isPaused = null,Object? durationSeconds = null,Object? chunkCount = null,Object? audioLevel = null,Object? liveTranscriptPreview = null,Object? errorMessage = freezed,Object? userMessage = freezed,Object? retryingChunkIds = null,Object? realtimeFactor = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? transcripts = null,Object? allChunks = null,Object? currentTranscript = freezed,Object? currentChunks = null,Object? isRecording = null,Object? isPaused = null,Object? durationSeconds = null,Object? chunkCount = null,Object? audioLevel = null,Object? liveTranscriptPreview = null,Object? errorMessage = freezed,Object? userErrorCode = freezed,Object? userMessage = freezed,Object? retryingChunkIds = null,Object? realtimeFactor = null,}) {
   return _then(_self.copyWith(
 transcripts: null == transcripts ? _self.transcripts : transcripts // ignore: cast_nullable_to_non_nullable
 as List<Transcript>,allChunks: null == allChunks ? _self.allChunks : allChunks // ignore: cast_nullable_to_non_nullable
@@ -77,7 +79,8 @@ as int,chunkCount: null == chunkCount ? _self.chunkCount : chunkCount // ignore:
 as int,audioLevel: null == audioLevel ? _self.audioLevel : audioLevel // ignore: cast_nullable_to_non_nullable
 as double,liveTranscriptPreview: null == liveTranscriptPreview ? _self.liveTranscriptPreview : liveTranscriptPreview // ignore: cast_nullable_to_non_nullable
 as String,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
-as String?,userMessage: freezed == userMessage ? _self.userMessage : userMessage // ignore: cast_nullable_to_non_nullable
+as String?,userErrorCode: freezed == userErrorCode ? _self.userErrorCode : userErrorCode // ignore: cast_nullable_to_non_nullable
+as AppErrorCode?,userMessage: freezed == userMessage ? _self.userMessage : userMessage // ignore: cast_nullable_to_non_nullable
 as String?,retryingChunkIds: null == retryingChunkIds ? _self.retryingChunkIds : retryingChunkIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,realtimeFactor: null == realtimeFactor ? _self.realtimeFactor : realtimeFactor // ignore: cast_nullable_to_non_nullable
 as double,
@@ -177,10 +180,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<Transcript> transcripts,  List<TranscriptChunk> allChunks,  Transcript? currentTranscript,  List<TranscriptChunk> currentChunks,  bool isRecording,  bool isPaused,  int durationSeconds,  int chunkCount,  double audioLevel,  String liveTranscriptPreview,  String? errorMessage,  String? userMessage,  Set<String> retryingChunkIds,  double realtimeFactor)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<Transcript> transcripts,  List<TranscriptChunk> allChunks,  Transcript? currentTranscript,  List<TranscriptChunk> currentChunks,  bool isRecording,  bool isPaused,  int durationSeconds,  int chunkCount,  double audioLevel,  String liveTranscriptPreview,  String? errorMessage,  AppErrorCode? userErrorCode,  String? userMessage,  Set<String> retryingChunkIds,  double realtimeFactor)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RecordingState() when $default != null:
-return $default(_that.transcripts,_that.allChunks,_that.currentTranscript,_that.currentChunks,_that.isRecording,_that.isPaused,_that.durationSeconds,_that.chunkCount,_that.audioLevel,_that.liveTranscriptPreview,_that.errorMessage,_that.userMessage,_that.retryingChunkIds,_that.realtimeFactor);case _:
+return $default(_that.transcripts,_that.allChunks,_that.currentTranscript,_that.currentChunks,_that.isRecording,_that.isPaused,_that.durationSeconds,_that.chunkCount,_that.audioLevel,_that.liveTranscriptPreview,_that.errorMessage,_that.userErrorCode,_that.userMessage,_that.retryingChunkIds,_that.realtimeFactor);case _:
   return orElse();
 
 }
@@ -198,10 +201,10 @@ return $default(_that.transcripts,_that.allChunks,_that.currentTranscript,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<Transcript> transcripts,  List<TranscriptChunk> allChunks,  Transcript? currentTranscript,  List<TranscriptChunk> currentChunks,  bool isRecording,  bool isPaused,  int durationSeconds,  int chunkCount,  double audioLevel,  String liveTranscriptPreview,  String? errorMessage,  String? userMessage,  Set<String> retryingChunkIds,  double realtimeFactor)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<Transcript> transcripts,  List<TranscriptChunk> allChunks,  Transcript? currentTranscript,  List<TranscriptChunk> currentChunks,  bool isRecording,  bool isPaused,  int durationSeconds,  int chunkCount,  double audioLevel,  String liveTranscriptPreview,  String? errorMessage,  AppErrorCode? userErrorCode,  String? userMessage,  Set<String> retryingChunkIds,  double realtimeFactor)  $default,) {final _that = this;
 switch (_that) {
 case _RecordingState():
-return $default(_that.transcripts,_that.allChunks,_that.currentTranscript,_that.currentChunks,_that.isRecording,_that.isPaused,_that.durationSeconds,_that.chunkCount,_that.audioLevel,_that.liveTranscriptPreview,_that.errorMessage,_that.userMessage,_that.retryingChunkIds,_that.realtimeFactor);case _:
+return $default(_that.transcripts,_that.allChunks,_that.currentTranscript,_that.currentChunks,_that.isRecording,_that.isPaused,_that.durationSeconds,_that.chunkCount,_that.audioLevel,_that.liveTranscriptPreview,_that.errorMessage,_that.userErrorCode,_that.userMessage,_that.retryingChunkIds,_that.realtimeFactor);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -218,10 +221,10 @@ return $default(_that.transcripts,_that.allChunks,_that.currentTranscript,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<Transcript> transcripts,  List<TranscriptChunk> allChunks,  Transcript? currentTranscript,  List<TranscriptChunk> currentChunks,  bool isRecording,  bool isPaused,  int durationSeconds,  int chunkCount,  double audioLevel,  String liveTranscriptPreview,  String? errorMessage,  String? userMessage,  Set<String> retryingChunkIds,  double realtimeFactor)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<Transcript> transcripts,  List<TranscriptChunk> allChunks,  Transcript? currentTranscript,  List<TranscriptChunk> currentChunks,  bool isRecording,  bool isPaused,  int durationSeconds,  int chunkCount,  double audioLevel,  String liveTranscriptPreview,  String? errorMessage,  AppErrorCode? userErrorCode,  String? userMessage,  Set<String> retryingChunkIds,  double realtimeFactor)?  $default,) {final _that = this;
 switch (_that) {
 case _RecordingState() when $default != null:
-return $default(_that.transcripts,_that.allChunks,_that.currentTranscript,_that.currentChunks,_that.isRecording,_that.isPaused,_that.durationSeconds,_that.chunkCount,_that.audioLevel,_that.liveTranscriptPreview,_that.errorMessage,_that.userMessage,_that.retryingChunkIds,_that.realtimeFactor);case _:
+return $default(_that.transcripts,_that.allChunks,_that.currentTranscript,_that.currentChunks,_that.isRecording,_that.isPaused,_that.durationSeconds,_that.chunkCount,_that.audioLevel,_that.liveTranscriptPreview,_that.errorMessage,_that.userErrorCode,_that.userMessage,_that.retryingChunkIds,_that.realtimeFactor);case _:
   return null;
 
 }
@@ -233,7 +236,7 @@ return $default(_that.transcripts,_that.allChunks,_that.currentTranscript,_that.
 
 
 class _RecordingState extends RecordingState {
-  const _RecordingState({final  List<Transcript> transcripts = const <Transcript>[], final  List<TranscriptChunk> allChunks = const <TranscriptChunk>[], this.currentTranscript, final  List<TranscriptChunk> currentChunks = const <TranscriptChunk>[], this.isRecording = false, this.isPaused = false, this.durationSeconds = 0, this.chunkCount = 0, this.audioLevel = 0.0, this.liveTranscriptPreview = '', this.errorMessage, this.userMessage, final  Set<String> retryingChunkIds = const <String>{}, this.realtimeFactor = 1.1}): _transcripts = transcripts,_allChunks = allChunks,_currentChunks = currentChunks,_retryingChunkIds = retryingChunkIds,super._();
+  const _RecordingState({final  List<Transcript> transcripts = const <Transcript>[], final  List<TranscriptChunk> allChunks = const <TranscriptChunk>[], this.currentTranscript, final  List<TranscriptChunk> currentChunks = const <TranscriptChunk>[], this.isRecording = false, this.isPaused = false, this.durationSeconds = 0, this.chunkCount = 0, this.audioLevel = 0.0, this.liveTranscriptPreview = '', this.errorMessage, this.userErrorCode, this.userMessage, final  Set<String> retryingChunkIds = const <String>{}, this.realtimeFactor = 1.1}): _transcripts = transcripts,_allChunks = allChunks,_currentChunks = currentChunks,_retryingChunkIds = retryingChunkIds,super._();
   
 
  final  List<Transcript> _transcripts;
@@ -265,6 +268,9 @@ class _RecordingState extends RecordingState {
 @override@JsonKey() final  double audioLevel;
 @override@JsonKey() final  String liveTranscriptPreview;
 @override final  String? errorMessage;
+// Machine-readable user-facing failure; the UI maps it to the active
+// locale. [userMessage] is the raw fallback for unrecognized errors.
+@override final  AppErrorCode? userErrorCode;
 @override final  String? userMessage;
  final  Set<String> _retryingChunkIds;
 @override@JsonKey() Set<String> get retryingChunkIds {
@@ -287,16 +293,16 @@ _$RecordingStateCopyWith<_RecordingState> get copyWith => __$RecordingStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecordingState&&const DeepCollectionEquality().equals(other._transcripts, _transcripts)&&const DeepCollectionEquality().equals(other._allChunks, _allChunks)&&(identical(other.currentTranscript, currentTranscript) || other.currentTranscript == currentTranscript)&&const DeepCollectionEquality().equals(other._currentChunks, _currentChunks)&&(identical(other.isRecording, isRecording) || other.isRecording == isRecording)&&(identical(other.isPaused, isPaused) || other.isPaused == isPaused)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.chunkCount, chunkCount) || other.chunkCount == chunkCount)&&(identical(other.audioLevel, audioLevel) || other.audioLevel == audioLevel)&&(identical(other.liveTranscriptPreview, liveTranscriptPreview) || other.liveTranscriptPreview == liveTranscriptPreview)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&const DeepCollectionEquality().equals(other._retryingChunkIds, _retryingChunkIds)&&(identical(other.realtimeFactor, realtimeFactor) || other.realtimeFactor == realtimeFactor));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecordingState&&const DeepCollectionEquality().equals(other._transcripts, _transcripts)&&const DeepCollectionEquality().equals(other._allChunks, _allChunks)&&(identical(other.currentTranscript, currentTranscript) || other.currentTranscript == currentTranscript)&&const DeepCollectionEquality().equals(other._currentChunks, _currentChunks)&&(identical(other.isRecording, isRecording) || other.isRecording == isRecording)&&(identical(other.isPaused, isPaused) || other.isPaused == isPaused)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.chunkCount, chunkCount) || other.chunkCount == chunkCount)&&(identical(other.audioLevel, audioLevel) || other.audioLevel == audioLevel)&&(identical(other.liveTranscriptPreview, liveTranscriptPreview) || other.liveTranscriptPreview == liveTranscriptPreview)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.userErrorCode, userErrorCode) || other.userErrorCode == userErrorCode)&&(identical(other.userMessage, userMessage) || other.userMessage == userMessage)&&const DeepCollectionEquality().equals(other._retryingChunkIds, _retryingChunkIds)&&(identical(other.realtimeFactor, realtimeFactor) || other.realtimeFactor == realtimeFactor));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_transcripts),const DeepCollectionEquality().hash(_allChunks),currentTranscript,const DeepCollectionEquality().hash(_currentChunks),isRecording,isPaused,durationSeconds,chunkCount,audioLevel,liveTranscriptPreview,errorMessage,userMessage,const DeepCollectionEquality().hash(_retryingChunkIds),realtimeFactor);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_transcripts),const DeepCollectionEquality().hash(_allChunks),currentTranscript,const DeepCollectionEquality().hash(_currentChunks),isRecording,isPaused,durationSeconds,chunkCount,audioLevel,liveTranscriptPreview,errorMessage,userErrorCode,userMessage,const DeepCollectionEquality().hash(_retryingChunkIds),realtimeFactor);
 
 @override
 String toString() {
-  return 'RecordingState(transcripts: $transcripts, allChunks: $allChunks, currentTranscript: $currentTranscript, currentChunks: $currentChunks, isRecording: $isRecording, isPaused: $isPaused, durationSeconds: $durationSeconds, chunkCount: $chunkCount, audioLevel: $audioLevel, liveTranscriptPreview: $liveTranscriptPreview, errorMessage: $errorMessage, userMessage: $userMessage, retryingChunkIds: $retryingChunkIds, realtimeFactor: $realtimeFactor)';
+  return 'RecordingState(transcripts: $transcripts, allChunks: $allChunks, currentTranscript: $currentTranscript, currentChunks: $currentChunks, isRecording: $isRecording, isPaused: $isPaused, durationSeconds: $durationSeconds, chunkCount: $chunkCount, audioLevel: $audioLevel, liveTranscriptPreview: $liveTranscriptPreview, errorMessage: $errorMessage, userErrorCode: $userErrorCode, userMessage: $userMessage, retryingChunkIds: $retryingChunkIds, realtimeFactor: $realtimeFactor)';
 }
 
 
@@ -307,7 +313,7 @@ abstract mixin class _$RecordingStateCopyWith<$Res> implements $RecordingStateCo
   factory _$RecordingStateCopyWith(_RecordingState value, $Res Function(_RecordingState) _then) = __$RecordingStateCopyWithImpl;
 @override @useResult
 $Res call({
- List<Transcript> transcripts, List<TranscriptChunk> allChunks, Transcript? currentTranscript, List<TranscriptChunk> currentChunks, bool isRecording, bool isPaused, int durationSeconds, int chunkCount, double audioLevel, String liveTranscriptPreview, String? errorMessage, String? userMessage, Set<String> retryingChunkIds, double realtimeFactor
+ List<Transcript> transcripts, List<TranscriptChunk> allChunks, Transcript? currentTranscript, List<TranscriptChunk> currentChunks, bool isRecording, bool isPaused, int durationSeconds, int chunkCount, double audioLevel, String liveTranscriptPreview, String? errorMessage, AppErrorCode? userErrorCode, String? userMessage, Set<String> retryingChunkIds, double realtimeFactor
 });
 
 
@@ -324,7 +330,7 @@ class __$RecordingStateCopyWithImpl<$Res>
 
 /// Create a copy of RecordingState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? transcripts = null,Object? allChunks = null,Object? currentTranscript = freezed,Object? currentChunks = null,Object? isRecording = null,Object? isPaused = null,Object? durationSeconds = null,Object? chunkCount = null,Object? audioLevel = null,Object? liveTranscriptPreview = null,Object? errorMessage = freezed,Object? userMessage = freezed,Object? retryingChunkIds = null,Object? realtimeFactor = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? transcripts = null,Object? allChunks = null,Object? currentTranscript = freezed,Object? currentChunks = null,Object? isRecording = null,Object? isPaused = null,Object? durationSeconds = null,Object? chunkCount = null,Object? audioLevel = null,Object? liveTranscriptPreview = null,Object? errorMessage = freezed,Object? userErrorCode = freezed,Object? userMessage = freezed,Object? retryingChunkIds = null,Object? realtimeFactor = null,}) {
   return _then(_RecordingState(
 transcripts: null == transcripts ? _self._transcripts : transcripts // ignore: cast_nullable_to_non_nullable
 as List<Transcript>,allChunks: null == allChunks ? _self._allChunks : allChunks // ignore: cast_nullable_to_non_nullable
@@ -337,7 +343,8 @@ as int,chunkCount: null == chunkCount ? _self.chunkCount : chunkCount // ignore:
 as int,audioLevel: null == audioLevel ? _self.audioLevel : audioLevel // ignore: cast_nullable_to_non_nullable
 as double,liveTranscriptPreview: null == liveTranscriptPreview ? _self.liveTranscriptPreview : liveTranscriptPreview // ignore: cast_nullable_to_non_nullable
 as String,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
-as String?,userMessage: freezed == userMessage ? _self.userMessage : userMessage // ignore: cast_nullable_to_non_nullable
+as String?,userErrorCode: freezed == userErrorCode ? _self.userErrorCode : userErrorCode // ignore: cast_nullable_to_non_nullable
+as AppErrorCode?,userMessage: freezed == userMessage ? _self.userMessage : userMessage // ignore: cast_nullable_to_non_nullable
 as String?,retryingChunkIds: null == retryingChunkIds ? _self._retryingChunkIds : retryingChunkIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,realtimeFactor: null == realtimeFactor ? _self.realtimeFactor : realtimeFactor // ignore: cast_nullable_to_non_nullable
 as double,

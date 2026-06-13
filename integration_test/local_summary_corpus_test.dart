@@ -40,14 +40,16 @@ const List<String> _corpus = <String>[
 
 String _detectLang(String s) {
   final lower = s.toLowerCase();
-  final tr = RegExp('[ğşıçöü]').allMatches(lower).length +
-      RegExp(r'\b(ve|bir|için|olarak|toplantı|karar|öğrenci|hasta|belirtildi)\b')
-              .allMatches(lower)
-              .length *
+  final tr =
+      RegExp('[ğşıçöü]').allMatches(lower).length +
+      RegExp(
+            r'\b(ve|bir|için|olarak|toplantı|karar|öğrenci|hasta|belirtildi)\b',
+          ).allMatches(lower).length *
           3;
-  final en = RegExp(r'\b(the|and|was|were|meeting|budget|patient|student|decided)\b')
-          .allMatches(lower)
-          .length *
+  final en =
+      RegExp(
+        r'\b(the|and|was|were|meeting|budget|patient|student|decided)\b',
+      ).allMatches(lower).length *
       3;
   if (tr == 0 && en == 0) return 'unknown';
   return tr >= en ? 'tr' : 'en';
@@ -64,31 +66,32 @@ void main() {
 
       final support = await getApplicationSupportDirectory();
       // ignore: avoid_print
-      print('MODEL_PATH=${support.path}/$_modelFile '
-          'installed=${await FlutterGemma.isModelInstalled(_modelFile)}');
+      print(
+        'MODEL_PATH=${support.path}/$_modelFile '
+        'installed=${await FlutterGemma.isModelInstalled(_modelFile)}',
+      );
 
       // Mirror the app's ensureReady(): fromNetwork() install is idempotent and
       // skips the download when the file is already present, then sets it active.
       // The HF token is passed via --dart-define (never committed).
       final token = EnvConfig.huggingFaceToken;
-      await FlutterGemma.installModel(
-        modelType: ModelType.gemmaIt,
-      )
+      await FlutterGemma.installModel(modelType: ModelType.gemmaIt)
           .fromNetwork(
             EnvConfig.llmModelDownloadUrl,
             token: token.isEmpty ? null : token,
           )
           .install();
 
-      const runtime = LocalLlmRuntime();
+      final runtime = LocalLlmRuntime();
       final locale = deviceLanguageCode();
       // ignore: avoid_print
       print('DEVICE_LOCALE=$locale');
 
       for (final id in _corpus) {
         final text = await rootBundle.loadString('test_assets/corpus/$id.txt');
-        final bounded =
-            text.length > _inputBudget ? text.substring(0, _inputBudget) : text;
+        final bounded = text.length > _inputBudget
+            ? text.substring(0, _inputBudget)
+            : text;
         final prompt = MeetingMinutesPrompt.system(locale: locale);
 
         final sw = Stopwatch()..start();
@@ -109,19 +112,25 @@ void main() {
         final parsed = MeetingSummary.tryParse(raw);
         final lang = parsed == null
             ? 'n/a'
-            : _detectLang('${parsed.title} ${parsed.executiveSummary.join(' ')}');
+            : _detectLang(
+                '${parsed.title} ${parsed.executiveSummary.join(' ')}',
+              );
         // ignore: avoid_print
-        print('LOCALRES id=$id status=$status ms=${sw.elapsedMilliseconds} '
-            'parsed=${parsed != null} lang=$lang '
-            'exec=${parsed?.executiveSummary.length ?? 0} '
-            'dec=${parsed?.decisions.length ?? 0} '
-            'act=${parsed?.actionItems.length ?? 0} '
-            'recorderLeak=${raw.contains('"recorder"')} '
-            'title=${parsed?.title ?? '-'}');
+        print(
+          'LOCALRES id=$id status=$status ms=${sw.elapsedMilliseconds} '
+          'parsed=${parsed != null} lang=$lang '
+          'exec=${parsed?.executiveSummary.length ?? 0} '
+          'dec=${parsed?.decisions.length ?? 0} '
+          'act=${parsed?.actionItems.length ?? 0} '
+          'recorderLeak=${raw.contains('"recorder"')} '
+          'title=${parsed?.title ?? '-'}',
+        );
         final flat = raw.replaceAll('\n', ' ');
         // ignore: avoid_print
-        print('LOCALRAW id=$id >>>'
-            '${flat.substring(0, flat.length > 500 ? 500 : flat.length)}<<<');
+        print(
+          'LOCALRAW id=$id >>>'
+          '${flat.substring(0, flat.length > 500 ? 500 : flat.length)}<<<',
+        );
       }
     },
     timeout: const Timeout(Duration(minutes: 30)),

@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:voicescribe_mobile/data/repositories/chat_repository.dart';
 import 'package:voicescribe_mobile/data/services/chat/local_chat_service.dart';
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/chat.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 
@@ -10,6 +11,7 @@ class ChatState {
     this.messages = const [],
     this.loading = false,
     this.sending = false,
+    this.errorCode,
     this.errorMessage,
   });
 
@@ -17,13 +19,20 @@ class ChatState {
   final List<ChatMessage> messages;
   final bool loading;
   final bool sending;
+
+  /// Machine-readable failure mapped to the active locale by the UI. When
+  /// null, [errorMessage] (e.g. a server-provided message) is shown raw.
+  final AppErrorCode? errorCode;
   final String? errorMessage;
+
+  bool get hasError => errorCode != null || errorMessage != null;
 
   ChatState copyWith({
     int? sessionId,
     List<ChatMessage>? messages,
     bool? loading,
     bool? sending,
+    AppErrorCode? errorCode,
     String? errorMessage,
     bool clearError = false,
   }) {
@@ -32,6 +41,7 @@ class ChatState {
       messages: messages ?? this.messages,
       loading: loading ?? this.loading,
       sending: sending ?? this.sending,
+      errorCode: clearError ? null : errorCode ?? this.errorCode,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
     );
   }
@@ -76,7 +86,7 @@ class ChatCubit extends Cubit<ChatState> {
     } on ChatException catch (e) {
       emit(ChatState(sessionId: id, errorMessage: e.message));
     } catch (_) {
-      emit(ChatState(sessionId: id, errorMessage: 'Sohbet yüklenemedi.'));
+      emit(ChatState(sessionId: id, errorCode: AppErrorCode.chatLoadFailed));
     }
   }
 
@@ -130,10 +140,7 @@ class ChatCubit extends Cubit<ChatState> {
       emit(state.copyWith(sending: false, errorMessage: e.message));
     } catch (_) {
       emit(
-        state.copyWith(
-          sending: false,
-          errorMessage: 'Yanıt alınamadı. Lütfen tekrar dene.',
-        ),
+        state.copyWith(sending: false, errorCode: AppErrorCode.chatSendFailed),
       );
     }
   }
@@ -169,13 +176,10 @@ class ChatCubit extends Cubit<ChatState> {
         ),
       );
     } on LocalChatException catch (e) {
-      emit(state.copyWith(sending: false, errorMessage: e.message));
+      emit(state.copyWith(sending: false, errorCode: e.code));
     } catch (_) {
       emit(
-        state.copyWith(
-          sending: false,
-          errorMessage: 'Yanıt alınamadı. Lütfen tekrar dene.',
-        ),
+        state.copyWith(sending: false, errorCode: AppErrorCode.chatSendFailed),
       );
     }
   }

@@ -1,16 +1,23 @@
 import 'package:uuid/uuid.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/transcript_api_client.dart';
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/utils/locale_utils.dart';
 
 /// Thrown when a cloud summary cannot be produced (offline, not synced, auth, or
-/// a backend error). The UI surfaces [message] to the user.
+/// a backend error). The UI localizes [code]; [message] is for logs.
 class CloudSummaryException implements Exception, SummaryFailure {
-  const CloudSummaryException(this.message);
+  const CloudSummaryException(
+    this.message, {
+    this.code = AppErrorCode.summaryServerError,
+  });
 
   @override
   final String message;
+
+  @override
+  final AppErrorCode code;
 
   @override
   String toString() => 'CloudSummaryException: $message';
@@ -46,15 +53,16 @@ class CloudSummaryService implements SummaryService {
     final remoteId = transcript.remoteId;
     if (remoteId == null || remoteId.trim().isEmpty) {
       throw const CloudSummaryException(
-        'Bu kayıt henüz eşitlenmedi. İnternete bağlanıp eşitledikten sonra '
-        'bulut özetini tekrar deneyin.',
+        'Transcript has not been synced to the server yet.',
+        code: AppErrorCode.summaryNotSynced,
       );
     }
 
     final token = _tokenProvider()?.trim();
     if (token == null || token.isEmpty) {
       throw const CloudSummaryException(
-        'Bulut özeti için giriş yapmış olmanız gerekiyor.',
+        'Cloud summary requires an authenticated session.',
+        code: AppErrorCode.summaryAuthRequired,
       );
     }
 
@@ -83,23 +91,31 @@ class CloudSummaryService implements SummaryService {
     if (!response.isSuccess) {
       if (response.isNetworkFailure) {
         throw const CloudSummaryException(
-          'Bağlantı yok. Yerel özete geçin veya çevrimiçi olunca tekrar deneyin.',
+          'No connection to the summary backend.',
+          code: AppErrorCode.summaryOffline,
         );
       }
-      throw const CloudSummaryException(
-        'Özet şu an oluşturulamadı. Lütfen biraz sonra tekrar deneyin.',
+      throw CloudSummaryException(
+        'Summary backend error: HTTP ${response.statusCode} '
+        '${response.message ?? ''}',
       );
     }
 
     final data = response.data;
     if (data is! Map) {
-      throw const CloudSummaryException('Sunucudan geçersiz yanıt alındı.');
+      throw const CloudSummaryException(
+        'Invalid summary response payload.',
+        code: AppErrorCode.summaryInvalidResponse,
+      );
     }
     final map = data.map((key, value) => MapEntry(key.toString(), value));
 
     final summaryText = (map['summary_text'] ?? '').toString();
     if (summaryText.trim().isEmpty) {
-      throw const CloudSummaryException('Sunucu boş bir özet döndürdü.');
+      throw const CloudSummaryException(
+        'Server returned an empty summary.',
+        code: AppErrorCode.summaryEmptyResponse,
+      );
     }
 
     return Summary(

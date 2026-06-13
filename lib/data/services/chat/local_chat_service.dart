@@ -2,17 +2,24 @@ import 'dart:async';
 
 import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/local_llm_runtime.dart';
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/chat.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/services/chat_prompt.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 
-/// Thrown when the on-device chat cannot produce an answer. Carries a
-/// user-facing [message] (no class names / stacks).
+/// Thrown when the on-device chat cannot produce an answer. The UI localizes
+/// [code]; [message] is for logs.
 class LocalChatException implements Exception {
-  const LocalChatException(this.message);
+  const LocalChatException(
+    this.message, {
+    this.code = AppErrorCode.chatLocalFailed,
+  });
+
   final String message;
+  final AppErrorCode code;
+
   @override
   String toString() => 'LocalChatException: $message';
 }
@@ -24,17 +31,20 @@ class LocalChatService {
   LocalChatService({
     required TranscriptRepository repository,
     required LocalLlmModelService modelService,
-    LocalLlmRuntime runtime = const LocalLlmRuntime(),
+    LocalLlmRuntime? runtime,
   }) : _repository = repository,
        _modelService = modelService,
-       _runtime = runtime;
+       _runtime = runtime ?? LocalLlmRuntime();
 
   final TranscriptRepository _repository;
   final LocalLlmModelService _modelService;
   final LocalLlmRuntime _runtime;
 
   static const int _maxSources = 3;
-  static const int _perSourceChars = 1500;
+  // 3 × 900 chars of sources + history + question must fit the runtime's
+  // 2048-token window *including* the answer; 1500/source overflowed it on
+  // Turkish text (≈2000+ input tokens) and clipped/emptied the response.
+  static const int _perSourceChars = 900;
   static const Duration _timeout = Duration(minutes: 4);
 
   Future<({String answer, List<ChatSource> sources})> answer({
@@ -43,7 +53,10 @@ class LocalChatService {
   }) async {
     final q = question.trim();
     if (q.isEmpty) {
-      throw const LocalChatException('Lütfen bir soru yazın.');
+      throw const LocalChatException(
+        'Empty question.',
+        code: AppErrorCode.chatEmptyQuestion,
+      );
     }
 
     final snapshot = await _repository.loadSnapshot();
@@ -85,18 +98,18 @@ class LocalChatService {
           .timeout(_timeout);
     } on TimeoutException {
       throw const LocalChatException(
-        'Yanıt beklenenden uzun sürdü. Lütfen tekrar deneyin veya Bulut moduna geçin.',
+        'On-device chat inference timed out.',
+        code: AppErrorCode.chatTimeout,
       );
     } catch (_) {
-      throw const LocalChatException(
-        'Cihaz üstü yapay zekâ şu an yanıt veremedi. Lütfen tekrar deneyin.',
-      );
+      throw const LocalChatException('On-device chat inference failed.');
     }
 
     final cleaned = raw.trim();
     if (cleaned.isEmpty) {
       throw const LocalChatException(
-        'Boş bir yanıt alındı. Lütfen tekrar deneyin.',
+        'On-device chat produced an empty answer.',
+        code: AppErrorCode.chatEmptyAnswer,
       );
     }
 

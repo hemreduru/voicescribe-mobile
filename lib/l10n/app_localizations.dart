@@ -1241,6 +1241,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'~{time} left'**
   String etaRemaining(String time);
+
+  /// No description provided for @errAuthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to start recording.'**
+  String get errAuthRequired;
+
+  /// No description provided for @errMicPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission is required.'**
+  String get errMicPermissionRequired;
+
+  /// No description provided for @errStorageFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage is full. Recording was stopped; free up space and try again.'**
+  String get errStorageFull;
+
+  /// No description provided for @errSummaryEmptyTranscript.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no transcript text to summarize.'**
+  String get errSummaryEmptyTranscript;
+
+  /// No description provided for @errSummaryLocalFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The on-device model could not produce a valid summary this time. Try again or switch to the Cloud summary.'**
+  String get errSummaryLocalFailed;
+
+  /// No description provided for @errSummaryTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The summary took longer than expected. Try again or use the Cloud summary.'**
+  String get errSummaryTimeout;
+
+  /// No description provided for @errSummaryNotSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'This recording hasn\'t been synced yet. Connect to the internet, sync, then retry the cloud summary.'**
+  String get errSummaryNotSynced;
+
+  /// No description provided for @errSummaryAuthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to be signed in for cloud summaries.'**
+  String get errSummaryAuthRequired;
+
+  /// No description provided for @errSummaryOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection. Switch to the on-device summary or retry when online.'**
+  String get errSummaryOffline;
+
+  /// No description provided for @errSummaryServerError.
+  ///
+  /// In en, this message translates to:
+  /// **'The summary couldn\'t be created right now. Please try again shortly.'**
+  String get errSummaryServerError;
+
+  /// No description provided for @errSummaryInvalidResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'The server returned an invalid response.'**
+  String get errSummaryInvalidResponse;
+
+  /// No description provided for @errSummaryEmptyResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'The server returned an empty summary.'**
+  String get errSummaryEmptyResponse;
+
+  /// No description provided for @errSummaryGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'The summary could not be created. Please try again.'**
+  String get errSummaryGeneric;
+
+  /// No description provided for @errChatEmptyQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Please type a question.'**
+  String get errChatEmptyQuestion;
+
+  /// No description provided for @errChatTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The answer took longer than expected. Try again or switch to Cloud mode.'**
+  String get errChatTimeout;
+
+  /// No description provided for @errChatLocalFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The on-device AI couldn\'t answer right now. Please try again.'**
+  String get errChatLocalFailed;
+
+  /// No description provided for @errChatEmptyAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'An empty answer was received. Please try again.'**
+  String get errChatEmptyAnswer;
+
+  /// No description provided for @errChatLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation could not be loaded.'**
+  String get errChatLoadFailed;
+
+  /// No description provided for @errChatSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'No answer received. Please try again.'**
+  String get errChatSendFailed;
 }
 
 class _AppLocalizationsDelegate

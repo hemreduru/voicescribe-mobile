@@ -435,6 +435,7 @@ class FakeSyncQueueService extends SyncQueueService {
   void scheduleSync({
     Duration delay = const Duration(seconds: 2),
     SyncTrigger trigger = SyncTrigger.auto,
+    bool force = true,
   }) {
     scheduledSyncCallCount += 1;
     lastScheduledTrigger = trigger;

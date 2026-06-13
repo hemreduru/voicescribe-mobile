@@ -8,6 +8,11 @@ import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 class TranscriptApiClient {
   const TranscriptApiClient();
 
+  /// One process-wide client so keep-alive connections are reused across
+  /// requests instead of a fresh TCP/TLS handshake per call.
+  static final HttpClient _sharedClient = HttpClient()
+    ..connectionTimeout = const Duration(seconds: 10);
+
   /// Fetches the full transcript list from the server.
   /// Returns the raw `data` list on success, throws on failure.
   Future<List<Map<String, Object?>>> fetchTranscripts({
@@ -56,8 +61,7 @@ class TranscriptApiClient {
     // widen the read timeout; defaults stay at 20s for normal requests.
     final responseTimeout = readTimeout ?? const Duration(seconds: 20);
     final uri = Uri.parse('${EnvConfig.apiBaseUrl}$path');
-    final client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 10);
+    final client = _sharedClient;
 
     try {
       AppLogger.debug('Transcript API request: $method $uri');
@@ -140,9 +144,9 @@ class TranscriptApiClient {
         success: false,
         message: 'Unexpected transcript API error (${error.runtimeType}).',
       );
-    } finally {
-      client.close(force: true);
     }
+    // No client.close(): _sharedClient lives for the process so keep-alive
+    // connections are reused.
   }
 
   static String? _fallbackMessage(String body) {

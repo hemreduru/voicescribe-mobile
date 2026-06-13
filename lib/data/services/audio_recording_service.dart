@@ -58,6 +58,9 @@ class AudioRecordingService implements RecordingService {
 
   StreamSubscription<List<int>>? _recordingSubscription;
   bool _isRecording = false;
+  // Resolved once per session in start(); the platform-channel lookup is not
+  // something to repeat for every 15 s chunk.
+  String? _chunksDirPath;
   Future<void> _emitTask = Future.value();
   String _notificationTitle = 'VoiceScribe';
   String? _notificationContent;
@@ -90,6 +93,8 @@ class AudioRecordingService implements RecordingService {
     }
 
     _chunker.reset();
+    _chunksDirPath ??=
+        '${(await getApplicationDocumentsDirectory()).path}/voicescribe_chunks';
     final stream = await _recorder.startStream(
       RecordConfig(
         encoder: AudioEncoder.pcm16bits,
@@ -178,9 +183,11 @@ class AudioRecordingService implements RecordingService {
   }
 
   Future<void> _emitChunk(PcmChunk chunk) async {
-    final directory = await getApplicationDocumentsDirectory();
+    final directory =
+        _chunksDirPath ??
+        '${(await getApplicationDocumentsDirectory()).path}/voicescribe_chunks';
     final file = File(
-      '${directory.path}/voicescribe_chunks/chunk_${DateTime.now().microsecondsSinceEpoch}_${chunk.index}.wav',
+      '$directory/chunk_${DateTime.now().microsecondsSinceEpoch}_${chunk.index}.wav',
     );
     await _wavWriter.writeWavFile(file: file, pcm16Data: chunk.pcm16Data);
     _consecutiveEmitFailures = 0;

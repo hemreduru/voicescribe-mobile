@@ -11,6 +11,7 @@ import 'package:voicescribe_mobile/domain/models/meeting_summary.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
+import 'package:voicescribe_mobile/ui/core/i18n/error_messages.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
@@ -724,12 +725,21 @@ class _TranscriptDetailScope extends StatelessWidget {
       builder: (context, recordingState) {
         return BlocConsumer<TranscriptDetailBloc, TranscriptDetailState>(
           listenWhen: (previous, current) =>
-              previous.errorMessage != current.errorMessage &&
-              current.errorMessage != null,
+              (previous.errorCode != current.errorCode &&
+                  current.errorCode != null) ||
+              (previous.errorMessage != current.errorMessage &&
+                  current.errorMessage != null),
           listener: (context, state) {
+            final code = state.errorCode;
+            final message = code != null
+                ? code.localized(context.l10n)
+                : state.errorMessage;
+            if (message == null) {
+              return;
+            }
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+            ).showSnackBar(SnackBar(content: Text(message)));
           },
           buildWhen: (previous, current) =>
               previous.transcript != current.transcript ||

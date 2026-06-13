@@ -652,4 +652,71 @@ class AppLocalizationsTr extends AppLocalizations {
   String etaRemaining(String time) {
     return '~$time kaldı';
   }
+
+  @override
+  String get errAuthRequired => 'Kayda başlamak için giriş yapın.';
+
+  @override
+  String get errMicPermissionRequired => 'Mikrofon izni gerekiyor.';
+
+  @override
+  String get errStorageFull =>
+      'Depolama dolu. Kayıt durduruldu; yer açıp tekrar deneyin.';
+
+  @override
+  String get errSummaryEmptyTranscript => 'Özetlenecek transkript metni yok.';
+
+  @override
+  String get errSummaryLocalFailed =>
+      'Cihaz üstü model bu sefer geçerli bir özet üretemedi. Lütfen tekrar deneyin veya Bulut özetine geçin.';
+
+  @override
+  String get errSummaryTimeout =>
+      'Özet beklenenden uzun sürdü. Lütfen tekrar deneyin veya Bulut özetini kullanın.';
+
+  @override
+  String get errSummaryNotSynced =>
+      'Bu kayıt henüz eşitlenmedi. İnternete bağlanıp eşitledikten sonra bulut özetini tekrar deneyin.';
+
+  @override
+  String get errSummaryAuthRequired =>
+      'Bulut özeti için giriş yapmış olmanız gerekiyor.';
+
+  @override
+  String get errSummaryOffline =>
+      'Bağlantı yok. Yerel özete geçin veya çevrimiçi olunca tekrar deneyin.';
+
+  @override
+  String get errSummaryServerError =>
+      'Özet şu an oluşturulamadı. Lütfen biraz sonra tekrar deneyin.';
+
+  @override
+  String get errSummaryInvalidResponse => 'Sunucudan geçersiz yanıt alındı.';
+
+  @override
+  String get errSummaryEmptyResponse => 'Sunucu boş bir özet döndürdü.';
+
+  @override
+  String get errSummaryGeneric => 'Özet oluşturulamadı. Lütfen tekrar deneyin.';
+
+  @override
+  String get errChatEmptyQuestion => 'Lütfen bir soru yazın.';
+
+  @override
+  String get errChatTimeout =>
+      'Yanıt beklenenden uzun sürdü. Lütfen tekrar deneyin veya Bulut moduna geçin.';
+
+  @override
+  String get errChatLocalFailed =>
+      'Cihaz üstü yapay zekâ şu an yanıt veremedi. Lütfen tekrar deneyin.';
+
+  @override
+  String get errChatEmptyAnswer =>
+      'Boş bir yanıt alındı. Lütfen tekrar deneyin.';
+
+  @override
+  String get errChatLoadFailed => 'Sohbet yüklenemedi.';
+
+  @override
+  String get errChatSendFailed => 'Yanıt alınamadı. Lütfen tekrar dene.';
 }

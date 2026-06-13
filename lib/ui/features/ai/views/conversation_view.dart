@@ -5,6 +5,7 @@ import 'package:voicescribe_mobile/data/repositories/chat_repository.dart';
 import 'package:voicescribe_mobile/data/services/chat/local_chat_service.dart';
 import 'package:voicescribe_mobile/domain/models/chat.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
+import 'package:voicescribe_mobile/ui/core/i18n/error_messages.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/design_system.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_skeleton.dart';
@@ -96,10 +97,12 @@ class _ConversationBodyState extends State<_ConversationBody> {
         if (touched != null) {
           widget.onSessionTouched?.call(touched);
         }
-        if (state.errorMessage != null) {
+        if (state.hasError) {
+          final message =
+              state.errorCode?.localized(context.l10n) ?? state.errorMessage!;
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+            ..showSnackBar(SnackBar(content: Text(message)));
         }
       },
       builder: (context, state) {

@@ -256,24 +256,61 @@
   "unsyncedCount": "{count, plural, =1{1 kayıt henüz yedeklenmedi} other{{count} kayıt henüz yedeklenmedi}}",
   "@unsyncedCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "transcribingNotificationContent": "Transkript hazırlanıyor",
   "etaUnitSeconds": "{count} saniye",
   "@etaUnitSeconds": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "etaUnitMinutes": "{count} dakika",
   "@etaUnitMinutes": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "etaUnitHours": "{count} saat",
   "@etaUnitHours": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "etaRemaining": "~{time} kaldı",
   "@etaRemaining": {
-    "placeholders": { "time": { "type": "String" } }
-  }
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "errAuthRequired": "Kayda başlamak için giriş yapın.",
+  "errMicPermissionRequired": "Mikrofon izni gerekiyor.",
+  "errStorageFull": "Depolama dolu. Kayıt durduruldu; yer açıp tekrar deneyin.",
+  "errSummaryEmptyTranscript": "Özetlenecek transkript metni yok.",
+  "errSummaryLocalFailed": "Cihaz üstü model bu sefer geçerli bir özet üretemedi. Lütfen tekrar deneyin veya Bulut özetine geçin.",
+  "errSummaryTimeout": "Özet beklenenden uzun sürdü. Lütfen tekrar deneyin veya Bulut özetini kullanın.",
+  "errSummaryNotSynced": "Bu kayıt henüz eşitlenmedi. İnternete bağlanıp eşitledikten sonra bulut özetini tekrar deneyin.",
+  "errSummaryAuthRequired": "Bulut özeti için giriş yapmış olmanız gerekiyor.",
+  "errSummaryOffline": "Bağlantı yok. Yerel özete geçin veya çevrimiçi olunca tekrar deneyin.",
+  "errSummaryServerError": "Özet şu an oluşturulamadı. Lütfen biraz sonra tekrar deneyin.",
+  "errSummaryInvalidResponse": "Sunucudan geçersiz yanıt alındı.",
+  "errSummaryEmptyResponse": "Sunucu boş bir özet döndürdü.",
+  "errSummaryGeneric": "Özet oluşturulamadı. Lütfen tekrar deneyin.",
+  "errChatEmptyQuestion": "Lütfen bir soru yazın.",
+  "errChatTimeout": "Yanıt beklenenden uzun sürdü. Lütfen tekrar deneyin veya Bulut moduna geçin.",
+  "errChatLocalFailed": "Cihaz üstü yapay zekâ şu an yanıt veremedi. Lütfen tekrar deneyin.",
+  "errChatEmptyAnswer": "Boş bir yanıt alındı. Lütfen tekrar deneyin.",
+  "errChatLoadFailed": "Sohbet yüklenemedi.",
+  "errChatSendFailed": "Yanıt alınamadı. Lütfen tekrar dene."
 }

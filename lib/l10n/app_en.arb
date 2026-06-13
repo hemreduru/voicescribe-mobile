@@ -256,24 +256,61 @@
   "unsyncedCount": "{count, plural, =1{1 recording not backed up yet} other{{count} recordings not backed up yet}}",
   "@unsyncedCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "transcribingNotificationContent": "Preparing transcript",
   "etaUnitSeconds": "{count, plural, =1{1 second} other{{count} seconds}}",
   "@etaUnitSeconds": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "etaUnitMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
   "@etaUnitMinutes": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "etaUnitHours": "{count, plural, =1{1 hour} other{{count} hours}}",
   "@etaUnitHours": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "etaRemaining": "~{time} left",
   "@etaRemaining": {
-    "placeholders": { "time": { "type": "String" } }
-  }
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "errAuthRequired": "Sign in to start recording.",
+  "errMicPermissionRequired": "Microphone permission is required.",
+  "errStorageFull": "Storage is full. Recording was stopped; free up space and try again.",
+  "errSummaryEmptyTranscript": "There is no transcript text to summarize.",
+  "errSummaryLocalFailed": "The on-device model could not produce a valid summary this time. Try again or switch to the Cloud summary.",
+  "errSummaryTimeout": "The summary took longer than expected. Try again or use the Cloud summary.",
+  "errSummaryNotSynced": "This recording hasn't been synced yet. Connect to the internet, sync, then retry the cloud summary.",
+  "errSummaryAuthRequired": "You need to be signed in for cloud summaries.",
+  "errSummaryOffline": "No connection. Switch to the on-device summary or retry when online.",
+  "errSummaryServerError": "The summary couldn't be created right now. Please try again shortly.",
+  "errSummaryInvalidResponse": "The server returned an invalid response.",
+  "errSummaryEmptyResponse": "The server returned an empty summary.",
+  "errSummaryGeneric": "The summary could not be created. Please try again.",
+  "errChatEmptyQuestion": "Please type a question.",
+  "errChatTimeout": "The answer took longer than expected. Try again or switch to Cloud mode.",
+  "errChatLocalFailed": "The on-device AI couldn't answer right now. Please try again.",
+  "errChatEmptyAnswer": "An empty answer was received. Please try again.",
+  "errChatLoadFailed": "The conversation could not be loaded.",
+  "errChatSendFailed": "No answer received. Please try again."
 }

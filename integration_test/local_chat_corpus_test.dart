@@ -19,18 +19,30 @@ import 'package:voicescribe_mobile/ui/core/utils/env_config.dart';
 
 // (logical, illogical) ASCII-safe questions so keyword retrieval matches.
 const Map<String, List<String>> _questions = {
-  'Kurumsal (corporate)': ['Lansman hangi aya ertelendi', 'Toplantida hangi hayvan getirildi'],
+  'Kurumsal (corporate)': [
+    'Lansman hangi aya ertelendi',
+    'Toplantida hangi hayvan getirildi',
+  ],
   'Teknik (tech)': ['API gecikmesi kac milisaniye', 'Ekip hangi tatile gitti'],
-  'Egitim (education)': ['Ikinci dunya savasi ne zaman basladi', 'Ogretmenin dogum gunu ne zaman'],
-  'Saglik (healthcare)': ['Antibiyotik dozu nedir', 'Hastanin dogum gunu ne zaman'],
+  'Egitim (education)': [
+    'Ikinci dunya savasi ne zaman basladi',
+    'Ogretmenin dogum gunu ne zaman',
+  ],
+  'Saglik (healthcare)': [
+    'Antibiyotik dozu nedir',
+    'Hastanin dogum gunu ne zaman',
+  ],
   'Hukuk (legal)': ['Sozlesme suresi kac ay', 'Avukatin arabasi ne renk'],
-  'Gunluk-gurultu (casual)': ['Bakiye ne kadar', 'Mars yolculugu kac gun surdu'],
+  'Gunluk-gurultu (casual)': [
+    'Bakiye ne kadar',
+    'Mars yolculugu kac gun surdu',
+  ],
 };
 
 bool _refused(String a) => RegExp(
-      'bulamad[ıi]m|bilgi (yok|bulun)|kay[ıi]tlar[ıi]nda',
-      caseSensitive: false,
-    ).hasMatch(a);
+  'bulamad[ıi]m|bilgi (yok|bulun)|kay[ıi]tlar[ıi]nda',
+  caseSensitive: false,
+).hasMatch(a);
 
 List<Map<String, String>> _retrieve(String query, TranscriptSnapshot snap) {
   final byT = <String, StringBuffer>{};
@@ -57,11 +69,16 @@ List<Map<String, String>> _retrieve(String query, TranscriptSnapshot snap) {
   final hits = scored.where((s) => s.score > 0).toList();
   final chosen = (hits.isNotEmpty ? hits : scored).take(3);
   return chosen
-      .map((s) => {
-            'title': (s.t.title ?? 'Adsız kayıt'),
-            'date': (s.t.recordedAt ?? s.t.createdAt).toIso8601String().split('T').first,
-            'text': s.text.length > 1500 ? s.text.substring(0, 1500) : s.text,
-          })
+      .map(
+        (s) => {
+          'title': (s.t.title ?? 'Adsız kayıt'),
+          'date': (s.t.recordedAt ?? s.t.createdAt)
+              .toIso8601String()
+              .split('T')
+              .first,
+          'text': s.text.length > 1500 ? s.text.substring(0, 1500) : s.text,
+        },
+      )
       .toList();
 }
 
@@ -75,15 +92,19 @@ void main() {
       await FlutterGemma.initialize();
       final token = EnvConfig.huggingFaceToken;
       await FlutterGemma.installModel(modelType: ModelType.gemmaIt)
-          .fromNetwork(EnvConfig.llmModelDownloadUrl,
-              token: token.isEmpty ? null : token)
+          .fromNetwork(
+            EnvConfig.llmModelDownloadUrl,
+            token: token.isEmpty ? null : token,
+          )
           .install();
 
-      const runtime = LocalLlmRuntime();
+      final runtime = LocalLlmRuntime();
       final repo = SqfliteTranscriptRepository();
       final snap = await repo.loadSnapshot();
       // ignore: avoid_print
-      print('SNAPSHOT transcripts=${snap.transcripts.length} chunks=${snap.chunks.length}');
+      print(
+        'SNAPSHOT transcripts=${snap.transcripts.length} chunks=${snap.chunks.length}',
+      );
 
       for (final entry in _questions.entries) {
         final category = entry.key;
@@ -103,7 +124,10 @@ void main() {
           String raw;
           try {
             raw = await runtime
-                .generate(systemInstruction: ChatPrompt.system(), userText: prompt)
+                .generate(
+                  systemInstruction: ChatPrompt.system(),
+                  userText: prompt,
+                )
                 .timeout(const Duration(minutes: 4));
           } catch (e) {
             raw = 'ERR: $e';
@@ -111,9 +135,11 @@ void main() {
           sw.stop();
           final flat = raw.replaceAll('\n', ' ');
           // ignore: avoid_print
-          print('LCHAT cat="$category" kind=$kind refused=${_refused(raw)} '
-              'ms=${sw.elapsedMilliseconds} srcs=${sources.length} '
-              'q="$q" a="${flat.substring(0, flat.length > 240 ? 240 : flat.length)}"');
+          print(
+            'LCHAT cat="$category" kind=$kind refused=${_refused(raw)} '
+            'ms=${sw.elapsedMilliseconds} srcs=${sources.length} '
+            'q="$q" a="${flat.substring(0, flat.length > 240 ? 240 : flat.length)}"',
+          );
         }
       }
     },

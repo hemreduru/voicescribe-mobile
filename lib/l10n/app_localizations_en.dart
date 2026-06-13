@@ -667,4 +667,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String etaRemaining(String time) {
     return '~$time left';
   }
+
+  @override
+  String get errAuthRequired => 'Sign in to start recording.';
+
+  @override
+  String get errMicPermissionRequired => 'Microphone permission is required.';
+
+  @override
+  String get errStorageFull =>
+      'Storage is full. Recording was stopped; free up space and try again.';
+
+  @override
+  String get errSummaryEmptyTranscript =>
+      'There is no transcript text to summarize.';
+
+  @override
+  String get errSummaryLocalFailed =>
+      'The on-device model could not produce a valid summary this time. Try again or switch to the Cloud summary.';
+
+  @override
+  String get errSummaryTimeout =>
+      'The summary took longer than expected. Try again or use the Cloud summary.';
+
+  @override
+  String get errSummaryNotSynced =>
+      'This recording hasn\'t been synced yet. Connect to the internet, sync, then retry the cloud summary.';
+
+  @override
+  String get errSummaryAuthRequired =>
+      'You need to be signed in for cloud summaries.';
+
+  @override
+  String get errSummaryOffline =>
+      'No connection. Switch to the on-device summary or retry when online.';
+
+  @override
+  String get errSummaryServerError =>
+      'The summary couldn\'t be created right now. Please try again shortly.';
+
+  @override
+  String get errSummaryInvalidResponse =>
+      'The server returned an invalid response.';
+
+  @override
+  String get errSummaryEmptyResponse => 'The server returned an empty summary.';
+
+  @override
+  String get errSummaryGeneric =>
+      'The summary could not be created. Please try again.';
+
+  @override
+  String get errChatEmptyQuestion => 'Please type a question.';
+
+  @override
+  String get errChatTimeout =>
+      'The answer took longer than expected. Try again or switch to Cloud mode.';
+
+  @override
+  String get errChatLocalFailed =>
+      'The on-device AI couldn\'t answer right now. Please try again.';
+
+  @override
+  String get errChatEmptyAnswer =>
+      'An empty answer was received. Please try again.';
+
+  @override
+  String get errChatLoadFailed => 'The conversation could not be loaded.';
+
+  @override
+  String get errChatSendFailed => 'No answer received. Please try again.';
 }

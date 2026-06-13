@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/use_cases/repair_stale_recordings.dart';
 import 'package:voicescribe_mobile/ui/features/recording/bloc/recording_bloc.dart';
@@ -177,7 +178,7 @@ void main() {
       },
       verify: (bloc) {
         expect(bloc.state.isRecording, isFalse);
-        expect(bloc.state.userMessage, contains('Storage is full'));
+        expect(bloc.state.userErrorCode, AppErrorCode.storageFull);
         // The recorder was asked to stop (initial stop on fault + finalize).
         expect(audio.stopCalls, greaterThan(0));
       },

@@ -161,13 +161,14 @@ class SyncQueueService {
   void scheduleSync({
     Duration delay = _defaultSyncDebounce,
     SyncTrigger trigger = SyncTrigger.auto,
+    bool force = true,
   }) {
     if (_accessTokenProvider == null) {
       return;
     }
     _syncDebounceTimer?.cancel();
     _syncDebounceTimer = Timer(delay, () {
-      unawaited(triggerSyncIfOnline(trigger: trigger, force: true));
+      unawaited(triggerSyncIfOnline(trigger: trigger, force: force));
     });
   }
 
@@ -325,7 +326,12 @@ class SyncQueueService {
         // untouched and syncs after the next successful login.
         unawaited(_onAuthFailure?.call());
       } else {
-        scheduleSync(delay: _retryDelayFor(_consecutiveFailureCount));
+        // Backoff retries must respect the circuit breaker (force: false) —
+        // otherwise it can never open and a dead backend is hammered forever.
+        scheduleSync(
+          delay: _retryDelayFor(_consecutiveFailureCount),
+          force: false,
+        );
       }
       _emitEvent(
         SyncEvent(
@@ -832,13 +838,11 @@ class SyncQueueService {
     }
 
     for (final audioPath in audioPaths) {
-      final file = File(audioPath);
       try {
-        if (file.existsSync()) {
-          file.deleteSync();
-        }
+        await File(audioPath).delete();
       } catch (_) {
-        // Best-effort cleanup; file deletion failures should not fail sync.
+        // Best-effort cleanup (incl. already-missing files); deletion failures
+        // must never fail sync.
       }
     }
   }

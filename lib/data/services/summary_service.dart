@@ -1,10 +1,13 @@
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 
-/// Marker for summary errors that carry a user-facing [message] (no class names
-/// or stack traces), so the UI can surface it directly.
+/// Marker for summary errors the UI can surface safely (no class names or
+/// stack traces). [code] is mapped to the active locale by the UI; [message]
+/// is the log-friendly description.
 abstract interface class SummaryFailure {
   String get message;
+  AppErrorCode get code;
 }
 
 /// Progress of a multi-step summary (on-device map-reduce over a long

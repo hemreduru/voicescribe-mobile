@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:voicescribe_mobile/data/services/llm/cloud_summary_service.dart';
 import 'package:voicescribe_mobile/data/services/transcript_api_client.dart';
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 
 class _FakeApiClient extends TranscriptApiClient {
@@ -116,9 +117,9 @@ void main() {
         ),
         throwsA(
           isA<CloudSummaryException>().having(
-            (e) => e.message,
-            'message',
-            contains('Bağlantı yok'),
+            (e) => e.code,
+            'code',
+            AppErrorCode.summaryOffline,
           ),
         ),
       );

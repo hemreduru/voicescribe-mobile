@@ -8,6 +8,7 @@ import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/background_work_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/models/transcript_extensions.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
@@ -125,6 +126,9 @@ abstract class RecordingState with _$RecordingState {
     @Default(0.0) double audioLevel,
     @Default('') String liveTranscriptPreview,
     String? errorMessage,
+    // Machine-readable user-facing failure; the UI maps it to the active
+    // locale. [userMessage] is the raw fallback for unrecognized errors.
+    AppErrorCode? userErrorCode,
     String? userMessage,
     @Default(<String>{}) Set<String> retryingChunkIds,
     // Measured processing-seconds-per-audio-second for the active model on this
@@ -353,7 +357,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     }
     final session = _authRepository.currentSession();
     if (session?.isAuthenticated != true) {
-      emit(state.copyWith(userMessage: 'Authentication is required.'));
+      emit(state.copyWith(userErrorCode: AppErrorCode.authRequired));
       return;
     }
 
@@ -372,7 +376,10 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       );
       emit(
         state.copyWith(
-          userMessage: _userMessageFor(error),
+          userErrorCode: _userErrorCodeFor(error),
+          userMessage: _userErrorCodeFor(error) == null
+              ? error.toString()
+              : null,
           errorMessage: error.toString(),
         ),
       );
@@ -391,6 +398,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
         audioLevel: 0,
         liveTranscriptPreview: '',
         errorMessage: null,
+        userErrorCode: null,
         userMessage: null,
       ),
     );
@@ -647,7 +655,13 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     // The recorder stops itself on a storage fault; finalize the session and
     // tell the user so audio isn't dropped silently for the rest of a long
     // recording. Chunks already written stay queued for transcription.
-    emit(state.copyWith(userMessage: _userMessageFor(event.error)));
+    final code = _userErrorCodeFor(event.error);
+    emit(
+      state.copyWith(
+        userErrorCode: code,
+        userMessage: code == null ? event.error.toString() : null,
+      ),
+    );
     if (state.isRecording) {
       add(const RecordingStopped());
     }
@@ -978,15 +992,16 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     _durationTimer = null;
   }
 
-  String _userMessageFor(Object error) {
+  /// Maps known recording failures to a localizable code; null for
+  /// unrecognized errors (whose raw text is surfaced via `userMessage`).
+  AppErrorCode? _userErrorCodeFor(Object error) {
     if (error is RecordingPermissionException) {
-      return 'Microphone permission is required.';
+      return AppErrorCode.micPermissionRequired;
     }
     if (error is RecordingStorageException) {
-      return 'Storage is full. Recording was stopped; '
-          'free up space and try again.';
+      return AppErrorCode.storageFull;
     }
-    return error.toString();
+    return null;
   }
 
   @override

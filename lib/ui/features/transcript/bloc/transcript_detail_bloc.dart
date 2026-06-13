@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/use_cases/generate_summary.dart';
@@ -50,6 +51,7 @@ class TranscriptDetailState {
     this.tabIndex = 0,
     this.generatingSummary = false,
     this.summaryProgress,
+    this.errorCode,
     this.errorMessage,
     this.completedChunkCount = 0,
     this.totalChunkCount = 0,
@@ -67,6 +69,10 @@ class TranscriptDetailState {
   /// Progress of an in-flight on-device summary (map-reduce over a long
   /// transcript). Null for a single-pass run with nothing useful to show.
   final SummaryProgress? summaryProgress;
+
+  /// Machine-readable failure of the last summary attempt; the UI maps it to
+  /// the active locale. [errorMessage] is kept for raw/legacy surfaces.
+  final AppErrorCode? errorCode;
   final String? errorMessage;
   final int completedChunkCount;
   final int totalChunkCount;
@@ -83,6 +89,7 @@ class TranscriptDetailState {
     bool? generatingSummary,
     SummaryProgress? summaryProgress,
     bool clearSummaryProgress = false,
+    AppErrorCode? errorCode,
     String? errorMessage,
     bool clearErrorMessage = false,
     int? completedChunkCount,
@@ -100,6 +107,7 @@ class TranscriptDetailState {
       summaryProgress: clearSummaryProgress
           ? null
           : summaryProgress ?? this.summaryProgress,
+      errorCode: clearErrorMessage ? null : errorCode ?? this.errorCode,
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
@@ -216,15 +224,16 @@ class TranscriptDetailBloc
         _syncQueueService.scheduleSync();
       }
     } catch (error) {
-      // Only ever surface a clean, user-facing message — never an exception
-      // class name or stack trace.
+      // Only ever surface a machine-readable code — the UI maps it to the
+      // active locale; never an exception class name or stack trace.
       emit(
         state.copyWith(
           generatingSummary: false,
           clearSummaryProgress: true,
-          errorMessage: error is SummaryFailure
-              ? error.message
-              : 'Özet oluşturulamadı. Lütfen tekrar deneyin.',
+          errorCode: error is SummaryFailure
+              ? error.code
+              : AppErrorCode.summaryGeneric,
+          errorMessage: error is SummaryFailure ? error.message : null,
         ),
       );
     }

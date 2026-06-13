@@ -47,8 +47,10 @@ void main() {
 
       final support = await getApplicationSupportDirectory();
       // ignore: avoid_print
-      print('MODEL_PATH=${support.path}/$_modelFile '
-          'installed=${await FlutterGemma.isModelInstalled(_modelFile)}');
+      print(
+        'MODEL_PATH=${support.path}/$_modelFile '
+        'installed=${await FlutterGemma.isModelInstalled(_modelFile)}',
+      );
 
       final token = EnvConfig.huggingFaceToken;
       await FlutterGemma.installModel(modelType: ModelType.gemmaIt)
@@ -58,7 +60,7 @@ void main() {
           )
           .install();
 
-      const runtime = LocalLlmRuntime();
+      final runtime = LocalLlmRuntime();
       final locale = deviceLanguageCode();
       // ignore: avoid_print
       print('DEVICE_LOCALE=$locale');
@@ -66,8 +68,9 @@ void main() {
       final raws = <Map<String, dynamic>>[];
       for (final id in _corpus) {
         final text = await rootBundle.loadString('test_assets/corpus/$id.txt');
-        final bounded =
-            text.length > _inputBudget ? text.substring(0, _inputBudget) : text;
+        final bounded = text.length > _inputBudget
+            ? text.substring(0, _inputBudget)
+            : text;
         final prompt = MeetingMinutesPrompt.system(locale: locale);
 
         final sw = Stopwatch()..start();
@@ -87,8 +90,11 @@ void main() {
 
         // tryParse must never throw on real on-device output.
         MeetingSummary? parsed;
-        expect(() => parsed = MeetingSummary.tryParse(raw), returnsNormally,
-            reason: 'tryParse threw for $id');
+        expect(
+          () => parsed = MeetingSummary.tryParse(raw),
+          returnsNormally,
+          reason: 'tryParse threw for $id',
+        );
 
         // Mirror the exact _SummaryTab render-branch selection and assert the
         // user can NEVER be shown raw JSON.
@@ -97,8 +103,11 @@ void main() {
             ? 'structured'
             : (looksJson ? 'clean-fallback' : 'plaintext');
         if (status == 'ok' && renderPath == 'plaintext') {
-          expect(raw.contains('{'), isFalse,
-              reason: 'JSON LEAK: $id would render raw braces as plain text');
+          expect(
+            raw.contains('{'),
+            isFalse,
+            reason: 'JSON LEAK: $id would render raw braces as plain text',
+          );
         }
         if (parsed != null) {
           final p = parsed!;
@@ -113,23 +122,30 @@ void main() {
             ...p.actionItems.map((a) => a.task),
           ];
           for (final f in fields) {
-            expect(f.contains('{') || f.contains('"schema_version"'), isFalse,
-                reason: 'rendered field leaked JSON for $id: "$f"');
+            expect(
+              f.contains('{') || f.contains('"schema_version"'),
+              isFalse,
+              reason: 'rendered field leaked JSON for $id: "$f"',
+            );
           }
         }
 
         // ignore: avoid_print
-        print('LOCALRES id=$id status=$status ms=${sw.elapsedMilliseconds} '
-            'parsed=${parsed != null} render=$renderPath '
-            'exec=${parsed?.executiveSummary.length ?? 0} '
-            'dec=${parsed?.decisions.length ?? 0} '
-            'act=${parsed?.actionItems.length ?? 0} '
-            'recorderLeak=${raw.contains('"recorder"')} '
-            'title=${parsed?.title ?? '-'}');
+        print(
+          'LOCALRES id=$id status=$status ms=${sw.elapsedMilliseconds} '
+          'parsed=${parsed != null} render=$renderPath '
+          'exec=${parsed?.executiveSummary.length ?? 0} '
+          'dec=${parsed?.decisions.length ?? 0} '
+          'act=${parsed?.actionItems.length ?? 0} '
+          'recorderLeak=${raw.contains('"recorder"')} '
+          'title=${parsed?.title ?? '-'}',
+        );
         final flat = raw.replaceAll('\n', ' ');
         // ignore: avoid_print
-        print('LOCALRAW id=$id >>>'
-            '${flat.substring(0, flat.length > 400 ? 400 : flat.length)}<<<');
+        print(
+          'LOCALRAW id=$id >>>'
+          '${flat.substring(0, flat.length > 400 ? 400 : flat.length)}<<<',
+        );
         raws.add(<String, dynamic>{
           'id': id,
           'provider': 'local',

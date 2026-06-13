@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
+import 'package:voicescribe_mobile/ui/core/i18n/error_messages.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
@@ -72,14 +73,18 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
     return BlocConsumer<RecordingBloc, RecordingState>(
       listenWhen: (previous, current) =>
+          (previous.userErrorCode != current.userErrorCode &&
+              current.userErrorCode != null) ||
           (previous.userMessage != current.userMessage &&
               current.userMessage != null) ||
           previous.currentTranscript?.id != current.currentTranscript?.id,
       listener: (context, state) {
-        if (state.userMessage != null) {
+        final message =
+            state.userErrorCode?.localized(context.l10n) ?? state.userMessage;
+        if (message != null) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text(state.userMessage!)));
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
         _syncTitleController(state.currentTranscript);
       },
@@ -88,6 +93,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
           previous.isPaused != current.isPaused ||
           previous.durationSeconds != current.durationSeconds ||
           previous.errorMessage != current.errorMessage ||
+          previous.userErrorCode != current.userErrorCode ||
           previous.userMessage != current.userMessage ||
           previous.transcripts != current.transcripts ||
           previous.currentTranscript != current.currentTranscript ||
