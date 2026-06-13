@@ -177,6 +177,12 @@ class SyncPayloadMapper {
       'endTime': _toDouble(row['end_time']),
       'confidence': row['confidence'],
       'transcriptionError': null,
+      // A chunk only reaches the server after it finished transcribing (push
+      // happens once the chunk is in a terminal state), so a pulled chunk is
+      // always transcribed. Without this, ConflictAlgorithm.replace resets the
+      // column to its default 0 — matching `_writeServerTranscriptsToCache`,
+      // which the (now-removed) post-sync full refresh used to mask.
+      'isTranscribed': 1,
       'syncStatus': SyncStatus.synced.key,
       'lastSyncedAt': now,
       'syncError': null,
