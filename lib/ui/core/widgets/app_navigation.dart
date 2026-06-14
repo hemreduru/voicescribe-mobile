@@ -196,19 +196,21 @@ class _NavigationItem extends StatelessWidget {
     final icon = selected ? destination.selectedIcon : destination.icon;
 
     final content = extended
-        ? Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: selected ? 23 : 22),
-              const SizedBox(width: AppSpacing.sm),
-              Flexible(
-                child: _NavigationLabel(
-                  label: destination.label,
-                  color: color,
-                  selected: selected,
+        ? Padding(
+            padding: const EdgeInsetsDirectional.only(start: AppSpacing.md),
+            child: Row(
+              children: [
+                Icon(icon, color: color, size: selected ? 23 : 22),
+                const SizedBox(width: AppSpacing.md),
+                Flexible(
+                  child: _NavigationLabel(
+                    label: destination.label,
+                    color: color,
+                    selected: selected,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           )
         : Column(
             mainAxisAlignment: MainAxisAlignment.center,
