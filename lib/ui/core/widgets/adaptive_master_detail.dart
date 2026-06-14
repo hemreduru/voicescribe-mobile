@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
+import 'package:voicescribe_mobile/ui/core/theme/brand_tokens.dart';
 import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
 
 /// Layout-only, state-agnostic master/detail scaffold.
@@ -56,8 +57,7 @@ class AdaptiveMasterDetail<T> extends StatelessWidget {
           return master;
         }
 
-        final scheme = Theme.of(context).colorScheme;
-        final surfaces = AppSurfaces.of(scheme);
+        final surfaces = context.brand.surfaces;
         final reduceMotion =
             MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoiceScribe — Brand Guidelines</title>
+<style>
+  /* Plus Jakarta Sans (OFL) — bundled locally; no network dependency. */
+  @font-face { font-family:'Plus Jakarta Sans'; font-weight:400; font-display:swap;
+    src:url('../google_fonts/PlusJakartaSans-Regular.ttf') format('truetype'); }
+  @font-face { font-family:'Plus Jakarta Sans'; font-weight:600; font-display:swap;
+    src:url('../google_fonts/PlusJakartaSans-SemiBold.ttf') format('truetype'); }
+  @font-face { font-family:'Plus Jakarta Sans'; font-weight:700; font-display:swap;
+    src:url('../google_fonts/PlusJakartaSans-Bold.ttf') format('truetype'); }
+  @font-face { font-family:'Plus Jakarta Sans'; font-weight:800; font-display:swap;
+    src:url('../google_fonts/PlusJakartaSans-ExtraBold.ttf') format('truetype'); }
+
+  :root{
+    --teal-700:#0B7884; --teal-500:#119A91; --teal-400:#2DD4CF; --teal-300:#5FE3DC;
+    --rec:#FF4D4D;
+    --bg:#080A0F; --panel:#0F141B; --panel-2:#141B24; --line:#26303C;
+    --ink:#E7EDF8; --muted:#9FB0C8; --brand:#5FE3DC;
+  }
+  html[data-theme="light"]{
+    --bg:#F8FAFC; --panel:#FFFFFF; --panel-2:#F1F5F9; --line:#E2E8F0;
+    --ink:#1E293B; --muted:#475569; --brand:#0B7884;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px 96px}
+  header.top{position:sticky;top:0;z-index:9;display:flex;justify-content:space-between;
+    align-items:center;padding:16px 24px;background:color-mix(in srgb,var(--bg) 86%,transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  header.top b{font-weight:800;letter-spacing:-.3px}
+  header.top b span{color:var(--brand)}
+  .toggle{font:inherit;font-weight:700;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);border-radius:999px;padding:8px 16px}
+  h2{font-weight:800;letter-spacing:-.6px;font-size:30px;margin:64px 0 6px}
+  h3{font-weight:700;letter-spacing:-.2px;font-size:18px;margin:32px 0 10px}
+  .sub{color:var(--muted);max-width:62ch}
+  .eyebrow{color:var(--brand);font-weight:800;font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;margin-top:64px}
+  section{border-top:1px solid var(--line);margin-top:8px}
+  .cover{border:0;padding:64px 0 8px;text-align:center}
+  .cover .lock{display:flex;justify-content:center;margin:8px 0 24px}
+  .tagline{font-size:34px;font-weight:800;letter-spacing:-.8px;margin:8px 0}
+  .tagline span{color:var(--brand)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px}
+  .grid{display:grid;gap:14px}
+  .scale{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:640px){.scale{grid-template-columns:repeat(2,1fr)}}
+  .sw{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .sw .chip{height:64px}
+  .sw .meta{padding:8px 10px;font-size:12px}
+  .sw .meta b{display:block;font-weight:800}
+  .sw .meta code{color:var(--muted);font-size:11px}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+  .pass{color:#16A34A;font-weight:800}
+  html[data-theme="dark"] .pass{color:#34D399}
+  .ratio{font-variant-numeric:tabular-nums;font-weight:800}
+  .pair{display:inline-flex;align-items:center;gap:0;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .pair span{display:inline-flex;align-items:center;justify-content:center;width:46px;height:30px;font-weight:800;font-size:13px}
+  .do,.dont{border-radius:12px;padding:14px 16px;border:1px solid var(--line)}
+  .do{background:color-mix(in srgb,#15803D 14%,var(--panel))}
+  .dont{background:color-mix(in srgb,#DC2626 12%,var(--panel))}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.two{grid-template-columns:1fr}}
+  .clear{position:relative;display:inline-block;padding:28px;border:1px dashed var(--line);border-radius:14px}
+  .micro{background:var(--panel-2);border-left:3px solid var(--brand);border-radius:8px;padding:12px 16px;margin:10px 0}
+  .micro b{display:block}
+  .typerow{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--line);padding:12px 0;flex-wrap:wrap}
+  .typerow small{color:var(--muted);font-variant-numeric:tabular-nums}
+  .dot{width:14px;height:14px;border-radius:50%;background:var(--teal-400);
+    box-shadow:0 0 16px var(--teal-400)}
+  .track{position:relative;height:14px;background:var(--panel-2);border-radius:999px;overflow:hidden}
+  .track .dot{position:absolute;top:0;animation:slide 2.4s cubic-bezier(.16,1,.3,1) infinite alternate}
+  @keyframes slide{from{left:0}to{left:calc(100% - 14px)}}
+  @media(prefers-reduced-motion:reduce){.track .dot{animation:none}}
+  .misuse{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(max-width:640px){.misuse{grid-template-columns:1fr}}
+  .badmark{height:96px;display:flex;align-items:center;justify-content:center;background:var(--panel-2);border-radius:12px}
+  @media print{
+    :root{--bg:#fff;--panel:#fff;--panel-2:#fff;--line:#bbb;--ink:#111;--muted:#444;--brand:#0B7884}
+    html[data-theme]{--bg:#fff}
+    header.top,.toggle{display:none}
+    body{color:#111}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    h2{page-break-after:avoid}section{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <b>Voice<span>Scribe</span> — Brand Guidelines</b>
+  <button class="toggle" onclick="t()">◐ Theme</button>
+</header>
+<div class="wrap">
+
+  <!-- COVER -->
+  <section class="cover">
+    <div class="lock">
+      <svg viewBox="0 0 424 96" width="360" role="img" aria-label="VoiceScribe">
+        <defs><linearGradient id="cv" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#2DD4CF"/><stop offset="1" stop-color="#0B7884"/></linearGradient></defs>
+        <rect x="12" y="12" width="72" height="72" rx="22" fill="url(#cv)"/>
+        <g fill="#fff">
+          <rect x="16" y="36" width="8" height="24" rx="4" opacity=".85"/>
+          <rect x="30" y="26" width="8" height="44" rx="4" opacity=".92"/>
+          <rect x="44" y="18" width="8" height="60" rx="4"/>
+          <rect x="58" y="27" width="8" height="42" rx="4" opacity=".92"/>
+          <rect x="72" y="34" width="8" height="28" rx="4" opacity=".85"/>
+        </g>
+        <text x="104" y="60" font-family="'Plus Jakarta Sans',sans-serif" font-size="44" letter-spacing="-1.4">
+          <tspan font-weight="800" fill="var(--brand)">Voice</tspan><tspan font-weight="700" fill="currentColor">Scribe</tspan>
+        </text>
+      </svg>
+    </div>
+    <div class="tagline">Your words stay <span>yours.</span></div>
+    <p class="sub" style="margin:8px auto 0">On-device voice intelligence — transcription, summaries,
+    and chat that run entirely on your device. The private home for your spoken words.</p>
+  </section>
+
+  <!-- ABOUT -->
+  <p class="eyebrow">About</p>
+  <h2>Private by design</h2>
+  <p class="sub">VoiceScribe records, transcribes, summarizes, and answers questions about your
+  conversations using modern AI that runs <strong>entirely on your phone</strong> — no account,
+  nothing uploaded. It is the privacy-first alternative to cloud transcribers like Otter and
+  Fireflies. That single promise — <em>your voice never leaves your device</em> — drives every
+  brand decision below, starting with the colour.</p>
+  <div class="panel" style="margin-top:18px">
+    <h3 style="margin-top:0">Archetype — Sage, with a Magician facet</h3>
+    <p class="sub" style="max-width:none">The <strong>Sage</strong> seeks truth and keeps confidence:
+    we turn messy speech into clear knowledge you own, and we keep it yours. The <strong>Magician</strong>
+    facet is the quiet delight — speech becomes structured insight, locally, as if by sleight of hand.
+    See <code>STRATEGY.md</code> for the full verbal identity.</p>
+  </div>
+
+  <!-- LOGO -->
+  <p class="eyebrow">Logo</p>
+  <h2>The Aperture Wave</h2>
+  <p class="sub">A waveform <strong>contained within a rounded aperture</strong>: voice (the bars)
+  kept private and on-device (the enclosure). The mark is self-grounding, so it reads on light or on
+  the <code>#080A0F</code> dark base.</p>
+
+  <div class="two" style="margin-top:18px">
+    <div class="panel" style="display:flex;align-items:center;justify-content:center;background:#fff">
+      <svg viewBox="0 0 96 96" width="120"><defs><linearGradient id="ml" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2DD4CF"/><stop offset="1" stop-color="#0B7884"/></linearGradient></defs>
+        <rect x="12" y="12" width="72" height="72" rx="22" fill="url(#ml)"/>
+        <g fill="#fff"><rect x="16" y="36" width="8" height="24" rx="4" opacity=".85"/><rect x="30" y="26" width="8" height="44" rx="4" opacity=".92"/><rect x="44" y="18" width="8" height="60" rx="4"/><rect x="58" y="27" width="8" height="42" rx="4" opacity=".92"/><rect x="72" y="34" width="8" height="28" rx="4" opacity=".85"/></g></svg>
+    </div>
+    <div class="panel" style="display:flex;align-items:center;justify-content:center;background:#080A0F">
+      <svg viewBox="0 0 96 96" width="120"><defs><linearGradient id="md" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2DD4CF"/><stop offset="1" stop-color="#0B7884"/></linearGradient></defs>
+        <rect x="12" y="12" width="72" height="72" rx="22" fill="url(#md)"/>
+        <g fill="#fff"><rect x="16" y="36" width="8" height="24" rx="4" opacity=".85"/><rect x="30" y="26" width="8" height="44" rx="4" opacity=".92"/><rect x="44" y="18" width="8" height="60" rx="4"/><rect x="58" y="27" width="8" height="42" rx="4" opacity=".92"/><rect x="72" y="34" width="8" height="28" rx="4" opacity=".85"/></g></svg>
+    </div>
+  </div>
+
+  <h3>Clearspace &amp; minimum size</h3>
+  <p class="sub">Keep clear space of at least the height of one waveform bar (¼ of the mark) on all
+  sides. Minimum legible size for the icon mark is <strong>24&nbsp;px</strong> — verified
+  (<code>brand/app_icon/generated/mark_24.png</code>). Do not place the wordmark below 80&nbsp;px wide.</p>
+  <div class="clear" style="margin-top:8px">
+    <svg viewBox="0 0 96 96" width="72"><defs><linearGradient id="mc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2DD4CF"/><stop offset="1" stop-color="#0B7884"/></linearGradient></defs>
+      <rect x="12" y="12" width="72" height="72" rx="22" fill="url(#mc)"/>
+      <g fill="#fff"><rect x="16" y="36" width="8" height="24" rx="4"/><rect x="30" y="26" width="8" height="44" rx="4"/><rect x="44" y="18" width="8" height="60" rx="4"/><rect x="58" y="27" width="8" height="42" rx="4"/><rect x="72" y="34" width="8" height="28" rx="4"/></g></svg>
+  </div>
+
+  <h3>Misuse</h3>
+  <div class="misuse">
+    <div><div class="badmark"><svg viewBox="0 0 96 96" width="80" style="transform:skewX(-12deg)"><rect x="12" y="12" width="72" height="72" rx="22" fill="#0B7884"/><g fill="#fff"><rect x="16" y="36" width="8" height="24" rx="4"/><rect x="44" y="18" width="8" height="60" rx="4"/><rect x="72" y="34" width="8" height="28" rx="4"/></g></svg></div><p class="sub">Don't skew, stretch, or rotate.</p></div>
+    <div><div class="badmark"><svg viewBox="0 0 96 96" width="80"><rect x="12" y="12" width="72" height="72" rx="22" fill="#7C3AED"/><g fill="#fff"><rect x="16" y="36" width="8" height="24" rx="4"/><rect x="30" y="26" width="8" height="44" rx="4"/><rect x="44" y="18" width="8" height="60" rx="4"/><rect x="58" y="27" width="8" height="42" rx="4"/><rect x="72" y="34" width="8" height="28" rx="4"/></g></svg></div><p class="sub">Don't recolour off-palette.</p></div>
+  </div>
+
+  <!-- COLOUR -->
+  <p class="eyebrow">Colour</p>
+  <h2>Signal Teal</h2>
+  <p class="sub">One ownable hue replaces the old blue-vs-indigo split. <strong>Privacy = trust (blue)
+  + safe/permission (green); teal is their intersection.</strong> It is the optical complement of the
+  reserved recording-red, so the UI tells one calm teal story and red <em>only</em> ever means
+  "recording." <strong>60–30–10:</strong> neutral surfaces ≈60%, Signal Teal ≈30%, warm accent +
+  recording-red ≈10%.</p>
+
+  <h3>Brand ramp — Signal Teal</h3>
+  <div class="grid scale">
+    <div class="sw"><div class="chip" style="background:#E9FBFA"></div><div class="meta"><b>50</b><code>#E9FBFA</code></div></div>
+    <div class="sw"><div class="chip" style="background:#D9F7F4"></div><div class="meta"><b>100</b><code>#D9F7F4 · container</code></div></div>
+    <div class="sw"><div class="chip" style="background:#95EAE4"></div><div class="meta"><b>200</b><code>#95EAE4</code></div></div>
+    <div class="sw"><div class="chip" style="background:#5FE3DC"></div><div class="meta"><b>300</b><code>#5FE3DC · dark primary</code></div></div>
+    <div class="sw"><div class="chip" style="background:#2DD4CF"></div><div class="meta"><b>400</b><code>#2DD4CF</code></div></div>
+    <div class="sw"><div class="chip" style="background:#119A91"></div><div class="meta"><b>500</b><code>#119A91 · glow</code></div></div>
+    <div class="sw"><div class="chip" style="background:#0E8079"></div><div class="meta"><b>600</b><code>#0E8079</code></div></div>
+    <div class="sw"><div class="chip" style="background:#0B7884"></div><div class="meta"><b>700</b><code>#0B7884 · primary</code></div></div>
+    <div class="sw"><div class="chip" style="background:#0E565C"></div><div class="meta"><b>800</b><code>#0E565C</code></div></div>
+    <div class="sw"><div class="chip" style="background:#0A3A42"></div><div class="meta"><b>900</b><code>#0A3A42</code></div></div>
+  </div>
+
+  <h3>Functional &amp; reserved</h3>
+  <div class="grid scale">
+    <div class="sw"><div class="chip" style="background:#15803D"></div><div class="meta"><b>Success</b><code>#15803D</code></div></div>
+    <div class="sw"><div class="chip" style="background:#D97706"></div><div class="meta"><b>Warning</b><code>#D97706</code></div></div>
+    <div class="sw"><div class="chip" style="background:#DC2626"></div><div class="meta"><b>Error</b><code>#DC2626</code></div></div>
+    <div class="sw"><div class="chip" style="background:#F97316"></div><div class="meta"><b>Accent</b><code>#F97316 · tertiary</code></div></div>
+    <div class="sw"><div class="chip" style="background:#FF4D4D"></div><div class="meta"><b>Recording</b><code>#FF4D4D · reserved</code></div></div>
+    <div class="sw"><div class="chip" style="background:#1E293B"></div><div class="meta"><b>Ink</b><code>#1E293B</code></div></div>
+    <div class="sw"><div class="chip" style="background:#475569"></div><div class="meta"><b>Muted</b><code>#475569</code></div></div>
+    <div class="sw"><div class="chip" style="background:#E2E8F0"></div><div class="meta"><b>Border</b><code>#E2E8F0</code></div></div>
+    <div class="sw"><div class="chip" style="background:#0D1118"></div><div class="meta"><b>Surface ·dk</b><code>#0D1118</code></div></div>
+    <div class="sw"><div class="chip" style="background:#080A0F"></div><div class="meta"><b>Base ·dk</b><code>#080A0F</code></div></div>
+  </div>
+
+  <h3>Contrast — every pair ≥ WCAG AA</h3>
+  <p class="sub">Computed with <code>tool/check_contrast.dart</code> (WCAG 2.1). AA = 4.5:1 normal text,
+  3:1 large text / graphics.</p>
+  <table>
+    <thead><tr><th>Pair</th><th>Ratio</th><th>Min</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Light · onPrimary on primary (button)</td><td class="ratio">5.21:1</td><td>4.5</td><td class="pass">AA</td></tr>
+      <tr><td>Light · primary on primaryContainer (nav)</td><td class="ratio">4.60:1</td><td>4.5</td><td class="pass">AA</td></tr>
+      <tr><td>Light · onSurface on surface</td><td class="ratio">14.63:1</td><td>4.5</td><td class="pass">AAA</td></tr>
+      <tr><td>Light · onSurfaceVariant on surface</td><td class="ratio">7.58:1</td><td>4.5</td><td class="pass">AAA</td></tr>
+      <tr><td>Light · success on surface (graphic)</td><td class="ratio">5.02:1</td><td>3.0</td><td class="pass">AA</td></tr>
+      <tr><td>Light · idle-core icon (glow top)</td><td class="ratio">3.47:1</td><td>3.0</td><td class="pass">AA·g</td></tr>
+      <tr><td>Dark · onPrimary on primary (button)</td><td class="ratio">9.08:1</td><td>4.5</td><td class="pass">AAA</td></tr>
+      <tr><td>Dark · primary on surface (text/icon)</td><td class="ratio">12.16:1</td><td>4.5</td><td class="pass">AAA</td></tr>
+      <tr><td>Dark · primary on primaryContainer (nav)</td><td class="ratio">5.39:1</td><td>4.5</td><td class="pass">AA</td></tr>
+      <tr><td>Dark · onSecondary on secondary</td><td class="ratio">8.91:1</td><td>4.5</td><td class="pass">AAA</td></tr>
+      <tr><td>Dark · onSurface on surface</td><td class="ratio">16.09:1</td><td>4.5</td><td class="pass">AAA</td></tr>
+    </tbody>
+  </table>
+
+  <!-- TYPE -->
+  <p class="eyebrow">Typography</p>
+  <h2>Plus Jakarta Sans</h2>
+  <p class="sub">One family, OFL-licensed and bundled offline. Display/headline roles use tight tracking;
+  body stays comfortable for long transcripts. Numeric/timer styles use tabular figures.</p>
+  <div class="panel" style="margin-top:16px">
+    <div class="typerow"><span style="font-weight:800;font-size:40px;letter-spacing:-1px">Display</span><small>800 · −0.5 tracking · 36–57px</small></div>
+    <div class="typerow"><span style="font-weight:700;font-size:28px;letter-spacing:-.4px">Headline</span><small>700 · −0.3 · 24–32px</small></div>
+    <div class="typerow"><span style="font-weight:700;font-size:20px">Title</span><small>700 · 16–22px</small></div>
+    <div class="typerow"><span style="font-weight:400;font-size:16px">Body — your words stay yours.</span><small>400 · 1.42 line-height · 14–16px</small></div>
+    <div class="typerow"><span style="font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase">Label</span><small>600 · 11–14px</small></div>
+    <div class="typerow"><span style="font-weight:800;font-size:30px;font-variant-numeric:tabular-nums">00:42</span><small>Timer · 800 · tabular figures</small></div>
+  </div>
+
+  <!-- MOTION -->
+  <p class="eyebrow">Motion</p>
+  <h2>Calm, decisive settle</h2>
+  <p class="sub">The signature easing is <strong>expressive</strong> —
+  <code>cubic-bezier(0.16, 1, 0.3, 1)</code> — a fast, confident settle used for entrances, the record
+  button, and pane transitions. Press feedback uses a spring (mass 1, stiffness 520, damping 24).</p>
+  <div class="panel" style="margin-top:16px">
+    <div class="track"><div class="dot"></div></div>
+    <table style="margin-top:14px">
+      <tr><td>instant</td><td class="ratio">90ms</td><td>fast</td><td class="ratio">150ms</td></tr>
+      <tr><td>normal</td><td class="ratio">240ms</td><td>slow</td><td class="ratio">320ms</td></tr>
+      <tr><td>entrance</td><td class="ratio">420ms</td><td>expressive</td><td class="ratio">cubic(.16,1,.3,1)</td></tr>
+    </table>
+  </div>
+
+  <!-- VOICE -->
+  <p class="eyebrow">Voice</p>
+  <h2>Calm. Precise. Private.</h2>
+  <ol class="sub">
+    <li><strong>Calm and precise.</strong> Short, concrete sentences. No hype.</li>
+    <li><strong>Privacy-respecting.</strong> Name where data lives; reduce anxiety, never manufacture it.</li>
+    <li><strong>Human, not robotic.</strong> Plain language; a confidant, not a chatbot.</li>
+  </ol>
+  <div class="two" style="margin-top:8px">
+    <div class="do"><b>Do</b><br>"Everything stays on this device."<br>"Transcribing locally…"<br>"No account needed."</div>
+    <div class="dont"><b>Don't</b><br>"AI magic is happening ✨🤖"<br>"We take your privacy very seriously." (vague)<br>"Unleash next-gen voice AI!!"</div>
+  </div>
+  <div class="micro"><b>Empty state</b>Nothing recorded yet. Tap the mic to start — everything you capture stays on this device.</div>
+  <div class="micro"><b>Microphone permission</b>VoiceScribe needs your microphone to transcribe what you say. Audio is processed on your device and never uploaded.</div>
+
+  <!-- ACCESSIBILITY -->
+  <p class="eyebrow">Accessibility</p>
+  <h2>Inclusive by default</h2>
+  <ul class="sub">
+    <li>Every text/background pair meets <strong>WCAG AA</strong> in both themes (table above).</li>
+    <li>Ambient backdrop blobs stay at low alpha (<strong>0.08–0.10</strong>) so foreground text contrast
+    is never reduced below AA.</li>
+    <li>All looping motion (record pulse, ambient drift, pane switch) honours
+    <strong>prefers-reduced-motion</strong> / <code>disableAnimations</code>; states stay distinct without movement.</li>
+    <li>Dark mode is the native default; light mode is a first-class peer.</li>
+  </ul>
+
+  <p class="sub" style="margin-top:48px;color:var(--muted);font-size:13px">
+  Tokens: <code>brand/tokens/brand-tokens.json</code> · Theme:
+  <code>lib/ui/core/theme/</code> · Generated <span id="d"></span>.</p>
+</div>
+<script>
+  function t(){var h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';}
+  document.getElementById('d').textContent=new Date().toISOString().slice(0,10);
+</script>
+</body>
+</html>

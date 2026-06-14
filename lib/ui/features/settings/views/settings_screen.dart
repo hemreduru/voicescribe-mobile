@@ -179,7 +179,7 @@ class SettingsScreen extends StatelessWidget {
                                   : Icons.cloud_done_outlined,
                               color: state.syncing
                                   ? Theme.of(context).colorScheme.secondary
-                                  : AppTheme.teal,
+                                  : AppTheme.positive,
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
@@ -315,7 +315,7 @@ class SettingsScreen extends StatelessWidget {
     ModelBootstrapState modelState,
   ) {
     return switch (modelState) {
-      ModelBootstrapState.ready => AppTheme.teal,
+      ModelBootstrapState.ready => AppTheme.positive,
       ModelBootstrapState.failed => Theme.of(context).colorScheme.error,
       ModelBootstrapState.bootstrapping => Theme.of(
         context,

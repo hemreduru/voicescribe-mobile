@@ -1,0 +1,17 @@
+# VoiceScribe launcher icons.
+#
+# PNG masters are produced by `flutter test tool/generate_app_icons_test.dart`
+# (rendered from the design sources in brand/app_icon/). Regenerate platform
+# icons with:
+#   dart run flutter_launcher_icons -f flutter_launcher_icons.yaml
+#
+# Do not hand-edit the generated android/ios icon files.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "brand/app_icon/generated/ic_app_1024.png"
+  adaptive_icon_background: "brand/app_icon/generated/ic_bg_1024.png"
+  adaptive_icon_foreground: "brand/app_icon/generated/ic_fg_1024.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  background_color_ios: "#0B7884"

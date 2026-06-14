@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
+import 'package:voicescribe_mobile/ui/core/theme/brand_tokens.dart';
 
 /// A quiet, premium backdrop: a static base wash with two large blurred color
 /// blobs that drift slowly behind the content.
@@ -36,8 +36,8 @@ class _AmbientBackdropState extends State<AmbientBackdrop>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final gradients = AppGradients.of(scheme);
-    final accents = AppAccents.of(scheme);
+    final gradients = context.brand.gradients;
+    final accents = context.brand.accents;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 

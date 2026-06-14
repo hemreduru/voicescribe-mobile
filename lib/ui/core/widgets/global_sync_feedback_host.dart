@@ -171,7 +171,7 @@ class _SyncMiniBanner extends StatelessWidget {
             children: [
               const Icon(
                 Icons.cloud_done_outlined,
-                color: AppTheme.teal,
+                color: AppTheme.positive,
                 size: 20,
               ),
               const SizedBox(width: AppSpacing.md),

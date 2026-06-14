@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 332 80" width="332" height="80" role="img" aria-label="VoiceScribe">
+  <title>VoiceScribe wordmark — for light backgrounds</title>
+  <!-- Plus Jakarta Sans. "Voice" emphasised (ExtraBold + brand teal). -->
+  <text x="8" y="56" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="48" letter-spacing="-1.5">
+    <tspan font-weight="800" fill="#0B7884">Voice</tspan><tspan font-weight="700" fill="#1E293B">Scribe</tspan>
+  </text>
+</svg>

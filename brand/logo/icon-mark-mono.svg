@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" color="#0B7884" role="img" aria-label="VoiceScribe">
+  <title>VoiceScribe — Aperture Wave mark (single colour)</title>
+  <!-- Monochrome: the waveform is knocked OUT of a solid tile, so the whole mark
+       is one ink. Recolour by changing the `color` attribute / currentColor. -->
+  <defs>
+    <mask id="vsCut" maskUnits="userSpaceOnUse">
+      <rect x="12" y="12" width="72" height="72" rx="22" fill="#FFFFFF"/>
+      <g fill="#000000">
+        <rect x="16" y="36" width="8" height="24" rx="4"/>
+        <rect x="30" y="26" width="8" height="44" rx="4"/>
+        <rect x="44" y="18" width="8" height="60" rx="4"/>
+        <rect x="58" y="27" width="8" height="42" rx="4"/>
+        <rect x="72" y="34" width="8" height="28" rx="4"/>
+      </g>
+    </mask>
+  </defs>
+  <rect x="12" y="12" width="72" height="72" rx="22" fill="currentColor" mask="url(#vsCut)"/>
+</svg>

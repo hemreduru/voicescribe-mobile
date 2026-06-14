@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 424 96" width="424" height="96" role="img" aria-label="VoiceScribe">
+  <title>VoiceScribe horizontal lockup — for dark backgrounds</title>
+  <defs>
+    <linearGradient id="lkTealD" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2DD4CF"/>
+      <stop offset="1" stop-color="#0B7884"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="12" width="72" height="72" rx="22" fill="url(#lkTealD)"/>
+  <g fill="#FFFFFF">
+    <rect x="16" y="36" width="8" height="24" rx="4" opacity="0.85"/>
+    <rect x="30" y="26" width="8" height="44" rx="4" opacity="0.92"/>
+    <rect x="44" y="18" width="8" height="60" rx="4"/>
+    <rect x="58" y="27" width="8" height="42" rx="4" opacity="0.92"/>
+    <rect x="72" y="34" width="8" height="28" rx="4" opacity="0.85"/>
+  </g>
+  <text x="104" y="60" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="44" letter-spacing="-1.4">
+    <tspan font-weight="800" fill="#5FE3DC">Voice</tspan><tspan font-weight="700" fill="#E7EDF8">Scribe</tspan>
+  </text>
+</svg>

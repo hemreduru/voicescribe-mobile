@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="VoiceScribe adaptive foreground">
+  <title>Adaptive icon foreground — waveform, sized within the 72dp safe zone</title>
+  <!-- Transparent background; the bars stay inside the central safe circle so no
+       mask shape (circle/squircle/rounded-square) clips them. -->
+  <g fill="#FFFFFF">
+    <rect x="228" y="380" width="76" height="264" rx="38"/>
+    <rect x="351" y="284" width="76" height="456" rx="38"/>
+    <rect x="474" y="218" width="76" height="588" rx="38"/>
+    <rect x="597" y="304" width="76" height="416" rx="38"/>
+    <rect x="720" y="360" width="76" height="304" rx="38"/>
+  </g>
+</svg>

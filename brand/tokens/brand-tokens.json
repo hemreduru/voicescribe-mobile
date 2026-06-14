@@ -1,0 +1,103 @@
+{
+  "$description": "VoiceScribe design tokens (DTCG format) — the single source of truth for colour, spacing, radius and motion. DECISION: the brand colour was previously split between a generic Tailwind blue (#2563EB, used as ColorScheme.primary) and an indigo 'glow' (#6E78FF, called the brand accent in premium_tokens.dart). Both are retired. They are reconciled into ONE distinctive, ownable hue — 'Signal Teal' — chosen because privacy = trust (blue) + safe/permission (green), and teal is their intersection; it is also the optical complement of the reserved recording-red and is unclaimed in the transcription category. The light ColorScheme primary is teal.700, the dark primary is teal.300, and the luminous 'glow' is teal.500/teal.300. BRAND colours (teal scale + glow) are kept separate from FUNCTIONAL UI colours (neutral, success, warning, error, info). The reserved recording-red is NEVER part of the brand ramp. 60-30-10: neutral surfaces ~60%, Signal Teal ~30%, warm accent + recording-red ~10%. These values mirror lib/ui/core/theme/design_system.dart, app_theme.dart and premium_tokens.dart; keep them in sync.",
+  "color": {
+    "brand": {
+      "$description": "Signal Teal — the single brand hue. 50→900 ramp.",
+      "teal": {
+        "50":  { "$type": "color", "$value": "#E9FBFA" },
+        "100": { "$type": "color", "$value": "#D9F7F4", "$description": "Light primaryContainer (nav/tab/chip pill)." },
+        "200": { "$type": "color", "$value": "#95EAE4" },
+        "300": { "$type": "color", "$value": "#5FE3DC", "$description": "Dark-mode primary; dark glow; light inversePrimary." },
+        "400": { "$type": "color", "$value": "#2DD4CF" },
+        "500": { "$type": "color", "$value": "#119A91", "$description": "Light-mode glow (idle halo, brand-gradient top)." },
+        "600": { "$type": "color", "$value": "#0E8079" },
+        "700": { "$type": "color", "$value": "#0B7884", "$description": "Light-mode primary (the hero hue). White text = 5.21:1." },
+        "800": { "$type": "color", "$value": "#0E565C", "$description": "Dark primaryContainer." },
+        "900": { "$type": "color", "$value": "#0A3A42" }
+      },
+      "primary":        { "$type": "color", "$value": "{color.brand.teal.700}", "$description": "ColorScheme.primary (light)." },
+      "primary-dark":   { "$type": "color", "$value": "{color.brand.teal.300}", "$description": "ColorScheme.primary (dark)." },
+      "glow":           { "$type": "color", "$value": "{color.brand.teal.500}", "$description": "AppAccents.glow (light) — luminous accent, halos, gradient top." },
+      "glow-dark":      { "$type": "color", "$value": "{color.brand.teal.300}", "$description": "AppAccents.glow (dark)." }
+    },
+    "functional": {
+      "$description": "UI/state colours, kept deliberately separate from brand.",
+      "neutral": {
+        "50":  { "$type": "color", "$value": "#F8FAFC", "$description": "canvas" },
+        "100": { "$type": "color", "$value": "#F1F5F9" },
+        "200": { "$type": "color", "$value": "#E2E8F0", "$description": "border / outlineVariant (light)" },
+        "300": { "$type": "color", "$value": "#CBD5E1" },
+        "400": { "$type": "color", "$value": "#94A3B8" },
+        "500": { "$type": "color", "$value": "#64748B" },
+        "600": { "$type": "color", "$value": "#475569", "$description": "onSurfaceVariant (light)" },
+        "700": { "$type": "color", "$value": "#334155" },
+        "800": { "$type": "color", "$value": "#1E293B", "$description": "ink / onSurface (light)" },
+        "900": { "$type": "color", "$value": "#0F172A" }
+      },
+      "surface-dark": { "$type": "color", "$value": "#0D1118", "$description": "ColorScheme.surface (dark)." },
+      "base-dark":    { "$type": "color", "$value": "#080A0F", "$description": "AppSurfaces.base (dark) — the deep, near-black canvas the brand must read on." },
+      "success": {
+        "default": { "$type": "color", "$value": "#15803D", "$description": "AppColors.success (light) — moved teal→green so semantic green no longer collides with brand teal." },
+        "dark":    { "$type": "color", "$value": "#34D399" }
+      },
+      "warning": {
+        "default": { "$type": "color", "$value": "#D97706" },
+        "dark":    { "$type": "color", "$value": "#FBBF24" }
+      },
+      "error": {
+        "default": { "$type": "color", "$value": "#DC2626", "$description": "AppColors.danger / ColorScheme.error (light)." },
+        "dark":    { "$type": "color", "$value": "#FFB4AB" }
+      },
+      "info": {
+        "default": { "$type": "color", "$value": "#0B69C4", "$description": "Functional informational only — never used as a brand colour (the old brand blue is retired)." },
+        "dark":    { "$type": "color", "$value": "#7FC4FF" }
+      },
+      "accent": {
+        "default": { "$type": "color", "$value": "#F97316", "$description": "ColorScheme.tertiary — warm complement to teal, unchanged." },
+        "dark":    { "$type": "color", "$value": "#FFBB8C" }
+      }
+    },
+    "reserved": {
+      "$description": "NEVER part of the brand ramp. Appearance always means 'recording'.",
+      "recording":      { "$type": "color", "$value": "#FF4D4D", "$description": "AppAccents.recording (light)." },
+      "recording-dark": { "$type": "color", "$value": "#FF5C5C", "$description": "AppAccents.recording (dark)." }
+    }
+  },
+  "spacing": {
+    "$description": "Mirrors AppSpacing in design_system.dart.",
+    "xs":   { "$type": "dimension", "$value": "4px" },
+    "sm":   { "$type": "dimension", "$value": "8px" },
+    "md":   { "$type": "dimension", "$value": "12px" },
+    "lg":   { "$type": "dimension", "$value": "16px" },
+    "xl":   { "$type": "dimension", "$value": "24px" },
+    "xxl":  { "$type": "dimension", "$value": "32px" },
+    "xxxl": { "$type": "dimension", "$value": "40px" }
+  },
+  "radius": {
+    "$description": "Mirrors AppRadii in design_system.dart.",
+    "xs":   { "$type": "dimension", "$value": "6px" },
+    "sm":   { "$type": "dimension", "$value": "10px" },
+    "md":   { "$type": "dimension", "$value": "12px" },
+    "lg":   { "$type": "dimension", "$value": "16px" },
+    "xl":   { "$type": "dimension", "$value": "20px" },
+    "pill": { "$type": "dimension", "$value": "999px" }
+  },
+  "motion": {
+    "$description": "Mirrors AppMotion / AppMotionX. The signature easing is 'expressive'.",
+    "duration": {
+      "instant":  { "$type": "duration", "$value": "90ms" },
+      "fast":     { "$type": "duration", "$value": "150ms" },
+      "normal":   { "$type": "duration", "$value": "240ms" },
+      "slow":     { "$type": "duration", "$value": "320ms" },
+      "entrance": { "$type": "duration", "$value": "420ms" }
+    },
+    "easing": {
+      "standard":   { "$type": "cubicBezier", "$value": [0.33, 0.0, 0.0, 1.0], "$description": "≈ Curves.easeOutCubic" },
+      "emphasized": { "$type": "cubicBezier", "$value": [0.65, 0.0, 0.35, 1.0], "$description": "≈ Curves.easeInOutCubic" },
+      "expressive": { "$type": "cubicBezier", "$value": [0.16, 1.0, 0.3, 1.0], "$description": "Signature — fast, decisive settle (AppMotionX.expressive)." }
+    },
+    "spring": {
+      "press": { "$type": "other", "$value": { "mass": 1, "stiffness": 520, "damping": 24 }, "$description": "AppMotionX.spring — tactile press-scale feedback." }
+    }
+  }
+}

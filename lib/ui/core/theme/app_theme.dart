@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 import 'package:voicescribe_mobile/ui/core/theme/app_typography_theme.dart';
+import 'package:voicescribe_mobile/ui/core/theme/brand_tokens.dart';
 import 'package:voicescribe_mobile/ui/core/theme/design_system.dart';
 
 export 'package:voicescribe_mobile/ui/core/theme/design_system.dart';
 
 class AppTheme {
   static const Color rose = AppColors.danger;
-  static const Color violet = AppColors.secondary;
-  static const Color teal = AppColors.success;
+  static const Color positive = AppColors.success;
   static const Color amber = AppColors.warning;
   static const Color slate = AppColors.ink;
 
@@ -17,12 +17,12 @@ class AppTheme {
       brightness: Brightness.light,
       primary: AppColors.primary,
       onPrimary: Colors.white,
-      primaryContainer: Color(0xFFDCE8FF),
-      onPrimaryContainer: Color(0xFF0D2A66),
+      primaryContainer: Color(0xFFD9F7F4),
+      onPrimaryContainer: Color(0xFF053238),
       secondary: AppColors.secondary,
       onSecondary: Colors.white,
-      secondaryContainer: Color(0xFFE4ECFF),
-      onSecondaryContainer: Color(0xFF122A58),
+      secondaryContainer: Color(0xFFD2ECF1),
+      onSecondaryContainer: Color(0xFF082C36),
       tertiary: AppColors.accent,
       onTertiary: Colors.white,
       tertiaryContainer: Color(0xFFFFE4D3),
@@ -38,7 +38,7 @@ class AppTheme {
       scrim: Color(0x520F172A),
       inverseSurface: Color(0xFF0F172A),
       onInverseSurface: Color(0xFFF8FAFC),
-      inversePrimary: Color(0xFF8CB4FF),
+      inversePrimary: Color(0xFF5FE3DC),
       surfaceTint: AppColors.primary,
     );
     return _base(scheme);
@@ -47,14 +47,14 @@ class AppTheme {
   static ThemeData dark() {
     const scheme = ColorScheme(
       brightness: Brightness.dark,
-      primary: Color(0xFF8CB4FF),
-      onPrimary: Color(0xFF082763),
-      primaryContainer: Color(0xFF13387C),
-      onPrimaryContainer: Color(0xFFDCE8FF),
-      secondary: Color(0xFFB5CBFF),
-      onSecondary: Color(0xFF08275D),
-      secondaryContainer: Color(0xFF1A3A7A),
-      onSecondaryContainer: Color(0xFFE4ECFF),
+      primary: Color(0xFF5FE3DC),
+      onPrimary: Color(0xFF063038),
+      primaryContainer: Color(0xFF0E565C),
+      onPrimaryContainer: Color(0xFFCFF5F1),
+      secondary: Color(0xFF7FDCEA),
+      onSecondary: Color(0xFF04303D),
+      secondaryContainer: Color(0xFF154A57),
+      onSecondaryContainer: Color(0xFFD2ECF1),
       tertiary: Color(0xFFFFBB8C),
       onTertiary: Color(0xFF612400),
       tertiaryContainer: Color(0xFF8F3A00),
@@ -71,7 +71,7 @@ class AppTheme {
       inverseSurface: Color(0xFFE7EDF8),
       onInverseSurface: Color(0xFF111826),
       inversePrimary: AppColors.primary,
-      surfaceTint: Color(0xFF8CB4FF),
+      surfaceTint: Color(0xFF5FE3DC),
     );
     return _base(scheme);
   }
@@ -83,6 +83,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
+      extensions: [BrandTokens.of(scheme)],
       textTheme: textTheme,
       scaffoldBackgroundColor: scheme.brightness == Brightness.dark
           ? Color.alphaBlend(const Color(0x14000000), scheme.surface)

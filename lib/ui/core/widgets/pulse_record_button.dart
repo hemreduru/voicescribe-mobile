@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
+import 'package:voicescribe_mobile/ui/core/theme/brand_tokens.dart';
 import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
 
 /// Hero record control.
@@ -85,8 +86,8 @@ class _PulseRecordButtonState extends State<PulseRecordButton>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final accents = AppAccents.of(scheme);
-    final gradients = AppGradients.of(scheme);
+    final accents = context.brand.accents;
+    final gradients = context.brand.gradients;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 

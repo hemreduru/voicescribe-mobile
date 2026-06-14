@@ -11,7 +11,8 @@ import 'package:voicescribe_mobile/ui/core/theme/design_system.dart';
 /// Brand and state accent colors.
 ///
 /// `recording` (≈#FF4D4D) is reserved exclusively for the live-mic state so its
-/// appearance always means "recording". `glow` is the calm indigo brand accent.
+/// appearance always means "recording". `glow` is the calm Signal Teal brand
+/// accent — the luminous tint of the single brand hue.
 class AppAccents {
   const AppAccents({required this.recording, required this.glow});
 
@@ -19,15 +20,21 @@ class AppAccents {
     final dark = scheme.brightness == Brightness.dark;
     return AppAccents(
       recording: dark ? const Color(0xFFFF5C5C) : const Color(0xFFFF4D4D),
-      glow: dark ? const Color(0xFF8C94FF) : const Color(0xFF6E78FF),
+      glow: dark ? const Color(0xFF5FE3DC) : const Color(0xFF119A91),
     );
   }
 
   /// Reserved recording-red. Do not use as a general primary.
   final Color recording;
 
-  /// Indigo brand glow accent.
+  /// Signal Teal brand glow accent.
   final Color glow;
+
+  /// Linearly interpolates toward [other] for [ThemeExtension] transitions.
+  AppAccents lerp(AppAccents other, double t) => AppAccents(
+    recording: Color.lerp(recording, other.recording, t)!,
+    glow: Color.lerp(glow, other.glow, t)!,
+  );
 }
 
 /// Layered surface colors: a base wash, raised cards, elevated sheets and a
@@ -72,6 +79,14 @@ class AppSurfaces {
   final Color raised;
   final Color elevated;
   final Color hairline;
+
+  /// Linearly interpolates toward [other] for [ThemeExtension] transitions.
+  AppSurfaces lerp(AppSurfaces other, double t) => AppSurfaces(
+    base: Color.lerp(base, other.base, t)!,
+    raised: Color.lerp(raised, other.raised, t)!,
+    elevated: Color.lerp(elevated, other.elevated, t)!,
+    hairline: Color.lerp(hairline, other.hairline, t)!,
+  );
 }
 
 /// Scheme-derived gradients for brand surfaces, the recording state, and the
@@ -117,6 +132,13 @@ class AppGradients {
   final Gradient brand;
   final Gradient recording;
   final Gradient ambient;
+
+  /// Linearly interpolates toward [other] for [ThemeExtension] transitions.
+  AppGradients lerp(AppGradients other, double t) => AppGradients(
+    brand: Gradient.lerp(brand, other.brand, t)!,
+    recording: Gradient.lerp(recording, other.recording, t)!,
+    ambient: Gradient.lerp(ambient, other.ambient, t)!,
+  );
 }
 
 /// Expressive motion tokens extending [AppMotion] for premium widgets.

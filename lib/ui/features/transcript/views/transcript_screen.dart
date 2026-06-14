@@ -1195,7 +1195,7 @@ Color statusColor(BuildContext context, TranscriptStatus status) {
   return switch (displayStatusFor(status)) {
     TranscriptDisplayStatus.active => theme.colorScheme.error,
     TranscriptDisplayStatus.processing => AppTheme.amber,
-    TranscriptDisplayStatus.ready => AppTheme.teal,
+    TranscriptDisplayStatus.ready => AppTheme.positive,
     TranscriptDisplayStatus.issue => theme.colorScheme.error,
   };
 }
