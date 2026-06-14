@@ -24,12 +24,6 @@ final class BootstrapRetried extends BootstrapEvent {
   const BootstrapRetried();
 }
 
-final class BootstrapTranscriptionModelChanged extends BootstrapEvent {
-  const BootstrapTranscriptionModelChanged(this.modelKey);
-
-  final String modelKey;
-}
-
 final class _BootstrapProgressChanged extends BootstrapEvent {
   const _BootstrapProgressChanged(this.progress);
 
@@ -85,7 +79,6 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
        super(const BootstrapState()) {
     on<BootstrapStarted>(_onStarted);
     on<BootstrapRetried>(_onRetried);
-    on<BootstrapTranscriptionModelChanged>(_onTranscriptionModelChanged);
     on<_BootstrapProgressChanged>(_onProgressChanged);
     _progressSubscription = _transcriptionService.downloadProgress.listen(
       (progress) => add(_BootstrapProgressChanged(progress)),
@@ -108,48 +101,6 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     Emitter<BootstrapState> emit,
   ) async {
     await _bootstrap(emit);
-  }
-
-  Future<void> _onTranscriptionModelChanged(
-    BootstrapTranscriptionModelChanged event,
-    Emitter<BootstrapState> emit,
-  ) async {
-    final normalizedModelKey = AppPreferences.normalizeTranscriptionModel(
-      event.modelKey,
-    );
-    emit(
-      state.copyWith(
-        modelState: ModelBootstrapState.bootstrapping,
-        selectedModelKey: normalizedModelKey,
-        clearErrorMessage: true,
-      ),
-    );
-
-    try {
-      await _transcriptionService.selectModel(
-        whisperModelFromKey(normalizedModelKey),
-      );
-      await _transcriptionService.ensureModel();
-      emit(
-        state.copyWith(
-          modelState: ModelBootstrapState.ready,
-          selectedModelKey: normalizedModelKey,
-          initialized: true,
-          clearDownloadProgress: true,
-          clearErrorMessage: true,
-        ),
-      );
-    } catch (error) {
-      emit(
-        state.copyWith(
-          modelState: ModelBootstrapState.failed,
-          selectedModelKey: normalizedModelKey,
-          initialized: true,
-          clearDownloadProgress: true,
-          errorMessage: error.toString(),
-        ),
-      );
-    }
   }
 
   void _onProgressChanged(
@@ -188,7 +139,20 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
       await RepairStaleRecordingsUseCase(
         _transcriptRepository,
       ).execute(snapshot);
-      await _transcriptionService.ensureModel();
+      // Non-blocking: if the persisted model isn't downloaded yet (e.g. an
+      // interrupted switch left only a `.part`), boot on an already-downloaded
+      // model instead of locking the app on the splash re-downloading it.
+      await _transcriptionService.ensureUsableModel();
+      // Persist whatever model actually loaded so Settings reflects reality and
+      // the next launch doesn't try to re-download the missing one all over.
+      final activeModelKey = AppPreferences.normalizeTranscriptionModel(
+        _transcriptionService.currentModelKey,
+      );
+      if (activeModelKey != snapshot.preferences.transcriptionModel) {
+        await _transcriptRepository.savePreferences(
+          snapshot.preferences.copyWith(transcriptionModel: activeModelKey),
+        );
+      }
       // Fetch the latest server data into cache in the background — the app is
       // offline-first, so becoming usable must never wait on the network (a
       // slow server would otherwise hold the splash screen for up to the full

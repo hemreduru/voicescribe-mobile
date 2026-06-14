@@ -92,6 +92,25 @@
   "summaryPreferences": "Choose where summaries and AI chat run.",
   "transcriptionModelSettings": "Transcription Model",
   "transcriptionModelPreferences": "Choose the on-device model used for speech transcription.",
+  "modelChangeConfirmTitle": "Change model?",
+  "modelChangeConfirmDownload": "Switching to {model} needs a one-time {size} download. It runs in the background and the current model keeps working until it's ready.",
+  "@modelChangeConfirmDownload": {
+    "placeholders": {
+      "model": {},
+      "size": {}
+    }
+  },
+  "modelChangeConfirmReady": "Switch transcription to the {model} model?",
+  "@modelChangeConfirmReady": {
+    "placeholders": {
+      "model": {}
+    }
+  },
+  "modelChangeConfirmAction": "Switch",
+  "modelChangeConfirmDownloadAction": "Download & switch",
+  "modelChangeBusyTitle": "Recording in progress",
+  "modelChangeBusyMessage": "Finish the current recording before changing the transcription model — the active session keeps using the current model.",
+  "modelApplying": "Applying…",
   "recommendedForYourDevice": "Recommended for your device",
   "deviceProfileLabel": "Device profile: {tier}",
   "@deviceProfileLabel": {
@@ -160,6 +179,7 @@
   "unnamed": "Untitled",
   "delete": "Delete",
   "cancel": "Cancel",
+  "ok": "OK",
   "permissionDenied": "Microphone permission is required.",
   "statusRecording": "Recording",
   "statusTranscribing": "Transcribing",
@@ -190,6 +210,8 @@
   "login": "Login",
   "register": "Register",
   "logout": "Logout",
+  "logoutConfirmTitle": "Log out?",
+  "logoutConfirmMessage": "You'll need to sign in again to sync. Recordings already on this device stay available.",
   "email": "E-mail",
   "password": "Password",
   "authenticatedUser": "Authenticated User",
