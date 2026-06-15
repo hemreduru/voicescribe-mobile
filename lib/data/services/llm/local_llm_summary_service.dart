@@ -18,9 +18,12 @@ import 'package:voicescribe_mobile/domain/utils/locale_utils.dart';
 const int _localInputCharBudget = 2200;
 
 /// Upper bound on map windows so a very long meeting can't spawn an unbounded
-/// number of inferences. Beyond `_localInputCharBudget * _maxMapWindows` chars
-/// each window grows and is truncated, trading some fidelity for bounded time.
-const int _maxMapWindows = 6;
+/// number of inferences. Each window is budget-sized (never grown), so the
+/// covered region is summarized losslessly; a transcript longer than
+/// `_localInputCharBudget * _maxMapWindows` chars is summarized as a coherent
+/// contiguous prefix on-device. The cloud provider (no cap) is the lossless path
+/// for very long meetings.
+const int _maxMapWindows = 8;
 
 /// Cap on recursive reduce passes when merged notes still exceed the budget.
 const int _maxReduceDepth = 2;
@@ -136,23 +139,32 @@ class LocalLlmSummaryService implements SummaryService {
     Transcript transcript,
     SummaryProgressCallback? onProgress,
   ) async {
-    final windows = splitTranscriptIntoWindows(
+    // Split into budget-sized windows (passing maxWindows >= the natural count
+    // so the chunker never grows a window past the budget — growth + the old
+    // per-window truncation silently dropped the tail of every window). Then cap
+    // the count for bounded inference time: a transcript longer than the cap is
+    // summarized as a coherent contiguous prefix rather than scattered fragments.
+    final naturalWindows = (input.length / _localInputCharBudget).ceil() + 1;
+    final allWindows = splitTranscriptIntoWindows(
       input,
       windowSize: _localInputCharBudget,
-      maxWindows: _maxMapWindows,
+      maxWindows: naturalWindows,
     );
+    final windows = allWindows.length > _maxMapWindows
+        ? allWindows.sublist(0, _maxMapWindows)
+        : allWindows;
     // Steps: one inference per window (map) + one reduce inference.
     final total = windows.length + 1;
     final notesPrompt = MeetingMinutesPrompt.partialNotes(locale: locale);
 
-    // Map: condense each window into short plain-text notes. A failed/slow
+    // Map: condense each window into short plain-text notes. Each window already
+    // fits the budget, so it is summarized in full (no truncation). A failed/slow
     // window is skipped rather than aborting the whole summary.
     final notes = <String>[];
     for (var i = 0; i < windows.length; i++) {
       onProgress?.call(SummaryProgress(current: i + 1, total: total));
-      final bounded = _bound(windows[i]);
       try {
-        final raw = await _runInference(notesPrompt, bounded);
+        final raw = await _runInference(notesPrompt, windows[i]);
         final note = _cleanText(raw);
         if (note.isNotEmpty) notes.add(note);
       } on LocalSummaryException {
