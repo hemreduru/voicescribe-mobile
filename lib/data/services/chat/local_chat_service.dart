@@ -119,6 +119,72 @@ class LocalChatService {
     return (answer: cleaned, sources: sources);
   }
 
+  /// Streaming variant of [answer]: retrieves sources, then returns them
+  /// alongside a [Stream] of answer deltas (token chunks) so the UI can render
+  /// the reply as it is generated. The sources are known up front (retrieval is
+  /// keyword-based), so they are returned immediately.
+  Future<({Stream<String> deltas, List<ChatSource> sources})> answerStream({
+    required String question,
+    required List<ChatMessage> history,
+  }) async {
+    final q = question.trim();
+    if (q.isEmpty) {
+      throw const LocalChatException(
+        'Empty question.',
+        code: AppErrorCode.chatEmptyQuestion,
+      );
+    }
+
+    final snapshot = await _repository.loadSnapshot();
+    final retrieved = _retrieve(q, snapshot);
+    final promptSources = retrieved
+        .map(
+          (r) => <String, String>{
+            'title': r.title,
+            'date': r.date ?? '',
+            'text': r.text,
+          },
+        )
+        .toList();
+    final recent = history
+        .where((m) => m.content.trim().isNotEmpty)
+        .map((m) => (role: m.role, content: m.content))
+        .toList();
+    final boundedHistory = recent.length > 6
+        ? recent.sublist(recent.length - 6)
+        : recent;
+    final userPrompt = ChatPrompt.buildUserPrompt(
+      sources: promptSources,
+      history: boundedHistory,
+      question: q,
+    );
+
+    await _modelService.ensureReady();
+
+    final sources = retrieved
+        .map((r) => ChatSource(title: r.title, date: r.date))
+        .toList();
+
+    // `.timeout` here guards against a stalled stream (no token within the
+    // window), mapping it to a clean localized failure.
+    final deltas = _runtime
+        .generateStream(
+          systemInstruction: ChatPrompt.system(),
+          userText: userPrompt,
+        )
+        .timeout(
+          _timeout,
+          onTimeout: (sink) => sink.addError(
+            const LocalChatException(
+              'On-device chat inference timed out.',
+              code: AppErrorCode.chatTimeout,
+            ),
+          ),
+        );
+
+    return (deltas: deltas, sources: sources);
+  }
+
   List<({String title, String? date, String text})> _retrieve(
     String query,
     TranscriptSnapshot snapshot,

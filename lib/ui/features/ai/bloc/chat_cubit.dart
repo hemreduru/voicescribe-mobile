@@ -146,11 +146,16 @@ class ChatCubit extends Cubit<ChatState> {
   }
 
   /// On-device RAG answer (no backend session — kept in-memory for this
-  /// conversation). [optimistic] is the already-shown user message.
+  /// conversation). [optimistic] is the already-shown user message. Streams the
+  /// answer token-by-token so the bubble fills in as the model generates.
   Future<void> _sendLocal(String text, ChatMessage optimistic) async {
-    final history = state.messages.where((m) => m.id != optimistic.id).toList();
+    final base = state.messages.where((m) => m.id != optimistic.id).toList();
+    final history = base.toList();
     try {
-      final result = await _localChat!.answer(question: text, history: history);
+      final result = await _localChat!.answerStream(
+        question: text,
+        history: history,
+      );
       final now = DateTime.now();
       final userMessage = ChatMessage(
         id: optimistic.id,
@@ -158,23 +163,35 @@ class ChatCubit extends Cubit<ChatState> {
         content: text,
         createdAt: now,
       );
-      final assistantMessage = ChatMessage(
-        id: -now.microsecondsSinceEpoch,
+      final assistantId = -now.microsecondsSinceEpoch;
+      final buffer = StringBuffer();
+      var assistant = ChatMessage(
+        id: assistantId,
         role: 'assistant',
-        content: result.answer,
         sources: result.sources,
         createdAt: now.add(const Duration(milliseconds: 1)),
       );
       emit(
         state.copyWith(
-          messages: [
-            ...state.messages.where((m) => m.id != optimistic.id),
-            userMessage,
-            assistantMessage,
-          ],
-          sending: false,
+          messages: [...base, userMessage, assistant],
+          sending: true,
         ),
       );
+      await for (final delta in result.deltas) {
+        buffer.write(delta);
+        assistant = assistant.copyWith(content: buffer.toString());
+        emit(state.copyWith(messages: [...base, userMessage, assistant]));
+      }
+      if (buffer.toString().trim().isEmpty) {
+        emit(
+          state.copyWith(
+            sending: false,
+            errorCode: AppErrorCode.chatEmptyAnswer,
+          ),
+        );
+        return;
+      }
+      emit(state.copyWith(sending: false));
     } on LocalChatException catch (e) {
       emit(state.copyWith(sending: false, errorCode: e.code));
     } catch (_) {
