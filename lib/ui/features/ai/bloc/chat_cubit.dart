@@ -118,21 +118,102 @@ class ChatCubit extends Cubit<ChatState> {
       return;
     }
 
+    await _sendCloudStreaming(text, optimistic);
+  }
+
+  /// Cloud answer over SSE: renders the reply as it streams. Falls back to the
+  /// buffered endpoint only when streaming fails **before** the server persisted
+  /// the user message (`meta`), so we never duplicate it.
+  Future<void> _sendCloudStreaming(String text, ChatMessage optimistic) async {
+    final base = state.messages.where((m) => m.id != optimistic.id).toList();
+    var gotMeta = false;
+    var userMessage = optimistic;
+    final buffer = StringBuffer();
+    final assistantId = -DateTime.now().microsecondsSinceEpoch;
+    var assistant = ChatMessage(
+      id: assistantId,
+      role: 'assistant',
+      createdAt: DateTime.now(),
+    );
+
+    try {
+      await for (final ev in _repository.streamMessage(
+        content: text,
+        sessionId: state.sessionId,
+      )) {
+        switch (ev.type) {
+          case 'meta':
+            gotMeta = true;
+            final session = _session(ev.data?['session']);
+            if (session != null) lastTouchedSessionId = session.id;
+            final um = _message(ev.data?['user_message']);
+            if (um != null) userMessage = um;
+            emit(
+              state.copyWith(
+                sessionId: session?.id ?? state.sessionId,
+                messages: [...base, userMessage, assistant],
+                sending: true,
+              ),
+            );
+          case 'delta':
+            final t = ev.data?['text'];
+            if (t is String && t.isNotEmpty) {
+              buffer.write(t);
+              assistant = assistant.copyWith(content: buffer.toString());
+              emit(state.copyWith(messages: [...base, userMessage, assistant]));
+            }
+          case 'done':
+            final session = _session(ev.data?['session']);
+            if (session != null) lastTouchedSessionId = session.id;
+            final finalAssistant =
+                _message(ev.data?['assistant_message']) ??
+                assistant.copyWith(content: buffer.toString());
+            emit(
+              state.copyWith(
+                sessionId: session?.id ?? state.sessionId,
+                messages: [...base, userMessage, finalAssistant],
+                sending: false,
+              ),
+            );
+            return;
+          case 'error':
+            throw ChatException(
+              ev.data?['message']?.toString() ?? 'Akış hatası.',
+            );
+        }
+      }
+      // Stream ended without a `done` event — settle whatever we have.
+      emit(state.copyWith(sending: false));
+    } on ChatException catch (e) {
+      if (!gotMeta) {
+        await _sendCloudBatch(text, optimistic);
+        return;
+      }
+      emit(state.copyWith(sending: false, errorMessage: e.message));
+    } catch (_) {
+      if (!gotMeta) {
+        await _sendCloudBatch(text, optimistic);
+        return;
+      }
+      emit(
+        state.copyWith(sending: false, errorCode: AppErrorCode.chatSendFailed),
+      );
+    }
+  }
+
+  /// Buffered cloud send (the original non-streaming path), used as the fallback.
+  Future<void> _sendCloudBatch(String text, ChatMessage optimistic) async {
     try {
       final result = await _repository.sendMessage(
         sessionId: state.sessionId,
         content: text,
       );
       lastTouchedSessionId = result.session.id;
-      final reconciled = [
-        ...state.messages.where((m) => m.id != optimistic.id),
-        result.userMessage,
-        result.assistantMessage,
-      ];
+      final base = state.messages.where((m) => m.id != optimistic.id).toList();
       emit(
         state.copyWith(
           sessionId: result.session.id,
-          messages: reconciled,
+          messages: [...base, result.userMessage, result.assistantMessage],
           sending: false,
         ),
       );
@@ -142,6 +223,24 @@ class ChatCubit extends Cubit<ChatState> {
       emit(
         state.copyWith(sending: false, errorCode: AppErrorCode.chatSendFailed),
       );
+    }
+  }
+
+  ChatSession? _session(Object? raw) {
+    if (raw is! Map) return null;
+    try {
+      return ChatSession.fromJson(raw.map((k, v) => MapEntry(k.toString(), v)));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  ChatMessage? _message(Object? raw) {
+    if (raw is! Map) return null;
+    try {
+      return ChatMessage.fromJson(raw.map((k, v) => MapEntry(k.toString(), v)));
+    } catch (_) {
+      return null;
     }
   }
 

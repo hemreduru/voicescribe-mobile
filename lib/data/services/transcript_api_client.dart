@@ -149,6 +149,34 @@ class TranscriptApiClient {
     // connections are reused.
   }
 
+  /// Opens a streaming request (e.g. Server-Sent Events) and returns the raw
+  /// [HttpClientResponse] so the caller can read the body incrementally. The
+  /// caller is responsible for checking [HttpClientResponse.statusCode] and
+  /// parsing the stream.
+  Future<HttpClientResponse> openStream({
+    required String method,
+    required String path,
+    Map<String, Object?>? payload,
+    String? token,
+  }) async {
+    final uri = Uri.parse('${EnvConfig.apiBaseUrl}$path');
+    final request = await _sharedClient
+        .openUrl(method, uri)
+        .timeout(const Duration(seconds: 10));
+    request.headers.set(HttpHeaders.acceptHeader, 'text/event-stream');
+    request.headers.set(
+      HttpHeaders.contentTypeHeader,
+      'application/json; charset=utf-8',
+    );
+    if (token != null && token.isNotEmpty) {
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
+    }
+    if (payload != null) {
+      request.add(utf8.encode(jsonEncode(payload)));
+    }
+    return request.close();
+  }
+
   static String? _fallbackMessage(String body) {
     final text = body.trim();
     if (text.isEmpty) {

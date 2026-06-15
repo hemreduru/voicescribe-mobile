@@ -172,6 +172,17 @@
 - **Files:** `ui/features/ai/bloc/chat_cubit.dart`, `conversation_view.dart`,
   `data/services/chat/local_chat_service.dart`, chat repository/backend SSE.
 - **Impact M · Effort H · Risk M · Deps:** backend SSE for cloud path.
+- **Status: done.** (a) **On-device:** `LocalLlmRuntime.generateStream` +
+  `LocalChatService.answerStream`; `ChatCubit` renders the answer token-by-token.
+  (b) **Cloud:** new `StreamingLlmProviderInterface` + `GeminiProvider.stream`
+  (streamGenerateContent SSE) + `ChatController.streamMessage` + route
+  `POST /chat/messages/stream` in **vsbackend** (php -l clean, route registered).
+  Mobile `TranscriptApiClient.openStream` + `ChatRepository.streamMessage` (SSE
+  parser) + `ChatCubit` cloud streaming with a **safe fallback** to the buffered
+  endpoint when streaming fails before `meta` (never duplicates the message).
+  analyze clean, 122 tests green, APK builds. **NOTE:** live cloud token-streaming
+  needs `GEMINI_API_KEY` + the running backend to verify end-to-end; the on-device
+  path and the graceful fallback are the safety net.
 
 ### UX-10 — Localize Settings (and stray) error messages
 - **Category:** polish
