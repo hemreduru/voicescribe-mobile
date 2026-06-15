@@ -356,5 +356,8 @@
   "errChatLocalFailed": "Cihaz üstü yapay zekâ şu an yanıt veremedi. Lütfen tekrar deneyin.",
   "errChatEmptyAnswer": "Boş bir yanıt alındı. Lütfen tekrar deneyin.",
   "errChatLoadFailed": "Sohbet yüklenemedi.",
-  "errChatSendFailed": "Yanıt alınamadı. Lütfen tekrar dene."
+  "errChatSendFailed": "Yanıt alınamadı. Lütfen tekrar dene.",
+  "errSettingsActionFailed": "Bir şeyler ters gitti. Lütfen tekrar dene.",
+  "errSettingsSyncFailed": "Eşitleme başarısız. Bağlantını kontrol edip tekrar dene.",
+  "errSettingsModelDownloadFailed": "Model indirilemedi. Bağlantını kontrol edip tekrar dene."
 }

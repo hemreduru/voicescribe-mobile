@@ -1553,6 +1553,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No answer received. Please try again.'**
   String get errChatSendFailed;
+
+  /// No description provided for @errSettingsActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get errSettingsActionFailed;
+
+  /// No description provided for @errSettingsSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync failed. Please check your connection and try again.'**
+  String get errSettingsSyncFailed;
+
+  /// No description provided for @errSettingsModelDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t download the model. Please check your connection and try again.'**
+  String get errSettingsModelDownloadFailed;
 }
 
 class _AppLocalizationsDelegate

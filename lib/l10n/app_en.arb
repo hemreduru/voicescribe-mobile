@@ -356,5 +356,8 @@
   "errChatLocalFailed": "The on-device AI couldn't answer right now. Please try again.",
   "errChatEmptyAnswer": "An empty answer was received. Please try again.",
   "errChatLoadFailed": "The conversation could not be loaded.",
-  "errChatSendFailed": "No answer received. Please try again."
+  "errChatSendFailed": "No answer received. Please try again.",
+  "errSettingsActionFailed": "Something went wrong. Please try again.",
+  "errSettingsSyncFailed": "Sync failed. Please check your connection and try again.",
+  "errSettingsModelDownloadFailed": "Couldn't download the model. Please check your connection and try again."
 }

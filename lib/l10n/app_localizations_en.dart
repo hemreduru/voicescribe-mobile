@@ -847,4 +847,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errChatSendFailed => 'No answer received. Please try again.';
+
+  @override
+  String get errSettingsActionFailed =>
+      'Something went wrong. Please try again.';
+
+  @override
+  String get errSettingsSyncFailed =>
+      'Sync failed. Please check your connection and try again.';
+
+  @override
+  String get errSettingsModelDownloadFailed =>
+      'Couldn\'t download the model. Please check your connection and try again.';
 }

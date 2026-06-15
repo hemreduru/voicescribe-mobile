@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
+import 'package:voicescribe_mobile/ui/core/i18n/error_messages.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/utils/model_download_formatters.dart';
@@ -33,7 +34,9 @@ class SettingsScreen extends StatelessWidget {
           previous.syncing != current.syncing ||
           previous.lastSyncAt != current.lastSyncAt ||
           previous.syncErrorMessage != current.syncErrorMessage ||
+          previous.syncErrorCode != current.syncErrorCode ||
           previous.errorMessage != current.errorMessage ||
+          previous.errorCode != current.errorCode ||
           previous.modelCatalog != current.modelCatalog ||
           previous.deviceProfile != current.deviceProfile ||
           previous.applyingTranscriptionModel !=
@@ -80,9 +83,14 @@ class SettingsScreen extends StatelessWidget {
                       variant: AppButtonVariant.outline,
                       foregroundColor: Theme.of(context).colorScheme.error,
                     ),
-                    if (state.errorMessage != null) ...[
+                    if (state.errorCode != null ||
+                        state.errorMessage != null) ...[
                       const SizedBox(height: AppSpacing.sm),
-                      AppErrorText(message: state.errorMessage!),
+                      AppErrorText(
+                        message:
+                            state.errorCode?.localized(l10n) ??
+                            state.errorMessage!,
+                      ),
                     ],
                   ],
                 ),
@@ -256,9 +264,14 @@ class SettingsScreen extends StatelessWidget {
                           variant: AppButtonVariant.outline,
                           expanded: true,
                         ),
-                        if (state.syncErrorMessage != null) ...[
+                        if (state.syncErrorCode != null ||
+                            state.syncErrorMessage != null) ...[
                           const SizedBox(height: AppSpacing.sm),
-                          AppErrorText(message: state.syncErrorMessage!),
+                          AppErrorText(
+                            message:
+                                state.syncErrorCode?.localized(l10n) ??
+                                state.syncErrorMessage!,
+                          ),
                         ],
                       ],
                     ),
@@ -754,9 +767,14 @@ class _LocalSummaryModelRow extends StatelessWidget {
             value: progress == null ? null : (progress / 100).clamp(0.0, 1.0),
           ),
         ],
-        if (state.localLlmErrorMessage != null) ...[
+        if (state.localLlmErrorCode != null ||
+            state.localLlmErrorMessage != null) ...[
           const SizedBox(height: AppSpacing.sm),
-          AppErrorText(message: state.localLlmErrorMessage!),
+          AppErrorText(
+            message:
+                state.localLlmErrorCode?.localized(context.l10n) ??
+                state.localLlmErrorMessage!,
+          ),
         ],
       ],
     );

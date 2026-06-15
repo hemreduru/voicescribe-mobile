@@ -25,6 +25,10 @@ extension AppErrorCodeL10n on AppErrorCode {
       AppErrorCode.chatEmptyAnswer => l10n.errChatEmptyAnswer,
       AppErrorCode.chatLoadFailed => l10n.errChatLoadFailed,
       AppErrorCode.chatSendFailed => l10n.errChatSendFailed,
+      AppErrorCode.settingsActionFailed => l10n.errSettingsActionFailed,
+      AppErrorCode.settingsSyncFailed => l10n.errSettingsSyncFailed,
+      AppErrorCode.settingsModelDownloadFailed =>
+        l10n.errSettingsModelDownloadFailed,
     };
   }
 }

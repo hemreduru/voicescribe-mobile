@@ -170,6 +170,11 @@
 - **Goal / success:** Failures map to `AppErrorCode` + localized copy; raw text only
   in logs. **Files:** `settings_bloc.dart`, `domain/models/app_error.dart`,
   `error_messages.dart`, ARB. **Impact M · Effort M · Risk L.**
+- **Status: done.** Added `settingsActionFailed/settingsSyncFailed/
+  settingsModelDownloadFailed` codes + TR/EN strings; `SettingsState` now carries
+  error codes localized in the UI (`code.localized(l10n) ?? rawMessage`). All
+  `error.toString()` surfaces in `SettingsBloc` replaced. analyze clean, 122
+  tests green.
 
 ### UX-11 — Inline summary retry + recording empty state + skeletons + l10n fix
 - **Category:** polish (bundled small wins)

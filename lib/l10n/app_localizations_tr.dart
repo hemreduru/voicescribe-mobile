@@ -828,4 +828,16 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get errChatSendFailed => 'Yanıt alınamadı. Lütfen tekrar dene.';
+
+  @override
+  String get errSettingsActionFailed =>
+      'Bir şeyler ters gitti. Lütfen tekrar dene.';
+
+  @override
+  String get errSettingsSyncFailed =>
+      'Eşitleme başarısız. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get errSettingsModelDownloadFailed =>
+      'Model indirilemedi. Bağlantını kontrol edip tekrar dene.';
 }
