@@ -13,6 +13,7 @@ import 'package:voicescribe_mobile/data/services/llm/cloud_summary_service.dart'
 import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/local_llm_runtime.dart';
 import 'package:voicescribe_mobile/data/services/llm/local_llm_summary_service.dart';
+import 'package:voicescribe_mobile/data/services/summary/auto_summary_coordinator.dart';
 import 'package:voicescribe_mobile/data/services/summary/summary_service_router.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
@@ -128,6 +129,20 @@ class VoiceScribeRoot extends StatelessWidget {
         ),
         RepositoryProvider<BackgroundWorkService>(
           create: (_) => ForegroundBackgroundWorkService(),
+        ),
+        // Auto-generates a summary when a recording finishes transcribing
+        // (gated by AppPreferences.autoSummarize). Eager: it must watch the
+        // snapshot stream from launch, not only when a screen reads it.
+        RepositoryProvider<AutoSummaryCoordinator>(
+          lazy: false,
+          create: (context) => AutoSummaryCoordinator(
+            transcriptRepository: context.read<TranscriptRepository>(),
+            summaryService: context.read<SummaryService>(),
+            localLlmModelService: context.read<LocalLlmModelService>(),
+            tokenProvider: () =>
+                context.read<AuthRepository>().currentSession()?.accessToken,
+          )..start(),
+          dispose: (coordinator) => coordinator.dispose(),
         ),
       ],
       child: MultiBlocProvider(

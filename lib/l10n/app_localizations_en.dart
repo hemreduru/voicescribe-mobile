@@ -256,6 +256,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'This phone isn\'t powerful enough for on-device AI — use the cloud instead.';
 
   @override
+  String get autoSummarizeTitle => 'Summarize automatically';
+
+  @override
+  String get autoSummarizeDesc =>
+      'Create the summary as soon as a recording finishes transcribing, with no extra tap.';
+
+  @override
   String get summaryPreferences => 'Choose where summaries and AI chat run.';
 
   @override

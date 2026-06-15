@@ -654,6 +654,16 @@ class _AiLocationSection extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           _LocalSummaryModelRow(state: state),
         ],
+        const SizedBox(height: AppSpacing.sm),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          value: preferences.autoSummarize,
+          title: Text(l10n.autoSummarizeTitle),
+          subtitle: Text(l10n.autoSummarizeDesc),
+          onChanged: (value) => context.read<SettingsBloc>().add(
+            SettingsAutoSummarizeChanged(value: value),
+          ),
+        ),
       ],
     );
   }

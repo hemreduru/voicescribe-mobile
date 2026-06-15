@@ -89,6 +89,8 @@
   "aiLocationOnDeviceDesc": "Her şey telefonunda çalışır; internet gerekmez ve hiçbir şey cihazdan çıkmaz. Güçlü bir telefon ve tek seferlik ~1 GB model indirme gerekir. Hem özet hem yapay zekâ sohbeti için geçerlidir.",
   "aiLocationCloudDesc": "Daha güçlü ve çok daha hızlı yapay zekâ; uzun toplantılarda daha iyi sonuç verir. İnternet ve giriş gerekir, kayıt önce eşitlenir. Hem özet hem yapay zekâ sohbeti için geçerlidir.",
   "aiLocationOnDeviceUnavailable": "Bu telefon cihaz içi yapay zekâ için yeterince güçlü değil — bunun yerine Bulut'u kullanın.",
+  "autoSummarizeTitle": "Otomatik özetle",
+  "autoSummarizeDesc": "Kayıt yazıya döküldüğü anda özet, ekstra dokunuş gerekmeden oluşturulur.",
   "summaryPreferences": "Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.",
   "transcriptionModelSettings": "Transkripsiyon Modeli",
   "transcriptionModelPreferences": "Ses transkripsiyonu için cihaz içinde kullanılacak modeli seçin.",

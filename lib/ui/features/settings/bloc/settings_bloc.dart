@@ -22,6 +22,12 @@ final class SettingsSummaryProviderChanged extends SettingsEvent {
   final String value;
 }
 
+final class SettingsAutoSummarizeChanged extends SettingsEvent {
+  const SettingsAutoSummarizeChanged({required this.value});
+
+  final bool value;
+}
+
 final class SettingsThemeModeChanged extends SettingsEvent {
   const SettingsThemeModeChanged(this.value);
 
@@ -224,6 +230,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_SettingsSessionChanged>(_onSessionChanged);
     on<_SettingsSyncEventChanged>(_onSyncEventChanged);
     on<SettingsSummaryProviderChanged>(_onSummaryProviderChanged);
+    on<SettingsAutoSummarizeChanged>(_onAutoSummarizeChanged);
     on<SettingsThemeModeChanged>(_onThemeModeChanged);
     on<SettingsLocalePreferenceChanged>(_onLocalePreferenceChanged);
     on<SettingsTranscriptionModelChanged>(_onTranscriptionModelChanged);
@@ -367,6 +374,16 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       state.preferences.copyWith(
         summaryProvider: AppPreferences.normalizeSummaryProvider(event.value),
       ),
+    );
+  }
+
+  Future<void> _onAutoSummarizeChanged(
+    SettingsAutoSummarizeChanged event,
+    Emitter<SettingsState> emit,
+  ) {
+    return _savePreferences(
+      emit,
+      state.preferences.copyWith(autoSummarize: event.value),
     );
   }
 

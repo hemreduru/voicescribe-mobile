@@ -5,6 +5,11 @@
 > proactive-behavior items first. Dedup'd against `optimization-plan.md` (bugs/perf)
 > and `production-readiness.md` (release gates) — those stay owned there.
 >
+> **Decisions (2026-06-15, confirmed by user):** UX-01 `autoSummarize` ships
+> **default-on**. UX-09 chat streaming scope = **both** on-device + cloud (cloud
+> needs vsbackend SSE — separate repo, sequenced later). Loop runs in the
+> suggested order.
+>
 > Status: `todo` / `in-progress` / `done`. Each item is a `/goal` unit for the loop.
 > Code is English; user-facing strings TR+EN. Every item must leave the tree green
 > (`flutter analyze` 0 issues, `flutter test`, `flutter build apk --debug`).
@@ -28,6 +33,14 @@
   `data/services/.../summary*`; `ui/features/transcript/bloc/transcript_detail_bloc.dart`
   or a new listener; settings toggle + ARB.
 - **Impact H · Effort M · Risk M · Deps:** UX-12, UX-04.
+- **Status: done (pending on-device E2E).** Added `AppPreferences.autoSummarize`
+  (default on, persisted), `AutoSummaryCoordinator` (watches the snapshot stream,
+  runs `GenerateSummaryUseCase` on the `completed` edge with full guards: existing
+  summary, in-flight, session-failed, engine-ready). Cloud naturally defers until
+  `remoteId`+token appear via a later snapshot — **this also covers UX-04**.
+  Settings toggle + TR/EN strings. +5 coordinator unit tests. analyze clean,
+  115 tests green, APK builds. Remaining: device E2E (record→auto-summary) with a
+  logged-in session + local model or cloud key.
 
 ### UX-02 — Interactive onboarding wizard (Phase 3)
 - **Category:** onboarding
@@ -150,6 +163,10 @@
 - **Goal / success:** No silent truncation; long transcripts summarize via the
   existing map-reduce path end-to-end. **Files:** summary chunker / use case.
 - **Impact H · Effort M · Risk M · Deps:** blocks UX-01.
+- **Status: done** (commit `ae7345c`). Map step now uses budget-sized windows
+  (no growth + no per-window truncation); coverage is a coherent contiguous
+  prefix on-device, cloud stays lossless. +coverage unit test. analyze clean,
+  110 tests green, debug APK builds.
 
 ### UX-13 — Accessibility pass (TalkBack / dynamic type / contrast)
 - **Category:** polish (also prod-readiness P2)

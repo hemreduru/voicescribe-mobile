@@ -564,6 +564,18 @@ abstract class AppLocalizations {
   /// **'This phone isn\'t powerful enough for on-device AI — use the cloud instead.'**
   String get aiLocationOnDeviceUnavailable;
 
+  /// No description provided for @autoSummarizeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize automatically'**
+  String get autoSummarizeTitle;
+
+  /// No description provided for @autoSummarizeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the summary as soon as a recording finishes transcribing, with no extra tap.'**
+  String get autoSummarizeDesc;
+
   /// No description provided for @summaryPreferences.
   ///
   /// In en, this message translates to:

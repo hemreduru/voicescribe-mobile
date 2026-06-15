@@ -255,6 +255,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu telefon cihaz içi yapay zekâ için yeterince güçlü değil — bunun yerine Bulut\'u kullanın.';
 
   @override
+  String get autoSummarizeTitle => 'Otomatik özetle';
+
+  @override
+  String get autoSummarizeDesc =>
+      'Kayıt yazıya döküldüğü anda özet, ekstra dokunuş gerekmeden oluşturulur.';
+
+  @override
   String get summaryPreferences =>
       'Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.';
 
