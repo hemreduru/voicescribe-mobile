@@ -53,7 +53,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatNoSessionsMessage =>
-      'Start a new chat to ask questions across all your recordings.';
+      'Start a new chat to ask questions across all your recordings. Answers are drawn from your own transcripts.';
+
+  @override
+  String get chatNeedsRecordingTitle => 'Record something first';
+
+  @override
+  String get chatNeedsRecordingMessage =>
+      'The assistant answers from your transcripts. Make a recording, then come back to ask about it.';
 
   @override
   String get chatSelectOrNew => 'Select a conversation or start a new chat.';

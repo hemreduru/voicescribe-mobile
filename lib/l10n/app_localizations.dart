@@ -185,8 +185,20 @@ abstract class AppLocalizations {
   /// No description provided for @chatNoSessionsMessage.
   ///
   /// In en, this message translates to:
-  /// **'Start a new chat to ask questions across all your recordings.'**
+  /// **'Start a new chat to ask questions across all your recordings. Answers are drawn from your own transcripts.'**
   String get chatNoSessionsMessage;
+
+  /// No description provided for @chatNeedsRecordingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record something first'**
+  String get chatNeedsRecordingTitle;
+
+  /// No description provided for @chatNeedsRecordingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The assistant answers from your transcripts. Make a recording, then come back to ask about it.'**
+  String get chatNeedsRecordingMessage;
 
   /// No description provided for @chatSelectOrNew.
   ///

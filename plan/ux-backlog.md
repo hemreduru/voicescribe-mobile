@@ -134,6 +134,11 @@
   `ui/features/settings/views/settings_screen.dart`,
   `ui/features/transcript/widgets/meeting_summary_view.dart`; ARB.
 - **Impact M · Effort L · Risk L.**
+- **Status: done.** AI empty state explains answers come from your transcripts
+  and shows a "record something first" nudge when there are zero transcripts.
+  Engine label on summaries already existed (cloud/on-device StatusPill);
+  provider trade-off copy already at the Settings toggle. analyze clean, 122
+  tests green. **Device-verified** (improved empty-state copy on AI tab).
 
 ### UX-08 — Per-session language chip on recording
 - **Category:** polish

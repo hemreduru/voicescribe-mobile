@@ -53,7 +53,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get chatNoSessionsMessage =>
-      'Tüm kayıtların arasında soru sormak için yeni bir sohbet başlat.';
+      'Tüm kayıtların arasında soru sormak için yeni bir sohbet başlat. Yanıtlar kendi dökümlerinden üretilir.';
+
+  @override
+  String get chatNeedsRecordingTitle => 'Önce bir kayıt al';
+
+  @override
+  String get chatNeedsRecordingMessage =>
+      'Asistan yanıtlarını dökümlerinden üretir. Bir kayıt yap, sonra gelip onun hakkında soru sor.';
 
   @override
   String get chatSelectOrNew => 'Bir sohbet seç ya da yeni bir sohbet başlat.';
