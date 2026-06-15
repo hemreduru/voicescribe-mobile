@@ -143,6 +143,11 @@
   unless chosen). Verified the forced language is applied to the next chunk.
 - **Files:** `recording_screen.dart`, `recording_bloc.dart`/transcription service; ARB.
 - **Impact M · Effort L · Risk L.**
+- **Status: done.** Added a `currentTranscriptionLanguage` getter to the service
+  and an Auto/TR/EN selector on the recording screen (hidden while recording);
+  applies session-only via `setTranscriptionLanguage`, seeded from the saved
+  default, no persistence. analyze clean, 122 tests green. **Device-verified**
+  (showed Türkçe default, switched to Otomatik on tap).
 
 ### UX-09 — Stream chat answers
 - **Category:** competitive-feature

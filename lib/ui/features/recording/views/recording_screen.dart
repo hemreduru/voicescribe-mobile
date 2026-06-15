@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/error_messages.dart';
@@ -17,6 +18,7 @@ import 'package:voicescribe_mobile/ui/core/widgets/ambient_backdrop.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
+import 'package:voicescribe_mobile/ui/core/widgets/app_segmented_control.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_text_field.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/audio_visualizer.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/premium_widgets.dart';
@@ -33,6 +35,18 @@ class RecordingScreen extends StatefulWidget {
 class _RecordingScreenState extends State<RecordingScreen> {
   final _titleController = TextEditingController();
   String? _boundTranscriptId;
+
+  /// Language for the next recording, seeded from the active service value
+  /// (the persisted default). Changing it here applies to this session only —
+  /// it does not overwrite the saved default in Settings.
+  String? _sessionLanguage;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sessionLanguage ??=
+        context.read<TranscriptionService>().currentTranscriptionLanguage;
+  }
 
   @override
   void initState() {
@@ -120,6 +134,17 @@ class _RecordingScreenState extends State<RecordingScreen> {
                       ),
                     ),
                   ),
+                  if (!state.isRecording) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    _SessionLanguageSelector(
+                      value: _sessionLanguage ?? 'auto',
+                      onChanged: (value) {
+                        context.read<TranscriptionService>()
+                            .setTranscriptionLanguage(value);
+                        setState(() => _sessionLanguage = value);
+                      },
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.xl),
                   Center(
                     child: LayoutBuilder(
@@ -299,6 +324,45 @@ class _RecordingScreenState extends State<RecordingScreen> {
     if (_titleController.text != title) {
       _titleController.text = title;
     }
+  }
+}
+
+/// Per-session speech-language picker (Auto/TR/EN). Applies to the next
+/// recording only via the transcription service; it never overwrites the saved
+/// default in Settings.
+class _SessionLanguageSelector extends StatelessWidget {
+  const _SessionLanguageSelector({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.transcriptionLanguage,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppSegmentedControl<String>(
+            value: value,
+            segments: [
+              AppSegment(value: 'auto', label: l10n.automatic),
+              AppSegment(value: 'tr', label: l10n.turkish),
+              AppSegment(value: 'en', label: l10n.english),
+            ],
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
   }
 }
 

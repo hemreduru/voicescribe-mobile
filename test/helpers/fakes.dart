@@ -253,6 +253,9 @@ class FakeTranscriptionService implements TranscriptionService {
   }
 
   @override
+  String get currentTranscriptionLanguage => language;
+
+  @override
   Future<void> selectModel(WhisperModel model) async {
     // Locked to base; parameter ignored.
   }

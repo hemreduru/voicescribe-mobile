@@ -128,6 +128,9 @@ abstract class TranscriptionService {
   /// bilingual/code-switching audio), or an ISO code like `tr`/`en`.
   void setTranscriptionLanguage(String language);
 
+  /// The language the next transcription will use (`auto`/`tr`/`en`).
+  String get currentTranscriptionLanguage;
+
   Future<void> selectModel(WhisperModel model);
   Future<DevicePerformanceProfile> resolveDeviceProfile();
   Future<List<TranscriptionModelCatalogEntry>> listModelCatalog();
@@ -229,6 +232,9 @@ class WhisperTranscriptionService implements TranscriptionService {
     _language = normalized;
     AppLogger.info('[Transcription] Language set to $_language');
   }
+
+  @override
+  String get currentTranscriptionLanguage => _language;
 
   @override
   Future<void> selectModel(WhisperModel model) async {
