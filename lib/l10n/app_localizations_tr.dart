@@ -325,6 +325,21 @@ class AppLocalizationsTr extends AppLocalizations {
   String get transcribingProgressLabel => 'Yazıya dökülüyor';
 
   @override
+  String get statusHelpRecording => 'Kayıt devam ediyor.';
+
+  @override
+  String get statusHelpProcessing => 'Metin şu an hazırlanıyor.';
+
+  @override
+  String get statusHelpReady => 'Metin kullanıma hazır.';
+
+  @override
+  String get statusHelpIssue => 'Kontrol etmen gerekiyor.';
+
+  @override
+  String get tryAgain => 'Tekrar dene';
+
+  @override
   String get summaryPreferences =>
       'Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.';
 

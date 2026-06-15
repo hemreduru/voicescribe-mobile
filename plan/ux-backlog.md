@@ -184,6 +184,12 @@
   (d) move `_statusHelpDescription` hardcoded TR/EN to ARB (J2).
 - **Files:** `recording_screen.dart`, `transcript_screen.dart`, ARB.
 - **Impact L · Effort L · Risk L.**
+- **Status: done.** (a) inline `_SummaryErrorCard` with one-tap retry in the
+  Summary tab; (b) recording empty state now uses shared `EmptyState`; (d)
+  `_statusHelpDescription` moved to ARB (proper TR diacritics). (c) recording-list
+  skeleton deferred — the list renders instantly from in-memory state, so a
+  skeleton adds little. analyze clean, 122 tests green. **Device-verified**
+  (localized status-help sheet on tablet).
 
 ### UX-12 — Fix large-transcript silent truncation (PREREQ)
 - **Category:** invisible-ux (correctness-adjacent; overlaps optimization-plan)

@@ -696,6 +696,36 @@ abstract class AppLocalizations {
   /// **'Transcribing'**
   String get transcribingProgressLabel;
 
+  /// No description provided for @statusHelpRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording is in progress.'**
+  String get statusHelpRecording;
+
+  /// No description provided for @statusHelpProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript is being prepared.'**
+  String get statusHelpProcessing;
+
+  /// No description provided for @statusHelpReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript is ready now.'**
+  String get statusHelpReady;
+
+  /// No description provided for @statusHelpIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs your attention.'**
+  String get statusHelpIssue;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
   /// No description provided for @summaryPreferences.
   ///
   /// In en, this message translates to:

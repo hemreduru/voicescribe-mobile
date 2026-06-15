@@ -114,7 +114,6 @@ class _RecordingScreenState extends State<RecordingScreen> {
           previous.currentTranscript != current.currentTranscript ||
           previous.currentChunks != current.currentChunks,
       builder: (context, state) {
-        final theme = Theme.of(context);
         final recent = state.transcripts.take(3).toList();
 
         return Scaffold(
@@ -225,13 +224,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   if (recent.isEmpty)
-                    AppCard(
-                      child: Text(
-                        l10n.noRecordings,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                    EmptyState(
+                      icon: Icons.mic_none,
+                      title: l10n.recentRecordings,
+                      description: l10n.noRecordings,
                     )
                   else
                     ...recent.map(

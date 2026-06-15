@@ -327,6 +327,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transcribingProgressLabel => 'Transcribing';
 
   @override
+  String get statusHelpRecording => 'Recording is in progress.';
+
+  @override
+  String get statusHelpProcessing => 'Transcript is being prepared.';
+
+  @override
+  String get statusHelpReady => 'Transcript is ready now.';
+
+  @override
+  String get statusHelpIssue => 'Needs your attention.';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
   String get summaryPreferences => 'Choose where summaries and AI chat run.';
 
   @override
