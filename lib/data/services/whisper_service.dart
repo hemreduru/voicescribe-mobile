@@ -133,6 +133,11 @@ abstract class TranscriptionService {
   Future<List<TranscriptionModelCatalogEntry>> listModelCatalog();
 
   Future<WhisperBootstrapResult> ensureModel();
+
+  /// Like [ensureModel] but keeps startup non-blocking: if the desired model
+  /// isn't downloaded yet while another model already is, it activates the
+  /// downloaded one instead of blocking the app on a large download.
+  Future<WhisperBootstrapResult> ensureUsableModel();
   Future<TranscriptionResult> transcribeChunk(
     String audioPath, {
     double? audioLevel,
@@ -155,13 +160,21 @@ class _TranscriptionRequest {
 class WhisperTranscriptionService implements TranscriptionService {
   WhisperTranscriptionService({WhisperController? controller})
     : _controller = controller ?? WhisperController(),
-      _model = WhisperModel.base;
+      _model = WhisperModel.base,
+      _desiredModel = WhisperModel.base;
 
   final WhisperController _controller;
   // Defaults to `base` (the safe choice for low-end devices). Capable devices
   // may opt into a heavier model via [selectModel]; models that exceed the
   // device tier are rejected so we never OOM an entry-level phone.
+  //
+  // [_model] is the *active* model: the one whose file is present on disk and
+  // currently driving transcription. [_desiredModel] is the user's requested
+  // target; it only becomes active inside [ensureModel] once its file is fully
+  // downloaded. Keeping these separate is what prevents the queue from running
+  // against a half-downloaded model file when the user switches mid-recording.
   WhisperModel _model;
+  WhisperModel _desiredModel;
   // `auto` lets Whisper detect the language per 30s window, which is the right
   // default for bilingual (e.g. EN/TR) meetings; `tr`/`en` force one language.
   String _language = 'auto';
@@ -177,6 +190,13 @@ class WhisperTranscriptionService implements TranscriptionService {
   final List<_TranscriptionRequest> _pendingRequests = [];
   bool _isProcessingQueue = false;
   int _consecutiveFailures = 0;
+
+  // Serializes every native-controller touch (transcribe, model promote,
+  // re-init, dispose) so a model switch can never interleave with an in-flight
+  // transcription. The long download in [ensureModel] runs *outside* this lock,
+  // so transcription keeps flowing on the current model while the next one
+  // downloads; only the instant promote step takes the lock.
+  Future<void> _controllerLock = Future<void>.value();
 
   static const Duration _transcribeTimeout = Duration(seconds: 240);
 
@@ -212,18 +232,21 @@ class WhisperTranscriptionService implements TranscriptionService {
 
   @override
   Future<void> selectModel(WhisperModel model) async {
-    if (model != _model) {
-      if (await isModelAllowedForDevice(model)) {
-        _model = model;
-        AppLogger.info('[Transcription] Model switched to ${model.modelName}');
-      } else {
-        AppLogger.info(
-          '[Transcription] selectModel(${model.modelName}) rejected — '
-          'exceeds device capability; staying on ${_model.modelName}',
-        );
-      }
+    // Only records the *desired* target. The active model is not switched here:
+    // it flips in [ensureModel] once the target's file is fully downloaded, so
+    // the transcription queue is never pointed at a missing/partial model file.
+    if (model == _desiredModel) {
+      return;
     }
-    await _controller.initModel(_model);
+    if (await isModelAllowedForDevice(model)) {
+      _desiredModel = model;
+      AppLogger.info('[Transcription] Desired model set to ${model.modelName}');
+    } else {
+      AppLogger.info(
+        '[Transcription] selectModel(${model.modelName}) rejected — '
+        'exceeds device capability; staying on ${_desiredModel.modelName}',
+      );
+    }
   }
 
   /// A model is allowed when it is at most as heavy as what the device tier can
@@ -287,22 +310,75 @@ class WhisperTranscriptionService implements TranscriptionService {
 
   @override
   Future<WhisperBootstrapResult> ensureModel() async {
-    final selectedModel = _model;
-    final modelPath = await _controller.getPath(selectedModel);
+    final target = _desiredModel;
+    final modelPath = await _controller.getPath(target);
     final file = File(modelPath);
     var downloaded = false;
 
+    // Download (the slow part) runs without the controller lock, so any
+    // in-flight transcription keeps running on the current model meanwhile.
     if (!await _isUsableModel(file)) {
-      await _downloadModel(model: selectedModel, outputFile: file);
+      await _downloadModel(model: target, outputFile: file);
       downloaded = true;
     }
 
-    await _controller.initModel(selectedModel);
+    // Promote atomically: take the lock so the active model only flips between
+    // chunks, never mid-transcribe. The file is guaranteed present by now.
+    await _runExclusive(() async {
+      _model = target;
+      await _controller.initModel(target);
+    });
     return WhisperBootstrapResult(
       path: modelPath,
       downloaded: downloaded,
       loaded: true,
     );
+  }
+
+  @override
+  Future<WhisperBootstrapResult> ensureUsableModel() async {
+    // If the desired model is already on disk, just promote it.
+    if (await _isModelDownloaded(_desiredModel)) {
+      return ensureModel();
+    }
+    // The desired model isn't downloaded (e.g. a previously-interrupted switch
+    // left only a `.part`). Rather than block the whole app on a multi-hundred-
+    // MB download at every launch, fall back to the best model that *is* already
+    // downloaded so the app is immediately usable. The user can re-trigger the
+    // heavier download from Settings, where it shows progress and doesn't lock
+    // the app. Only a genuine first run (nothing on disk) blocks on a download.
+    final fallback = await _bestDownloadedModel();
+    if (fallback != null && fallback != _desiredModel) {
+      AppLogger.info(
+        '[Transcription] Desired model ${_desiredModel.modelName} not '
+        'downloaded; activating already-downloaded ${fallback.modelName} to '
+        'keep startup non-blocking',
+      );
+      _desiredModel = fallback;
+    }
+    return ensureModel();
+  }
+
+  Future<bool> _isModelDownloaded(WhisperModel model) async {
+    final path = await _controller.getPath(model);
+    return _isUsableModel(File(path));
+  }
+
+  /// The heaviest already-downloaded model the device is allowed to run, so a
+  /// fallback activates the best the user already has — not just the smallest.
+  Future<WhisperModel?> _bestDownloadedModel() async {
+    const preference = [
+      WhisperModel.small,
+      WhisperModel.base,
+      WhisperModel.tiny,
+    ];
+    for (final model in preference) {
+      if (await _isModelDownloaded(model) &&
+          await isModelAllowedForDevice(model)) {
+        return model;
+      }
+    }
+    return null;
   }
 
   @override
@@ -319,6 +395,26 @@ class WhisperTranscriptionService implements TranscriptionService {
       ),
     );
     unawaited(_processQueue());
+    return completer.future;
+  }
+
+  /// Runs [action] with exclusive access to the native controller. Calls are
+  /// chained so they execute one at a time in submission order; a failure in
+  /// one call doesn't poison the lock for the next.
+  Future<T> _runExclusive<T>(Future<T> Function() action) {
+    final completer = Completer<T>();
+    final previous = _controllerLock;
+    _controllerLock = completer.future.then<void>(
+      (_) {},
+      onError: (_) {},
+    );
+    previous.whenComplete(() async {
+      try {
+        completer.complete(await action());
+      } catch (error, stackTrace) {
+        completer.completeError(error, stackTrace);
+      }
+    });
     return completer.future;
   }
 
@@ -351,9 +447,11 @@ class WhisperTranscriptionService implements TranscriptionService {
               're-initializing model',
             );
             try {
-              await _controller
-                  .initModel(_model)
-                  .timeout(const Duration(seconds: 15));
+              await _runExclusive(
+                () => _controller
+                    .initModel(_model)
+                    .timeout(const Duration(seconds: 15)),
+              );
               _consecutiveFailures = 0;
             } catch (initError) {
               AppLogger.warning(
@@ -449,20 +547,24 @@ class WhisperTranscriptionService implements TranscriptionService {
     required int threads,
     required int attempt,
   }) async {
-    final future = _controller.transcribe(
-      model: model,
-      audioPath: audioPath,
-      lang: _language,
-      convert: false,
-      threads: threads,
-    );
-
-    final result = await future.timeout(
-      _transcribeTimeout,
-      onTimeout: () => throw TimeoutException(
-        'Transcription timed out after ${_transcribeTimeout.inSeconds}s '
-        '(attempt $attempt)',
-      ),
+    // Hold the controller lock for the native call so a concurrent model
+    // promote/re-init can't swap the model out from under an in-flight clip.
+    final result = await _runExclusive(
+      () => _controller
+          .transcribe(
+            model: model,
+            audioPath: audioPath,
+            lang: _language,
+            convert: false,
+            threads: threads,
+          )
+          .timeout(
+            _transcribeTimeout,
+            onTimeout: () => throw TimeoutException(
+              'Transcription timed out after ${_transcribeTimeout.inSeconds}s '
+              '(attempt $attempt)',
+            ),
+          ),
     );
 
     final transcription = result?.transcription;
@@ -533,7 +635,7 @@ class WhisperTranscriptionService implements TranscriptionService {
       }
     }
     _pendingRequests.clear();
-    await _controller.dispose(model: _model);
+    await _runExclusive(() => _controller.dispose(model: _model));
     await _progressController.close();
   }
 

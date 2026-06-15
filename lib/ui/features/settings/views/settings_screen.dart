@@ -4,12 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
+import 'package:voicescribe_mobile/ui/core/utils/model_download_formatters.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_section.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_segmented_control.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/premium_widgets.dart';
 import 'package:voicescribe_mobile/ui/features/bootstrap/bloc/bootstrap_bloc.dart';
+import 'package:voicescribe_mobile/ui/features/recording/bloc/recording_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/settings/bloc/settings_bloc.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -33,6 +35,10 @@ class SettingsScreen extends StatelessWidget {
           previous.errorMessage != current.errorMessage ||
           previous.modelCatalog != current.modelCatalog ||
           previous.deviceProfile != current.deviceProfile ||
+          previous.applyingTranscriptionModel !=
+              current.applyingTranscriptionModel ||
+          previous.transcriptionModelDownloadProgress !=
+              current.transcriptionModelDownloadProgress ||
           previous.pendingSyncCount != current.pendingSyncCount,
       builder: (context, state) {
         final session = state.session;
@@ -67,9 +73,7 @@ class SettingsScreen extends StatelessWidget {
                     AppButton(
                       label: l10n.logout,
                       icon: Icons.logout,
-                      onPressed: () => context.read<SettingsBloc>().add(
-                        const SettingsLogoutRequested(),
-                      ),
+                      onPressed: () => _confirmLogout(context),
                       isLoading: state.loggingOut,
                       expanded: true,
                       variant: AppButtonVariant.outline,
@@ -92,6 +96,8 @@ class SettingsScreen extends StatelessWidget {
                       catalog: state.modelCatalog,
                       selectedKey: preferences.transcriptionModel,
                       applying: state.applyingTranscriptionModel,
+                      downloadProgress:
+                          state.transcriptionModelDownloadProgress,
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     AppSegmentedField<String>(
@@ -290,6 +296,32 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final l10n = context.l10n;
+        return AlertDialog(
+          title: Text(l10n.logoutConfirmTitle),
+          content: Text(l10n.logoutConfirmMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.logout),
+            ),
+          ],
+        );
+      },
+    );
+    if ((confirmed ?? false) && context.mounted) {
+      context.read<SettingsBloc>().add(const SettingsLogoutRequested());
+    }
+  }
+
   String _modelStatusLabel(
     BuildContext context,
     ModelBootstrapState modelState,
@@ -333,14 +365,96 @@ class _TranscriptionModelSelector extends StatelessWidget {
     required this.catalog,
     required this.selectedKey,
     required this.applying,
+    required this.downloadProgress,
   });
 
   final List<TranscriptionModelCatalogEntry> catalog;
   final String selectedKey;
   final bool applying;
 
+  /// Whisper model download progress (0–100), or null when indeterminate.
+  final double? downloadProgress;
+
   // Cap the mobile choice at `small`; heavier models are impractical on phones.
   static const _mobileModels = ['tiny', 'base', 'small'];
+
+  /// Confirms the switch (and warns about the download / blocks while
+  /// recording) before dispatching, so a tap can't silently kick off a
+  /// hundreds-of-MB download or disrupt an active session.
+  Future<void> _onModelSelected(BuildContext context, String value) async {
+    if (applying) {
+      return;
+    }
+    final recording = context.read<RecordingBloc>().state;
+    if (recording.isRecording || recording.isTranscribing) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(context.l10n.modelChangeBusyTitle),
+          content: Text(context.l10n.modelChangeBusyMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(context.l10n.ok),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final entry = _entryForKey(value);
+    final needsDownload = entry != null && !entry.isDownloaded;
+    final downloadBytes = entry?.remainingBytes ?? entry?.totalBytes;
+    final modelLabel = _labelFor(value);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final l10n = context.l10n;
+        return AlertDialog(
+          title: Text(l10n.modelChangeConfirmTitle),
+          content: Text(
+            needsDownload && downloadBytes != null
+                ? l10n.modelChangeConfirmDownload(
+                    modelLabel,
+                    formatModelDownloadBytes(downloadBytes),
+                  )
+                : l10n.modelChangeConfirmReady(modelLabel),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(
+                needsDownload
+                    ? l10n.modelChangeConfirmDownloadAction
+                    : l10n.modelChangeConfirmAction,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if ((confirmed ?? false) && context.mounted) {
+      context.read<SettingsBloc>().add(
+        SettingsTranscriptionModelChanged(value),
+      );
+    }
+  }
+
+  TranscriptionModelCatalogEntry? _entryForKey(String key) {
+    for (final entry in catalog) {
+      if (modelKeyFromWhisperModel(entry.model) == key) {
+        return entry;
+      }
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -404,17 +518,11 @@ class _TranscriptionModelSelector extends StatelessWidget {
                 icon: Icons.model_training,
               ),
           ],
-          onChanged: (value) {
-            if (!applying) {
-              context.read<SettingsBloc>().add(
-                SettingsTranscriptionModelChanged(value),
-              );
-            }
-          },
+          onChanged: (value) => _onModelSelected(context, value),
         ),
         const SizedBox(height: AppSpacing.sm),
         if (applying) ...[
-          const LinearProgressIndicator(),
+          _DownloadProgress(progress: downloadProgress),
           const SizedBox(height: AppSpacing.sm),
         ],
         description,
@@ -427,6 +535,40 @@ class _TranscriptionModelSelector extends StatelessWidget {
     'small' => 'Small',
     _ => 'Base',
   };
+}
+
+/// Determinate model-download bar with a percent/label caption. Falls back to
+/// an indeterminate bar (e.g. while loading the model, or before the first
+/// progress event arrives) so the user always sees that work is happening.
+class _DownloadProgress extends StatelessWidget {
+  const _DownloadProgress({required this.progress});
+
+  final double? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final percent = progress;
+    final label = percent == null
+        ? l10n.modelApplying
+        : l10n.modelDownloadingPercent(percent.floor());
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LinearProgressIndicator(
+          value: percent == null ? null : (percent / 100).clamp(0.0, 1.0),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// Plain-language "where does AI run" chooser. The single toggle drives both

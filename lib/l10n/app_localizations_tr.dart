@@ -266,6 +266,35 @@ class AppLocalizationsTr extends AppLocalizations {
       'Ses transkripsiyonu için cihaz içinde kullanılacak modeli seçin.';
 
   @override
+  String get modelChangeConfirmTitle => 'Model değiştirilsin mi?';
+
+  @override
+  String modelChangeConfirmDownload(Object model, Object size) {
+    return '$model modeline geçiş için tek seferlik $size indirme gerekir. İndirme arka planda sürer ve hazır olana kadar mevcut model çalışmaya devam eder.';
+  }
+
+  @override
+  String modelChangeConfirmReady(Object model) {
+    return 'Transkripsiyon $model modeline geçirilsin mi?';
+  }
+
+  @override
+  String get modelChangeConfirmAction => 'Geç';
+
+  @override
+  String get modelChangeConfirmDownloadAction => 'İndir ve geç';
+
+  @override
+  String get modelChangeBusyTitle => 'Kayıt sürüyor';
+
+  @override
+  String get modelChangeBusyMessage =>
+      'Transkripsiyon modelini değiştirmeden önce mevcut kaydı tamamlayın — etkin oturum mevcut modeli kullanmaya devam eder.';
+
+  @override
+  String get modelApplying => 'Uygulanıyor…';
+
+  @override
   String get recommendedForYourDevice => 'Cihazınız için önerilen';
 
   @override
@@ -437,6 +466,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get cancel => 'İptal';
 
   @override
+  String get ok => 'Tamam';
+
+  @override
   String get permissionDenied => 'Mikrofon izni gerekli.';
 
   @override
@@ -512,6 +544,13 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get logout => 'Çıkış Yap';
+
+  @override
+  String get logoutConfirmTitle => 'Çıkış yapılsın mı?';
+
+  @override
+  String get logoutConfirmMessage =>
+      'Eşitleme için yeniden giriş yapmanız gerekir. Bu cihazdaki kayıtlar kullanılabilir kalır.';
 
   @override
   String get email => 'E-posta';

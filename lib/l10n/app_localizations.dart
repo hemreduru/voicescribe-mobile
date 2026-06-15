@@ -582,6 +582,54 @@ abstract class AppLocalizations {
   /// **'Choose the on-device model used for speech transcription.'**
   String get transcriptionModelPreferences;
 
+  /// No description provided for @modelChangeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change model?'**
+  String get modelChangeConfirmTitle;
+
+  /// No description provided for @modelChangeConfirmDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Switching to {model} needs a one-time {size} download. It runs in the background and the current model keeps working until it\'s ready.'**
+  String modelChangeConfirmDownload(Object model, Object size);
+
+  /// No description provided for @modelChangeConfirmReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch transcription to the {model} model?'**
+  String modelChangeConfirmReady(Object model);
+
+  /// No description provided for @modelChangeConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch'**
+  String get modelChangeConfirmAction;
+
+  /// No description provided for @modelChangeConfirmDownloadAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Download & switch'**
+  String get modelChangeConfirmDownloadAction;
+
+  /// No description provided for @modelChangeBusyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording in progress'**
+  String get modelChangeBusyTitle;
+
+  /// No description provided for @modelChangeBusyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the current recording before changing the transcription model — the active session keeps using the current model.'**
+  String get modelChangeBusyMessage;
+
+  /// No description provided for @modelApplying.
+  ///
+  /// In en, this message translates to:
+  /// **'Applying…'**
+  String get modelApplying;
+
   /// No description provided for @recommendedForYourDevice.
   ///
   /// In en, this message translates to:
@@ -894,6 +942,12 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get cancel;
 
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
   /// No description provided for @permissionDenied.
   ///
   /// In en, this message translates to:
@@ -1043,6 +1097,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logout'**
   String get logout;
+
+  /// No description provided for @logoutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out?'**
+  String get logoutConfirmTitle;
+
+  /// No description provided for @logoutConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll need to sign in again to sync. Recordings already on this device stay available.'**
+  String get logoutConfirmMessage;
 
   /// No description provided for @email.
   ///

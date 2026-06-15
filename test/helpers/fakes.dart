@@ -300,6 +300,9 @@ class FakeTranscriptionService implements TranscriptionService {
   }
 
   @override
+  Future<WhisperBootstrapResult> ensureUsableModel() => ensureModel();
+
+  @override
   Future<TranscriptionResult> transcribeChunk(
     String audioPath, {
     double? audioLevel,

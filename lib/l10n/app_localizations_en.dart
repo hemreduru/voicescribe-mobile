@@ -266,6 +266,35 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose the on-device model used for speech transcription.';
 
   @override
+  String get modelChangeConfirmTitle => 'Change model?';
+
+  @override
+  String modelChangeConfirmDownload(Object model, Object size) {
+    return 'Switching to $model needs a one-time $size download. It runs in the background and the current model keeps working until it\'s ready.';
+  }
+
+  @override
+  String modelChangeConfirmReady(Object model) {
+    return 'Switch transcription to the $model model?';
+  }
+
+  @override
+  String get modelChangeConfirmAction => 'Switch';
+
+  @override
+  String get modelChangeConfirmDownloadAction => 'Download & switch';
+
+  @override
+  String get modelChangeBusyTitle => 'Recording in progress';
+
+  @override
+  String get modelChangeBusyMessage =>
+      'Finish the current recording before changing the transcription model — the active session keeps using the current model.';
+
+  @override
+  String get modelApplying => 'Applying…';
+
+  @override
   String get recommendedForYourDevice => 'Recommended for your device';
 
   @override
@@ -436,6 +465,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancel => 'Cancel';
 
   @override
+  String get ok => 'OK';
+
+  @override
   String get permissionDenied => 'Microphone permission is required.';
 
   @override
@@ -511,6 +543,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logout => 'Logout';
+
+  @override
+  String get logoutConfirmTitle => 'Log out?';
+
+  @override
+  String get logoutConfirmMessage =>
+      'You\'ll need to sign in again to sync. Recordings already on this device stay available.';
 
   @override
   String get email => 'E-mail';

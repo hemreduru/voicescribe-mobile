@@ -56,6 +56,12 @@ final class _SettingsLocalLlmProgressChanged extends SettingsEvent {
   final double? percent;
 }
 
+final class _SettingsTranscriptionModelProgressChanged extends SettingsEvent {
+  const _SettingsTranscriptionModelProgressChanged(this.percent);
+
+  final double? percent;
+}
+
 final class SettingsLogoutRequested extends SettingsEvent {
   const SettingsLogoutRequested();
 }
@@ -96,6 +102,7 @@ class SettingsState {
     this.modelCatalogErrorMessage,
     this.deviceProfile,
     this.applyingTranscriptionModel = false,
+    this.transcriptionModelDownloadProgress,
     this.pendingSyncCount = 0,
     this.localLlmEntry,
     this.localLlmDownloading = false,
@@ -115,6 +122,10 @@ class SettingsState {
   final String? modelCatalogErrorMessage;
   final DevicePerformanceProfile? deviceProfile;
   final bool applyingTranscriptionModel;
+
+  /// Whisper model download progress (0–100) while a model switch is applying.
+  /// Null means indeterminate (size unknown yet) or no download in progress.
+  final double? transcriptionModelDownloadProgress;
 
   /// Number of local transcripts not yet backed up to the server. Surfaced so
   /// the user can trust that nothing is stuck unsynced.
@@ -145,6 +156,8 @@ class SettingsState {
     DevicePerformanceProfile? deviceProfile,
     bool clearDeviceProfile = false,
     bool? applyingTranscriptionModel,
+    double? transcriptionModelDownloadProgress,
+    bool clearTranscriptionModelDownloadProgress = false,
     int? pendingSyncCount,
     LocalLlmModelCatalogEntry? localLlmEntry,
     bool? localLlmDownloading,
@@ -175,6 +188,11 @@ class SettingsState {
           : deviceProfile ?? this.deviceProfile,
       applyingTranscriptionModel:
           applyingTranscriptionModel ?? this.applyingTranscriptionModel,
+      transcriptionModelDownloadProgress:
+          clearTranscriptionModelDownloadProgress
+          ? null
+          : transcriptionModelDownloadProgress ??
+                this.transcriptionModelDownloadProgress,
       pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
       localLlmEntry: localLlmEntry ?? this.localLlmEntry,
       localLlmDownloading: localLlmDownloading ?? this.localLlmDownloading,
@@ -212,6 +230,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<SettingsTranscriptionLanguageChanged>(_onTranscriptionLanguageChanged);
     on<SettingsLocalLlmDownloadRequested>(_onLocalLlmDownloadRequested);
     on<_SettingsLocalLlmProgressChanged>(_onLocalLlmProgressChanged);
+    on<_SettingsTranscriptionModelProgressChanged>(
+      _onTranscriptionModelProgressChanged,
+    );
     on<SettingsManualSyncRequested>(_onManualSyncRequested);
     on<SettingsLogoutRequested>(_onLogoutRequested);
   }
@@ -225,6 +246,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   StreamSubscription<AuthSessionState?>? _sessionSubscription;
   StreamSubscription<SyncEvent>? _syncSubscription;
   StreamSubscription<ModelDownloadProgress>? _localLlmProgressSubscription;
+  StreamSubscription<ModelDownloadProgress>? _transcriptionProgressSubscription;
 
   Future<void> _onSubscriptionRequested(
     SettingsSubscriptionRequested event,
@@ -255,6 +277,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     _localLlmProgressSubscription = _localLlmModelService.downloadProgress
         .listen(
           (progress) => add(_SettingsLocalLlmProgressChanged(progress.percent)),
+        );
+    await _transcriptionProgressSubscription?.cancel();
+    _transcriptionProgressSubscription = _transcriptionService.downloadProgress
+        .listen(
+          (progress) =>
+              add(_SettingsTranscriptionModelProgressChanged(progress.percent)),
         );
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
       (snapshot) => add(_SettingsSnapshotChanged(snapshot)),
@@ -375,7 +403,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       return;
     }
     emit(
-      state.copyWith(applyingTranscriptionModel: true, clearErrorMessage: true),
+      state.copyWith(
+        applyingTranscriptionModel: true,
+        clearErrorMessage: true,
+        clearTranscriptionModelDownloadProgress: true,
+      ),
     );
     try {
       await _transcriptionService.selectModel(whisperModelFromKey(normalized));
@@ -389,7 +421,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         emit,
         state.preferences.copyWith(transcriptionModel: applied),
       );
-      emit(state.copyWith(applyingTranscriptionModel: false));
+      emit(
+        state.copyWith(
+          applyingTranscriptionModel: false,
+          clearTranscriptionModelDownloadProgress: true,
+        ),
+      );
       await _loadModelCatalog(emit);
     } catch (error) {
       // A failed switch (e.g. the new model's download failed) must not leave
@@ -407,6 +444,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       emit(
         state.copyWith(
           applyingTranscriptionModel: false,
+          clearTranscriptionModelDownloadProgress: true,
           errorMessage: error.toString(),
         ),
       );
@@ -488,6 +526,18 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       return;
     }
     emit(state.copyWith(localLlmDownloadProgress: event.percent));
+  }
+
+  void _onTranscriptionModelProgressChanged(
+    _SettingsTranscriptionModelProgressChanged event,
+    Emitter<SettingsState> emit,
+  ) {
+    // The transcription progress stream is always live (bootstrap also uses
+    // it); only reflect it while a user-initiated model switch is applying.
+    if (!state.applyingTranscriptionModel) {
+      return;
+    }
+    emit(state.copyWith(transcriptionModelDownloadProgress: event.percent));
   }
 
   Future<void> _loadLocalLlmEntry(Emitter<SettingsState> emit) async {
@@ -575,6 +625,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     await _sessionSubscription?.cancel();
     await _syncSubscription?.cancel();
     await _localLlmProgressSubscription?.cancel();
+    await _transcriptionProgressSubscription?.cancel();
     return super.close();
   }
 }

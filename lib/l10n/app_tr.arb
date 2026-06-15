@@ -92,6 +92,25 @@
   "summaryPreferences": "Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.",
   "transcriptionModelSettings": "Transkripsiyon Modeli",
   "transcriptionModelPreferences": "Ses transkripsiyonu için cihaz içinde kullanılacak modeli seçin.",
+  "modelChangeConfirmTitle": "Model değiştirilsin mi?",
+  "modelChangeConfirmDownload": "{model} modeline geçiş için tek seferlik {size} indirme gerekir. İndirme arka planda sürer ve hazır olana kadar mevcut model çalışmaya devam eder.",
+  "@modelChangeConfirmDownload": {
+    "placeholders": {
+      "model": {},
+      "size": {}
+    }
+  },
+  "modelChangeConfirmReady": "Transkripsiyon {model} modeline geçirilsin mi?",
+  "@modelChangeConfirmReady": {
+    "placeholders": {
+      "model": {}
+    }
+  },
+  "modelChangeConfirmAction": "Geç",
+  "modelChangeConfirmDownloadAction": "İndir ve geç",
+  "modelChangeBusyTitle": "Kayıt sürüyor",
+  "modelChangeBusyMessage": "Transkripsiyon modelini değiştirmeden önce mevcut kaydı tamamlayın — etkin oturum mevcut modeli kullanmaya devam eder.",
+  "modelApplying": "Uygulanıyor…",
   "recommendedForYourDevice": "Cihazınız için önerilen",
   "deviceProfileLabel": "Cihaz profili: {tier}",
   "@deviceProfileLabel": {
@@ -160,6 +179,7 @@
   "unnamed": "Adsız",
   "delete": "Sil",
   "cancel": "İptal",
+  "ok": "Tamam",
   "permissionDenied": "Mikrofon izni gerekli.",
   "statusRecording": "Kaydediliyor",
   "statusTranscribing": "Çevriliyor",
@@ -190,6 +210,8 @@
   "login": "Giriş Yap",
   "register": "Kayıt Ol",
   "logout": "Çıkış Yap",
+  "logoutConfirmTitle": "Çıkış yapılsın mı?",
+  "logoutConfirmMessage": "Eşitleme için yeniden giriş yapmanız gerekir. Bu cihazdaki kayıtlar kullanılabilir kalır.",
   "email": "E-posta",
   "password": "Şifre",
   "authenticatedUser": "Giriş Yapan Kullanıcı",
