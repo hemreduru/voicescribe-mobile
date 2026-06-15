@@ -108,6 +108,13 @@
   "onboardingPermissionsTitle": "One last thing",
   "onboardingPermissionsBody": "VoiceScribe needs the microphone to record, and notifications to let you know when a transcript or summary is ready. Nothing is shared without your action.",
   "onboardingAllowAndFinish": "Allow & get started",
+  "onboardingStepProgress": "Step {current} of {total}",
+  "@onboardingStepProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "replayIntroTitle": "Replay intro",
   "replayIntroSubtitle": "See the welcome walkthrough again",
   "transcribingProgressLabel": "Transcribing",

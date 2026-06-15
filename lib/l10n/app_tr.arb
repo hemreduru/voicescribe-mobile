@@ -108,6 +108,13 @@
   "onboardingPermissionsTitle": "Son bir şey",
   "onboardingPermissionsBody": "VoiceScribe kayıt için mikrofona, döküm veya özet hazır olduğunda haber vermek için bildirimlere ihtiyaç duyar. Sen istemeden hiçbir şey paylaşılmaz.",
   "onboardingAllowAndFinish": "İzin ver ve başla",
+  "onboardingStepProgress": "Adım {current} / {total}",
+  "@onboardingStepProgress": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "replayIntroTitle": "Tanıtımı tekrar göster",
   "replayIntroSubtitle": "Karşılama turunu yeniden izle",
   "transcribingProgressLabel": "Yazıya dökülüyor",

@@ -112,9 +112,15 @@ class _OnboardingViewState extends State<_OnboardingView> {
                       ],
                     ),
                   ),
-                  _PageDots(
-                    count: OnboardingCubit.pageCount,
-                    index: state.pageIndex,
+                  Semantics(
+                    label: l10n.onboardingStepProgress(
+                      state.pageIndex + 1,
+                      OnboardingCubit.pageCount,
+                    ),
+                    child: _PageDots(
+                      count: OnboardingCubit.pageCount,
+                      index: state.pageIndex,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Padding(

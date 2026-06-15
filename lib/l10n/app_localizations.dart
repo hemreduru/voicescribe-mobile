@@ -678,6 +678,12 @@ abstract class AppLocalizations {
   /// **'Allow & get started'**
   String get onboardingAllowAndFinish;
 
+  /// No description provided for @onboardingStepProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String onboardingStepProgress(int current, int total);
+
   /// No description provided for @replayIntroTitle.
   ///
   /// In en, this message translates to:

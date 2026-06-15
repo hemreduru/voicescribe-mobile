@@ -207,6 +207,11 @@
 - **Category:** polish (also prod-readiness P2)
 - **Goal / success:** Icon-only controls labeled; UI holds at largest font scale;
   dark-mode contrast verified. **Impact M · Effort M · Risk L.**
+- **Status: done.** Audited icon-only controls — all `IconButton`s already carry
+  tooltips and the record button a semantic label. Added a semantic
+  "Step X of Y" label to the onboarding page dots. **Device-verified at 1.45
+  font scale** (recording screen with the new chip + strip reflows without
+  overflow; dark-mode contrast good). analyze clean, 122 tests green.
 
 ---
 

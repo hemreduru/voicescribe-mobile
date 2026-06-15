@@ -318,6 +318,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingAllowAndFinish => 'Allow & get started';
 
   @override
+  String onboardingStepProgress(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
   String get replayIntroTitle => 'Replay intro';
 
   @override

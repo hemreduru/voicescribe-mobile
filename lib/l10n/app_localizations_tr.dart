@@ -316,6 +316,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingAllowAndFinish => 'İzin ver ve başla';
 
   @override
+  String onboardingStepProgress(int current, int total) {
+    return 'Adım $current / $total';
+  }
+
+  @override
   String get replayIntroTitle => 'Tanıtımı tekrar göster';
 
   @override
