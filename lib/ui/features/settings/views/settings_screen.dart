@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/utils/model_download_formatters.dart';
@@ -286,6 +287,12 @@ class SettingsScreen extends StatelessWidget {
                               color: _modelStatusColor(context, modelState),
                             ),
                     ),
+                    ActionRow(
+                      icon: Icons.replay,
+                      title: l10n.replayIntroTitle,
+                      subtitle: l10n.replayIntroSubtitle,
+                      onTap: () => _replayIntro(context),
+                    ),
                   ],
                 ),
               ],
@@ -294,6 +301,16 @@ class SettingsScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _replayIntro(BuildContext context) async {
+    final bootstrapBloc = context.read<BootstrapBloc>();
+    final repository = context.read<TranscriptRepository>();
+    final snapshot = await repository.loadSnapshot();
+    await repository.savePreferences(
+      snapshot.preferences.copyWith(hasSeenOnboarding: false),
+    );
+    bootstrapBloc.add(const BootstrapOnboardingReset());
   }
 
   Future<void> _confirmLogout(BuildContext context) async {

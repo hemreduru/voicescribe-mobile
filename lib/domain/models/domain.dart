@@ -148,6 +148,7 @@ abstract class AppPreferences with _$AppPreferences {
     @Default('base') String transcriptionModel,
     @Default('auto') String transcriptionLanguage,
     @Default(true) bool autoSummarize,
+    @Default(false) bool hasSeenOnboarding,
   }) = _AppPreferences;
 
   const AppPreferences._();

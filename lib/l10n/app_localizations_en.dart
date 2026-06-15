@@ -263,6 +263,60 @@ class AppLocalizationsEn extends AppLocalizations {
       'Create the summary as soon as a recording finishes transcribing, with no extra tap.';
 
   @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get onboardingBack => 'Back';
+
+  @override
+  String get onboardingNext => 'Next';
+
+  @override
+  String get onboardingGetStarted => 'Get started';
+
+  @override
+  String get onboardingWelcomeTitle => 'Welcome to VoiceScribe';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Record anything and get a clean transcript and structured minutes — automatically.';
+
+  @override
+  String get onboardingFeatureRecord =>
+      'Record and transcribe live, on your device';
+
+  @override
+  String get onboardingFeatureSummary => 'Automatic, structured summaries';
+
+  @override
+  String get onboardingFeatureChat => 'Ask questions about your recordings';
+
+  @override
+  String get onboardingLanguageTitle => 'Choose your languages';
+
+  @override
+  String get onboardingRecommended => 'Recommended for your device';
+
+  @override
+  String get onboardingThemeTitle => 'Pick a theme';
+
+  @override
+  String get onboardingPermissionsTitle => 'One last thing';
+
+  @override
+  String get onboardingPermissionsBody =>
+      'VoiceScribe needs the microphone to record, and notifications to let you know when a transcript or summary is ready. Nothing is shared without your action.';
+
+  @override
+  String get onboardingAllowAndFinish => 'Allow & get started';
+
+  @override
+  String get replayIntroTitle => 'Replay intro';
+
+  @override
+  String get replayIntroSubtitle => 'See the welcome walkthrough again';
+
+  @override
   String get summaryPreferences => 'Choose where summaries and AI chat run.';
 
   @override

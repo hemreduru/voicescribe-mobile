@@ -67,6 +67,12 @@
   (`hasSeenOnboarding`) + build_runner; repository `savePreferences`; ARB; settings
   entry to re-open.
 - **Impact H · Effort H · Risk L · Deps:** none (UX-03 reuses its engine-pick copy).
+- **Status: done.** `onboarding` feature (cubit+5 slides), `hasSeenOnboarding`
+  pref, go_router `/onboarding` gate via `BootstrapState.onboardingComplete`,
+  "Replay intro" in Settings, TR/EN. +5 cubit tests; widget tests fixed.
+  analyze clean, 120 tests green, APK builds. **Device-verified on tablet** (all
+  5 slides, TR transcription-language smart default, on-device recommended,
+  finish→app, relaunch does not re-show).
 
 ### UX-03 — Resolve provider smart-default at bootstrap
 - **Category:** invisible-ux

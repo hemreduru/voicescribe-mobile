@@ -262,6 +262,59 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kayıt yazıya döküldüğü anda özet, ekstra dokunuş gerekmeden oluşturulur.';
 
   @override
+  String get onboardingSkip => 'Atla';
+
+  @override
+  String get onboardingBack => 'Geri';
+
+  @override
+  String get onboardingNext => 'İleri';
+
+  @override
+  String get onboardingGetStarted => 'Başla';
+
+  @override
+  String get onboardingWelcomeTitle => 'VoiceScribe\'a hoş geldin';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Her şeyi kaydet; temiz bir döküm ve yapılandırılmış toplantı notları otomatik olarak çıksın.';
+
+  @override
+  String get onboardingFeatureRecord => 'Cihazında canlı kayıt ve yazıya dökme';
+
+  @override
+  String get onboardingFeatureSummary => 'Otomatik, yapılandırılmış özetler';
+
+  @override
+  String get onboardingFeatureChat => 'Kayıtların hakkında soru sor';
+
+  @override
+  String get onboardingLanguageTitle => 'Dillerini seç';
+
+  @override
+  String get onboardingRecommended => 'Cihazın için önerilen';
+
+  @override
+  String get onboardingThemeTitle => 'Bir tema seç';
+
+  @override
+  String get onboardingPermissionsTitle => 'Son bir şey';
+
+  @override
+  String get onboardingPermissionsBody =>
+      'VoiceScribe kayıt için mikrofona, döküm veya özet hazır olduğunda haber vermek için bildirimlere ihtiyaç duyar. Sen istemeden hiçbir şey paylaşılmaz.';
+
+  @override
+  String get onboardingAllowAndFinish => 'İzin ver ve başla';
+
+  @override
+  String get replayIntroTitle => 'Tanıtımı tekrar göster';
+
+  @override
+  String get replayIntroSubtitle => 'Karşılama turunu yeniden izle';
+
+  @override
   String get summaryPreferences =>
       'Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.';
 

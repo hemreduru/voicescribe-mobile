@@ -10,6 +10,7 @@ import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
@@ -304,7 +305,16 @@ class _RepositoryHarness extends StatelessWidget {
 
 class _Fakes {
   _Fakes()
-    : transcripts = FakeTranscriptRepository(),
+    : transcripts = FakeTranscriptRepository(
+        // Bypass first-run onboarding so the router lands on the app shell
+        // (these tests exercise shell navigation, not the wizard).
+        initial: const TranscriptSnapshot(
+          transcripts: [],
+          chunks: [],
+          summaries: [],
+          preferences: AppPreferences(hasSeenOnboarding: true),
+        ),
+      ),
       auth = FakeAuthRepository(session: FakeAuthRepository.defaultSession),
       recording = FakeRecordingService(),
       transcription = FakeTranscriptionService(),

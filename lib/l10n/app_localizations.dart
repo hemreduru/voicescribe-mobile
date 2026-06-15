@@ -576,6 +576,108 @@ abstract class AppLocalizations {
   /// **'Create the summary as soon as a recording finishes transcribing, with no extra tap.'**
   String get autoSummarizeDesc;
 
+  /// No description provided for @onboardingSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get onboardingSkip;
+
+  /// No description provided for @onboardingBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get onboardingBack;
+
+  /// No description provided for @onboardingNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get onboardingNext;
+
+  /// No description provided for @onboardingGetStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get onboardingGetStarted;
+
+  /// No description provided for @onboardingWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to VoiceScribe'**
+  String get onboardingWelcomeTitle;
+
+  /// No description provided for @onboardingWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Record anything and get a clean transcript and structured minutes — automatically.'**
+  String get onboardingWelcomeBody;
+
+  /// No description provided for @onboardingFeatureRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record and transcribe live, on your device'**
+  String get onboardingFeatureRecord;
+
+  /// No description provided for @onboardingFeatureSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic, structured summaries'**
+  String get onboardingFeatureSummary;
+
+  /// No description provided for @onboardingFeatureChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask questions about your recordings'**
+  String get onboardingFeatureChat;
+
+  /// No description provided for @onboardingLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your languages'**
+  String get onboardingLanguageTitle;
+
+  /// No description provided for @onboardingRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended for your device'**
+  String get onboardingRecommended;
+
+  /// No description provided for @onboardingThemeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a theme'**
+  String get onboardingThemeTitle;
+
+  /// No description provided for @onboardingPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One last thing'**
+  String get onboardingPermissionsTitle;
+
+  /// No description provided for @onboardingPermissionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'VoiceScribe needs the microphone to record, and notifications to let you know when a transcript or summary is ready. Nothing is shared without your action.'**
+  String get onboardingPermissionsBody;
+
+  /// No description provided for @onboardingAllowAndFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow & get started'**
+  String get onboardingAllowAndFinish;
+
+  /// No description provided for @replayIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay intro'**
+  String get replayIntroTitle;
+
+  /// No description provided for @replayIntroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See the welcome walkthrough again'**
+  String get replayIntroSubtitle;
+
   /// No description provided for @summaryPreferences.
   ///
   /// In en, this message translates to:

@@ -24,6 +24,18 @@ final class BootstrapRetried extends BootstrapEvent {
   const BootstrapRetried();
 }
 
+/// Flips [BootstrapState.onboardingComplete] after the wizard finishes so the
+/// router stops redirecting to `/onboarding` and lands on the app.
+final class BootstrapOnboardingCompleted extends BootstrapEvent {
+  const BootstrapOnboardingCompleted();
+}
+
+/// Re-arms onboarding (e.g. "Replay intro" from Settings) so the router routes
+/// back to the wizard. Pairs with persisting `hasSeenOnboarding = false`.
+final class BootstrapOnboardingReset extends BootstrapEvent {
+  const BootstrapOnboardingReset();
+}
+
 final class _BootstrapProgressChanged extends BootstrapEvent {
   const _BootstrapProgressChanged(this.progress);
 
@@ -37,6 +49,7 @@ class BootstrapState {
     this.downloadProgress,
     this.errorMessage,
     this.initialized = false,
+    this.onboardingComplete = true,
   });
 
   final ModelBootstrapState modelState;
@@ -44,6 +57,11 @@ class BootstrapState {
   final ModelDownloadProgress? downloadProgress;
   final String? errorMessage;
   final bool initialized;
+
+  /// Whether the first-run wizard has been completed. Defaults true so we never
+  /// flash onboarding before preferences load; set from the persisted
+  /// `hasSeenOnboarding` flag once the snapshot is read.
+  final bool onboardingComplete;
 
   bool get isReady => initialized && modelState == ModelBootstrapState.ready;
 
@@ -55,6 +73,7 @@ class BootstrapState {
     String? errorMessage,
     bool clearErrorMessage = false,
     bool? initialized,
+    bool? onboardingComplete,
   }) {
     return BootstrapState(
       modelState: modelState ?? this.modelState,
@@ -66,6 +85,7 @@ class BootstrapState {
           ? null
           : errorMessage ?? this.errorMessage,
       initialized: initialized ?? this.initialized,
+      onboardingComplete: onboardingComplete ?? this.onboardingComplete,
     );
   }
 }
@@ -79,6 +99,8 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
        super(const BootstrapState()) {
     on<BootstrapStarted>(_onStarted);
     on<BootstrapRetried>(_onRetried);
+    on<BootstrapOnboardingCompleted>(_onOnboardingCompleted);
+    on<BootstrapOnboardingReset>(_onOnboardingReset);
     on<_BootstrapProgressChanged>(_onProgressChanged);
     _progressSubscription = _transcriptionService.downloadProgress.listen(
       (progress) => add(_BootstrapProgressChanged(progress)),
@@ -110,6 +132,20 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     emit(state.copyWith(downloadProgress: event.progress));
   }
 
+  void _onOnboardingCompleted(
+    BootstrapOnboardingCompleted event,
+    Emitter<BootstrapState> emit,
+  ) {
+    emit(state.copyWith(onboardingComplete: true));
+  }
+
+  void _onOnboardingReset(
+    BootstrapOnboardingReset event,
+    Emitter<BootstrapState> emit,
+  ) {
+    emit(state.copyWith(onboardingComplete: false));
+  }
+
   Future<void> _bootstrap(Emitter<BootstrapState> emit) async {
     emit(
       state.copyWith(
@@ -120,6 +156,13 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     );
     try {
       final snapshot = await _transcriptRepository.loadSnapshot();
+      // Surface whether the first-run wizard still needs to show, so the router
+      // can gate on it the moment bootstrap reports ready.
+      emit(
+        state.copyWith(
+          onboardingComplete: snapshot.preferences.hasSeenOnboarding,
+        ),
+      );
       // Cutoff for the orphan-file sweep below: the sweep runs unawaited after
       // the app is ready, so any chunk file written *after* this snapshot (a
       // recording the user started right away) is unknown to it and must not

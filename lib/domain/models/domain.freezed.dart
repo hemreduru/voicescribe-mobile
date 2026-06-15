@@ -1177,7 +1177,7 @@ as DateTime?,
 /// @nodoc
 mixin _$AppPreferences {
 
- String get summaryProvider; String get themeMode; String get localePreference; String get transcriptionModel; String get transcriptionLanguage; bool get autoSummarize;
+ String get summaryProvider; String get themeMode; String get localePreference; String get transcriptionModel; String get transcriptionLanguage; bool get autoSummarize; bool get hasSeenOnboarding;
 /// Create a copy of AppPreferences
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1188,16 +1188,16 @@ $AppPreferencesCopyWith<AppPreferences> get copyWith => _$AppPreferencesCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppPreferences&&(identical(other.summaryProvider, summaryProvider) || other.summaryProvider == summaryProvider)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.localePreference, localePreference) || other.localePreference == localePreference)&&(identical(other.transcriptionModel, transcriptionModel) || other.transcriptionModel == transcriptionModel)&&(identical(other.transcriptionLanguage, transcriptionLanguage) || other.transcriptionLanguage == transcriptionLanguage)&&(identical(other.autoSummarize, autoSummarize) || other.autoSummarize == autoSummarize));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppPreferences&&(identical(other.summaryProvider, summaryProvider) || other.summaryProvider == summaryProvider)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.localePreference, localePreference) || other.localePreference == localePreference)&&(identical(other.transcriptionModel, transcriptionModel) || other.transcriptionModel == transcriptionModel)&&(identical(other.transcriptionLanguage, transcriptionLanguage) || other.transcriptionLanguage == transcriptionLanguage)&&(identical(other.autoSummarize, autoSummarize) || other.autoSummarize == autoSummarize)&&(identical(other.hasSeenOnboarding, hasSeenOnboarding) || other.hasSeenOnboarding == hasSeenOnboarding));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,summaryProvider,themeMode,localePreference,transcriptionModel,transcriptionLanguage,autoSummarize);
+int get hashCode => Object.hash(runtimeType,summaryProvider,themeMode,localePreference,transcriptionModel,transcriptionLanguage,autoSummarize,hasSeenOnboarding);
 
 @override
 String toString() {
-  return 'AppPreferences(summaryProvider: $summaryProvider, themeMode: $themeMode, localePreference: $localePreference, transcriptionModel: $transcriptionModel, transcriptionLanguage: $transcriptionLanguage, autoSummarize: $autoSummarize)';
+  return 'AppPreferences(summaryProvider: $summaryProvider, themeMode: $themeMode, localePreference: $localePreference, transcriptionModel: $transcriptionModel, transcriptionLanguage: $transcriptionLanguage, autoSummarize: $autoSummarize, hasSeenOnboarding: $hasSeenOnboarding)';
 }
 
 
@@ -1208,7 +1208,7 @@ abstract mixin class $AppPreferencesCopyWith<$Res>  {
   factory $AppPreferencesCopyWith(AppPreferences value, $Res Function(AppPreferences) _then) = _$AppPreferencesCopyWithImpl;
 @useResult
 $Res call({
- String summaryProvider, String themeMode, String localePreference, String transcriptionModel, String transcriptionLanguage, bool autoSummarize
+ String summaryProvider, String themeMode, String localePreference, String transcriptionModel, String transcriptionLanguage, bool autoSummarize, bool hasSeenOnboarding
 });
 
 
@@ -1225,7 +1225,7 @@ class _$AppPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of AppPreferences
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? summaryProvider = null,Object? themeMode = null,Object? localePreference = null,Object? transcriptionModel = null,Object? transcriptionLanguage = null,Object? autoSummarize = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? summaryProvider = null,Object? themeMode = null,Object? localePreference = null,Object? transcriptionModel = null,Object? transcriptionLanguage = null,Object? autoSummarize = null,Object? hasSeenOnboarding = null,}) {
   return _then(_self.copyWith(
 summaryProvider: null == summaryProvider ? _self.summaryProvider : summaryProvider // ignore: cast_nullable_to_non_nullable
 as String,themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
@@ -1233,6 +1233,7 @@ as String,localePreference: null == localePreference ? _self.localePreference : 
 as String,transcriptionModel: null == transcriptionModel ? _self.transcriptionModel : transcriptionModel // ignore: cast_nullable_to_non_nullable
 as String,transcriptionLanguage: null == transcriptionLanguage ? _self.transcriptionLanguage : transcriptionLanguage // ignore: cast_nullable_to_non_nullable
 as String,autoSummarize: null == autoSummarize ? _self.autoSummarize : autoSummarize // ignore: cast_nullable_to_non_nullable
+as bool,hasSeenOnboarding: null == hasSeenOnboarding ? _self.hasSeenOnboarding : hasSeenOnboarding // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -1318,10 +1319,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String summaryProvider,  String themeMode,  String localePreference,  String transcriptionModel,  String transcriptionLanguage,  bool autoSummarize)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String summaryProvider,  String themeMode,  String localePreference,  String transcriptionModel,  String transcriptionLanguage,  bool autoSummarize,  bool hasSeenOnboarding)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppPreferences() when $default != null:
-return $default(_that.summaryProvider,_that.themeMode,_that.localePreference,_that.transcriptionModel,_that.transcriptionLanguage,_that.autoSummarize);case _:
+return $default(_that.summaryProvider,_that.themeMode,_that.localePreference,_that.transcriptionModel,_that.transcriptionLanguage,_that.autoSummarize,_that.hasSeenOnboarding);case _:
   return orElse();
 
 }
@@ -1339,10 +1340,10 @@ return $default(_that.summaryProvider,_that.themeMode,_that.localePreference,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String summaryProvider,  String themeMode,  String localePreference,  String transcriptionModel,  String transcriptionLanguage,  bool autoSummarize)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String summaryProvider,  String themeMode,  String localePreference,  String transcriptionModel,  String transcriptionLanguage,  bool autoSummarize,  bool hasSeenOnboarding)  $default,) {final _that = this;
 switch (_that) {
 case _AppPreferences():
-return $default(_that.summaryProvider,_that.themeMode,_that.localePreference,_that.transcriptionModel,_that.transcriptionLanguage,_that.autoSummarize);case _:
+return $default(_that.summaryProvider,_that.themeMode,_that.localePreference,_that.transcriptionModel,_that.transcriptionLanguage,_that.autoSummarize,_that.hasSeenOnboarding);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1359,10 +1360,10 @@ return $default(_that.summaryProvider,_that.themeMode,_that.localePreference,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String summaryProvider,  String themeMode,  String localePreference,  String transcriptionModel,  String transcriptionLanguage,  bool autoSummarize)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String summaryProvider,  String themeMode,  String localePreference,  String transcriptionModel,  String transcriptionLanguage,  bool autoSummarize,  bool hasSeenOnboarding)?  $default,) {final _that = this;
 switch (_that) {
 case _AppPreferences() when $default != null:
-return $default(_that.summaryProvider,_that.themeMode,_that.localePreference,_that.transcriptionModel,_that.transcriptionLanguage,_that.autoSummarize);case _:
+return $default(_that.summaryProvider,_that.themeMode,_that.localePreference,_that.transcriptionModel,_that.transcriptionLanguage,_that.autoSummarize,_that.hasSeenOnboarding);case _:
   return null;
 
 }
@@ -1374,7 +1375,7 @@ return $default(_that.summaryProvider,_that.themeMode,_that.localePreference,_th
 
 
 class _AppPreferences extends AppPreferences {
-  const _AppPreferences({this.summaryProvider = 'local', this.themeMode = 'system', this.localePreference = 'system', this.transcriptionModel = 'base', this.transcriptionLanguage = 'auto', this.autoSummarize = true}): super._();
+  const _AppPreferences({this.summaryProvider = 'local', this.themeMode = 'system', this.localePreference = 'system', this.transcriptionModel = 'base', this.transcriptionLanguage = 'auto', this.autoSummarize = true, this.hasSeenOnboarding = false}): super._();
   
 
 @override@JsonKey() final  String summaryProvider;
@@ -1383,6 +1384,7 @@ class _AppPreferences extends AppPreferences {
 @override@JsonKey() final  String transcriptionModel;
 @override@JsonKey() final  String transcriptionLanguage;
 @override@JsonKey() final  bool autoSummarize;
+@override@JsonKey() final  bool hasSeenOnboarding;
 
 /// Create a copy of AppPreferences
 /// with the given fields replaced by the non-null parameter values.
@@ -1394,16 +1396,16 @@ _$AppPreferencesCopyWith<_AppPreferences> get copyWith => __$AppPreferencesCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppPreferences&&(identical(other.summaryProvider, summaryProvider) || other.summaryProvider == summaryProvider)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.localePreference, localePreference) || other.localePreference == localePreference)&&(identical(other.transcriptionModel, transcriptionModel) || other.transcriptionModel == transcriptionModel)&&(identical(other.transcriptionLanguage, transcriptionLanguage) || other.transcriptionLanguage == transcriptionLanguage)&&(identical(other.autoSummarize, autoSummarize) || other.autoSummarize == autoSummarize));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppPreferences&&(identical(other.summaryProvider, summaryProvider) || other.summaryProvider == summaryProvider)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.localePreference, localePreference) || other.localePreference == localePreference)&&(identical(other.transcriptionModel, transcriptionModel) || other.transcriptionModel == transcriptionModel)&&(identical(other.transcriptionLanguage, transcriptionLanguage) || other.transcriptionLanguage == transcriptionLanguage)&&(identical(other.autoSummarize, autoSummarize) || other.autoSummarize == autoSummarize)&&(identical(other.hasSeenOnboarding, hasSeenOnboarding) || other.hasSeenOnboarding == hasSeenOnboarding));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,summaryProvider,themeMode,localePreference,transcriptionModel,transcriptionLanguage,autoSummarize);
+int get hashCode => Object.hash(runtimeType,summaryProvider,themeMode,localePreference,transcriptionModel,transcriptionLanguage,autoSummarize,hasSeenOnboarding);
 
 @override
 String toString() {
-  return 'AppPreferences(summaryProvider: $summaryProvider, themeMode: $themeMode, localePreference: $localePreference, transcriptionModel: $transcriptionModel, transcriptionLanguage: $transcriptionLanguage, autoSummarize: $autoSummarize)';
+  return 'AppPreferences(summaryProvider: $summaryProvider, themeMode: $themeMode, localePreference: $localePreference, transcriptionModel: $transcriptionModel, transcriptionLanguage: $transcriptionLanguage, autoSummarize: $autoSummarize, hasSeenOnboarding: $hasSeenOnboarding)';
 }
 
 
@@ -1414,7 +1416,7 @@ abstract mixin class _$AppPreferencesCopyWith<$Res> implements $AppPreferencesCo
   factory _$AppPreferencesCopyWith(_AppPreferences value, $Res Function(_AppPreferences) _then) = __$AppPreferencesCopyWithImpl;
 @override @useResult
 $Res call({
- String summaryProvider, String themeMode, String localePreference, String transcriptionModel, String transcriptionLanguage, bool autoSummarize
+ String summaryProvider, String themeMode, String localePreference, String transcriptionModel, String transcriptionLanguage, bool autoSummarize, bool hasSeenOnboarding
 });
 
 
@@ -1431,7 +1433,7 @@ class __$AppPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of AppPreferences
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? summaryProvider = null,Object? themeMode = null,Object? localePreference = null,Object? transcriptionModel = null,Object? transcriptionLanguage = null,Object? autoSummarize = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? summaryProvider = null,Object? themeMode = null,Object? localePreference = null,Object? transcriptionModel = null,Object? transcriptionLanguage = null,Object? autoSummarize = null,Object? hasSeenOnboarding = null,}) {
   return _then(_AppPreferences(
 summaryProvider: null == summaryProvider ? _self.summaryProvider : summaryProvider // ignore: cast_nullable_to_non_nullable
 as String,themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
@@ -1439,6 +1441,7 @@ as String,localePreference: null == localePreference ? _self.localePreference : 
 as String,transcriptionModel: null == transcriptionModel ? _self.transcriptionModel : transcriptionModel // ignore: cast_nullable_to_non_nullable
 as String,transcriptionLanguage: null == transcriptionLanguage ? _self.transcriptionLanguage : transcriptionLanguage // ignore: cast_nullable_to_non_nullable
 as String,autoSummarize: null == autoSummarize ? _self.autoSummarize : autoSummarize // ignore: cast_nullable_to_non_nullable
+as bool,hasSeenOnboarding: null == hasSeenOnboarding ? _self.hasSeenOnboarding : hasSeenOnboarding // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
