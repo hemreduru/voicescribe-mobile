@@ -151,6 +151,7 @@ class VoiceScribeRoot extends StatelessWidget {
             create: (context) => BootstrapBloc(
               transcriptRepository: context.read<TranscriptRepository>(),
               transcriptionService: context.read<TranscriptionService>(),
+              localLlmModelService: context.read<LocalLlmModelService>(),
             )..add(const BootstrapStarted()),
           ),
           BlocProvider<AuthBloc>(

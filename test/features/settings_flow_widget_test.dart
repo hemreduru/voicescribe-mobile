@@ -192,6 +192,7 @@ List<BlocProvider<dynamic>> _createBlocProviders(_Fakes fakes) {
       create: (_) => BootstrapBloc(
         transcriptRepository: fakes.transcripts,
         transcriptionService: fakes.transcription,
+        localLlmModelService: fakes.localLlm,
       )..add(const BootstrapStarted()),
     ),
     BlocProvider<AuthBloc>(

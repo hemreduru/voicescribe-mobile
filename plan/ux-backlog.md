@@ -84,6 +84,10 @@
 - **Files:** `ui/features/bootstrap/bloc/bootstrap_bloc.dart` (or onboarding
   finalize); reuse `LocalLlmModelService.catalogEntry()`; repository.
 - **Impact M · Effort M · Risk L · Deps:** UX-02 (shared logic).
+- **Status: done.** `BootstrapBloc` now resolves the provider smart-default at
+  launch (local→cloud when `isSupported()` is false), folded into the existing
+  single boot-time preference write. +2 unit tests (both branches). analyze
+  clean, 122 tests green. (No UI change; test device is a capable tier.)
 
 ### UX-04 — Queue cloud summary to run after sync
 - **Category:** invisible-ux

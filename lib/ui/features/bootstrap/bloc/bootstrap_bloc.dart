@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 // ignore_for_file: avoid_slow_async_io
 import 'package:path_provider/path_provider.dart';
+import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -94,8 +95,10 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
   BootstrapBloc({
     required TranscriptRepository transcriptRepository,
     required TranscriptionService transcriptionService,
+    required LocalLlmModelService localLlmModelService,
   }) : _transcriptRepository = transcriptRepository,
        _transcriptionService = transcriptionService,
+       _localLlmModelService = localLlmModelService,
        super(const BootstrapState()) {
     on<BootstrapStarted>(_onStarted);
     on<BootstrapRetried>(_onRetried);
@@ -109,6 +112,7 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
 
   final TranscriptRepository _transcriptRepository;
   final TranscriptionService _transcriptionService;
+  final LocalLlmModelService _localLlmModelService;
   StreamSubscription<ModelDownloadProgress>? _progressSubscription;
 
   Future<void> _onStarted(
@@ -186,15 +190,24 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
       // interrupted switch left only a `.part`), boot on an already-downloaded
       // model instead of locking the app on the splash re-downloading it.
       await _transcriptionService.ensureUsableModel();
-      // Persist whatever model actually loaded so Settings reflects reality and
-      // the next launch doesn't try to re-download the missing one all over.
+      // Persist any preference corrections discovered at boot in a single write:
+      // (1) whatever model actually loaded (so Settings reflects reality and the
+      // next launch doesn't re-download a missing one), and (2) a provider
+      // smart-default — a device that can't run the on-device engine must not be
+      // left on `local` (summary + chat would just fail), so fall back to cloud
+      // once. This runs even when the user never opens Settings.
+      var prefs = snapshot.preferences;
       final activeModelKey = AppPreferences.normalizeTranscriptionModel(
         _transcriptionService.currentModelKey,
       );
-      if (activeModelKey != snapshot.preferences.transcriptionModel) {
-        await _transcriptRepository.savePreferences(
-          snapshot.preferences.copyWith(transcriptionModel: activeModelKey),
-        );
+      if (activeModelKey != prefs.transcriptionModel) {
+        prefs = prefs.copyWith(transcriptionModel: activeModelKey);
+      }
+      if (prefs.summaryProvider == 'local' && !await _localCanRun()) {
+        prefs = prefs.copyWith(summaryProvider: 'cloud');
+      }
+      if (prefs != snapshot.preferences) {
+        await _transcriptRepository.savePreferences(prefs);
       }
       // Fetch the latest server data into cache in the background — the app is
       // offline-first, so becoming usable must never wait on the network (a
@@ -227,6 +240,16 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
           errorMessage: error.toString(),
         ),
       );
+    }
+  }
+
+  /// Whether the on-device engine can run here. Defaults to optimistic (true)
+  /// on error so a transient failure never silently downgrades a capable device.
+  Future<bool> _localCanRun() async {
+    try {
+      return await _localLlmModelService.isSupported();
+    } catch (_) {
+      return true;
     }
   }
 
