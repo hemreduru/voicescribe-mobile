@@ -9,6 +9,7 @@ import 'package:voicescribe_mobile/data/repositories/voice_scribe_auth_repositor
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/background_work_service.dart';
 import 'package:voicescribe_mobile/data/services/chat/local_chat_service.dart';
+import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/cloud_summary_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/local_llm_runtime.dart';
@@ -130,6 +131,9 @@ class VoiceScribeRoot extends StatelessWidget {
         RepositoryProvider<BackgroundWorkService>(
           create: (_) => ForegroundBackgroundWorkService(),
         ),
+        RepositoryProvider<CompletionNotificationService>(
+          create: (_) => FlutterLocalCompletionNotificationService(),
+        ),
         // Auto-generates a summary when a recording finishes transcribing
         // (gated by AppPreferences.autoSummarize). Eager: it must watch the
         // snapshot stream from launch, not only when a screen reads it.
@@ -141,6 +145,8 @@ class VoiceScribeRoot extends StatelessWidget {
             localLlmModelService: context.read<LocalLlmModelService>(),
             tokenProvider: () =>
                 context.read<AuthRepository>().currentSession()?.accessToken,
+            completionNotifications: context
+                .read<CompletionNotificationService>(),
           )..start(),
           dispose: (coordinator) => coordinator.dispose(),
         ),
@@ -174,6 +180,8 @@ class VoiceScribeRoot extends StatelessWidget {
               authRepository: context.read<AuthRepository>(),
               syncQueueService: context.read<SyncQueueService>(),
               backgroundWork: context.read<BackgroundWorkService>(),
+              completionNotifications: context
+                  .read<CompletionNotificationService>(),
             )..add(const RecordingSubscriptionRequested()),
           ),
           BlocProvider<TranscriptListBloc>(

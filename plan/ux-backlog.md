@@ -122,6 +122,15 @@
 - **Files:** `data/services/background_work_service.dart` /
   `flutter_foreground_task`; recording/summary completion hooks; ARB; deep-link.
 - **Impact M · Effort M · Risk L · Deps:** UX-01 for the summary-ready case.
+- **Status: done.** Added `flutter_local_notifications` (+ core-library
+  desugaring in Gradle) and a `CompletionNotificationService` that posts
+  "Transcript ready" / "Summary ready" — gated to fire only when the app is
+  backgrounded. Wired into `RecordingBloc` (post-stop backlog drained) and
+  `AutoSummaryCoordinator` (summary done); copy localized TR/EN via the recording
+  screen. +wiring test (coordinator fires the notifier). analyze clean, 122 tests
+  green, APK builds. NOTE: the backgrounded-drain path couldn't be captured on
+  the test tablet — its live transcription keeps pace, so there is no post-stop
+  backlog to drain in the background; the path is for slower devices/longer lag.
 
 ### UX-07 — AI-tab first-use explainer + local/cloud legibility
 - **Category:** competitive-feature / invisible-ux

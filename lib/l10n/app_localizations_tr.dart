@@ -345,6 +345,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get tryAgain => 'Tekrar dene';
 
   @override
+  String get transcriptReadyTitle => 'Döküm hazır';
+
+  @override
+  String get transcriptReadyBody => 'Kaydın yazıya döküldü.';
+
+  @override
+  String get summaryReadyTitle => 'Özet hazır';
+
+  @override
+  String get summaryReadyBody => 'Toplantı özetin hazır.';
+
+  @override
   String get summaryPreferences =>
       'Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.';
 

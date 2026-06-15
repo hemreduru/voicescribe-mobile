@@ -347,6 +347,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tryAgain => 'Try again';
 
   @override
+  String get transcriptReadyTitle => 'Transcript ready';
+
+  @override
+  String get transcriptReadyBody => 'Your recording has been transcribed.';
+
+  @override
+  String get summaryReadyTitle => 'Summary ready';
+
+  @override
+  String get summaryReadyBody => 'Your meeting summary is ready.';
+
+  @override
   String get summaryPreferences => 'Choose where summaries and AI chat run.';
 
   @override

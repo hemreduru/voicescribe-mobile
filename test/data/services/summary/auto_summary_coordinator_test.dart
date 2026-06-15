@@ -86,6 +86,7 @@ TranscriptSnapshot _snapshot(
 void main() {
   late FakeTranscriptRepository repo;
   late _RecordingSummaryService summary;
+  late FakeCompletionNotificationService notifier;
   late AutoSummaryCoordinator coordinator;
 
   AutoSummaryCoordinator build({String? token}) {
@@ -94,11 +95,13 @@ void main() {
       summaryService: summary,
       localLlmModelService: FakeLocalLlmModelService(downloaded: true),
       tokenProvider: () => token,
+      completionNotifications: notifier,
     );
   }
 
   setUp(() {
     summary = _RecordingSummaryService();
+    notifier = FakeCompletionNotificationService();
   });
 
   tearDown(() async {
@@ -118,6 +121,7 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 20));
 
     expect(summary.calls, 1);
+    expect(notifier.summaryReadyCount, 1);
   });
 
   test('does not summarize while still transcribing', () async {

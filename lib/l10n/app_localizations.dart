@@ -732,6 +732,30 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get tryAgain;
 
+  /// No description provided for @transcriptReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript ready'**
+  String get transcriptReadyTitle;
+
+  /// No description provided for @transcriptReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recording has been transcribed.'**
+  String get transcriptReadyBody;
+
+  /// No description provided for @summaryReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary ready'**
+  String get summaryReadyTitle;
+
+  /// No description provided for @summaryReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your meeting summary is ready.'**
+  String get summaryReadyBody;
+
   /// No description provided for @summaryPreferences.
   ///
   /// In en, this message translates to:

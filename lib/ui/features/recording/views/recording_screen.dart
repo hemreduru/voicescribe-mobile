@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
@@ -84,6 +85,14 @@ class _RecordingScreenState extends State<RecordingScreen> {
     context.read<RecordingBloc>().configureBackgroundNotification(
       title: l10n.appName,
       text: l10n.transcribingNotificationContent,
+    );
+    // Localized copy for the "ready" notifications posted when work finishes
+    // while the app is backgrounded.
+    context.read<CompletionNotificationService>().configure(
+      transcriptTitle: l10n.transcriptReadyTitle,
+      transcriptBody: l10n.transcriptReadyBody,
+      summaryTitle: l10n.summaryReadyTitle,
+      summaryBody: l10n.summaryReadyBody,
     );
 
     return BlocConsumer<RecordingBloc, RecordingState>(

@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
@@ -298,6 +299,9 @@ class _RepositoryHarness extends StatelessWidget {
         ),
         RepositoryProvider<SummaryService>.value(value: fakes.summary),
         RepositoryProvider<SyncQueueService>.value(value: fakes.sync),
+        RepositoryProvider<CompletionNotificationService>.value(
+          value: const NoopCompletionNotificationService(),
+        ),
       ],
       child: child,
     );

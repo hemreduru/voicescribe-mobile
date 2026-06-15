@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
@@ -31,15 +32,19 @@ class AutoSummaryCoordinator {
     required SummaryService summaryService,
     required LocalLlmModelService localLlmModelService,
     required String? Function() tokenProvider,
+    CompletionNotificationService completionNotifications =
+        const NoopCompletionNotificationService(),
   }) : _transcriptRepository = transcriptRepository,
        _summaryService = summaryService,
        _localLlmModelService = localLlmModelService,
-       _tokenProvider = tokenProvider;
+       _tokenProvider = tokenProvider,
+       _completionNotifications = completionNotifications;
 
   final TranscriptRepository _transcriptRepository;
   final SummaryService _summaryService;
   final LocalLlmModelService _localLlmModelService;
   final String? Function() _tokenProvider;
+  final CompletionNotificationService _completionNotifications;
 
   StreamSubscription<TranscriptSnapshot>? _subscription;
 
@@ -116,6 +121,9 @@ class AutoSummaryCoordinator {
         preferences: preferences,
       );
       AppLogger.info('[AutoSummary] Done | id=${transcript.id}');
+      // Nudge the user if they backgrounded the app while it summarized
+      // (no-ops when the app is in the foreground).
+      unawaited(_completionNotifications.showSummaryReady());
     } catch (error, stack) {
       // Remember the failure so we don't loop on a broken engine; manual
       // generation (with its own error UI) remains available.
