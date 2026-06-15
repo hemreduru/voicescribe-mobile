@@ -109,6 +109,10 @@
 - **Files:** `ui/features/recording/views/recording_screen.dart` (reuse
   `_TranscriptionProgressBar`); ARB if new strings.
 - **Impact M · Effort L · Risk L.**
+- **Status: done.** Added a self-rebuilding `_TranscriptionStatusStrip` (label +
+  progress bar + "X/Y · ~ETA") driven by the bloc's existing progress getters;
+  extracted `humanizeEtaUnit` to a shared util. analyze clean, 122 tests green.
+  **Device-verified on tablet** (showed "Yazıya dökülüyor 17/18" while recording).
 
 ### UX-06 — Completion notifications (transcript / summary ready)
 - **Category:** invisible-ux

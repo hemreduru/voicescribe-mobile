@@ -108,6 +108,7 @@
   "onboardingAllowAndFinish": "Allow & get started",
   "replayIntroTitle": "Replay intro",
   "replayIntroSubtitle": "See the welcome walkthrough again",
+  "transcribingProgressLabel": "Transcribing",
   "summaryPreferences": "Choose where summaries and AI chat run.",
   "transcriptionModelSettings": "Transcription Model",
   "transcriptionModelPreferences": "Choose the on-device model used for speech transcription.",

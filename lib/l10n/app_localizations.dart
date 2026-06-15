@@ -678,6 +678,12 @@ abstract class AppLocalizations {
   /// **'See the welcome walkthrough again'**
   String get replayIntroSubtitle;
 
+  /// No description provided for @transcribingProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing'**
+  String get transcribingProgressLabel;
+
   /// No description provided for @summaryPreferences.
   ///
   /// In en, this message translates to:

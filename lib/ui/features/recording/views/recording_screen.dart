@@ -12,6 +12,7 @@ import 'package:voicescribe_mobile/ui/core/i18n/error_messages.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
+import 'package:voicescribe_mobile/ui/core/utils/eta_formatters.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/ambient_backdrop.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
@@ -188,6 +189,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ],
+                  const SizedBox(height: AppSpacing.lg),
+                  const _TranscriptionStatusStrip(),
                   const SizedBox(height: AppSpacing.xl),
                   SectionHeader(
                     title: l10n.recentRecordings,
@@ -296,6 +299,88 @@ class _RecordingScreenState extends State<RecordingScreen> {
     if (_titleController.text != title) {
       _titleController.text = title;
     }
+  }
+}
+
+/// Compact, self-rebuilding strip shown on the home screen while transcription
+/// is still draining (during recording and after stop). Surfaces the progress
+/// the bloc already computes — chunk count + device-specific ETA — so the user
+/// isn't left staring at a screen with nothing visibly happening.
+class _TranscriptionStatusStrip extends StatelessWidget {
+  const _TranscriptionStatusStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<RecordingBloc, RecordingState>(
+      buildWhen: (previous, current) =>
+          previous.isTranscribing != current.isTranscribing ||
+          previous.transcribedProgressChunks !=
+              current.transcribedProgressChunks ||
+          previous.totalProgressChunks != current.totalProgressChunks ||
+          previous.estimatedTranscriptionRemaining !=
+              current.estimatedTranscriptionRemaining,
+      builder: (context, state) {
+        if (!state.isTranscribing) {
+          return const SizedBox.shrink();
+        }
+        final l10n = context.l10n;
+        final theme = Theme.of(context);
+        final completed = state.transcribedProgressChunks;
+        final total = state.totalProgressChunks;
+        final percent = total == 0
+            ? null
+            : (completed / total).clamp(0.0, 1.0);
+        final remaining = state.estimatedTranscriptionRemaining;
+        final detail = remaining == null || remaining.inSeconds <= 0
+            ? l10n.transcriptionProgressChunks(completed, total)
+            : '${l10n.transcriptionProgressChunks(completed, total)} · '
+                  '${l10n.etaRemaining(humanizeEtaUnit(l10n, remaining))}';
+
+        return AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    l10n.transcribingProgressLabel,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadii.xs),
+                child: LinearProgressIndicator(
+                  value: percent,
+                  minHeight: 4,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.3),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                detail,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

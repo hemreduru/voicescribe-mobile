@@ -315,6 +315,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get replayIntroSubtitle => 'Karşılama turunu yeniden izle';
 
   @override
+  String get transcribingProgressLabel => 'Yazıya dökülüyor';
+
+  @override
   String get summaryPreferences =>
       'Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.';
 

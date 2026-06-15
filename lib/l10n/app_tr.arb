@@ -108,6 +108,7 @@
   "onboardingAllowAndFinish": "İzin ver ve başla",
   "replayIntroTitle": "Tanıtımı tekrar göster",
   "replayIntroSubtitle": "Karşılama turunu yeniden izle",
+  "transcribingProgressLabel": "Yazıya dökülüyor",
   "summaryPreferences": "Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.",
   "transcriptionModelSettings": "Transkripsiyon Modeli",
   "transcriptionModelPreferences": "Ses transkripsiyonu için cihaz içinde kullanılacak modeli seçin.",

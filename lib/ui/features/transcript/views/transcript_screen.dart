@@ -10,11 +10,11 @@ import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/models/meeting_summary.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
-import 'package:voicescribe_mobile/l10n/app_localizations.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/error_messages.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
+import 'package:voicescribe_mobile/ui/core/utils/eta_formatters.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/adaptive_master_detail.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
@@ -482,22 +482,6 @@ class _TranscriptionErrorBanner extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Humanizes a remaining-time estimate into a localized, rounded phrase like
-/// "1 dakika" / "30 saniye" (diffForHumans style) — paired with the
-/// `etaRemaining` frame to read "~1 dakika kaldı".
-String humanizeEtaUnit(AppLocalizations l10n, Duration remaining) {
-  final seconds = remaining.inSeconds;
-  if (seconds < 60) {
-    // Round to the nearest 5s (min 5) so it doesn't jitter every second.
-    final rounded = (seconds / 5).round() * 5;
-    return l10n.etaUnitSeconds(rounded < 5 ? 5 : rounded);
-  }
-  if (seconds < 3600) {
-    return l10n.etaUnitMinutes((seconds / 60).round());
-  }
-  return l10n.etaUnitHours((seconds / 3600).round());
 }
 
 class _TranscriptionProgressBar extends StatelessWidget {

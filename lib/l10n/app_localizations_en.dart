@@ -317,6 +317,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get replayIntroSubtitle => 'See the welcome walkthrough again';
 
   @override
+  String get transcribingProgressLabel => 'Transcribing';
+
+  @override
   String get summaryPreferences => 'Choose where summaries and AI chat run.';
 
   @override
