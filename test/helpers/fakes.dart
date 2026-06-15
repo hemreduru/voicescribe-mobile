@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/transcript_api_client.dart';
@@ -253,6 +254,9 @@ class FakeTranscriptionService implements TranscriptionService {
   }
 
   @override
+  String get currentTranscriptionLanguage => language;
+
+  @override
   Future<void> selectModel(WhisperModel model) async {
     // Locked to base; parameter ignored.
   }
@@ -324,6 +328,29 @@ class FakeTranscriptionService implements TranscriptionService {
   Future<void> dispose() async {
     await _progress.close();
   }
+}
+
+class FakeCompletionNotificationService
+    implements CompletionNotificationService {
+  int transcriptReadyCount = 0;
+  int summaryReadyCount = 0;
+
+  @override
+  Future<void> init() async {}
+
+  @override
+  void configure({
+    required String transcriptTitle,
+    required String transcriptBody,
+    required String summaryTitle,
+    required String summaryBody,
+  }) {}
+
+  @override
+  Future<void> showTranscriptReady() async => transcriptReadyCount++;
+
+  @override
+  Future<void> showSummaryReady() async => summaryReadyCount++;
 }
 
 class FakeLocalLlmModelService extends LocalLlmModelService {

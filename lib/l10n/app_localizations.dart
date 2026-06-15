@@ -185,8 +185,20 @@ abstract class AppLocalizations {
   /// No description provided for @chatNoSessionsMessage.
   ///
   /// In en, this message translates to:
-  /// **'Start a new chat to ask questions across all your recordings.'**
+  /// **'Start a new chat to ask questions across all your recordings. Answers are drawn from your own transcripts.'**
   String get chatNoSessionsMessage;
+
+  /// No description provided for @chatNeedsRecordingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record something first'**
+  String get chatNeedsRecordingTitle;
+
+  /// No description provided for @chatNeedsRecordingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The assistant answers from your transcripts. Make a recording, then come back to ask about it.'**
+  String get chatNeedsRecordingMessage;
 
   /// No description provided for @chatSelectOrNew.
   ///
@@ -563,6 +575,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This phone isn\'t powerful enough for on-device AI — use the cloud instead.'**
   String get aiLocationOnDeviceUnavailable;
+
+  /// No description provided for @autoSummarizeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize automatically'**
+  String get autoSummarizeTitle;
+
+  /// No description provided for @autoSummarizeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the summary as soon as a recording finishes transcribing, with no extra tap.'**
+  String get autoSummarizeDesc;
+
+  /// No description provided for @onboardingSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get onboardingSkip;
+
+  /// No description provided for @onboardingBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get onboardingBack;
+
+  /// No description provided for @onboardingNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get onboardingNext;
+
+  /// No description provided for @onboardingGetStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get onboardingGetStarted;
+
+  /// No description provided for @onboardingWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to VoiceScribe'**
+  String get onboardingWelcomeTitle;
+
+  /// No description provided for @onboardingWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Record anything and get a clean transcript and structured minutes — automatically.'**
+  String get onboardingWelcomeBody;
+
+  /// No description provided for @onboardingFeatureRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record and transcribe live, on your device'**
+  String get onboardingFeatureRecord;
+
+  /// No description provided for @onboardingFeatureSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic, structured summaries'**
+  String get onboardingFeatureSummary;
+
+  /// No description provided for @onboardingFeatureChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask questions about your recordings'**
+  String get onboardingFeatureChat;
+
+  /// No description provided for @onboardingLanguageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your languages'**
+  String get onboardingLanguageTitle;
+
+  /// No description provided for @onboardingRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended for your device'**
+  String get onboardingRecommended;
+
+  /// No description provided for @onboardingThemeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a theme'**
+  String get onboardingThemeTitle;
+
+  /// No description provided for @onboardingPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One last thing'**
+  String get onboardingPermissionsTitle;
+
+  /// No description provided for @onboardingPermissionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'VoiceScribe needs the microphone to record, and notifications to let you know when a transcript or summary is ready. Nothing is shared without your action.'**
+  String get onboardingPermissionsBody;
+
+  /// No description provided for @onboardingAllowAndFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow & get started'**
+  String get onboardingAllowAndFinish;
+
+  /// No description provided for @onboardingStepProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String onboardingStepProgress(int current, int total);
+
+  /// No description provided for @replayIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay intro'**
+  String get replayIntroTitle;
+
+  /// No description provided for @replayIntroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See the welcome walkthrough again'**
+  String get replayIntroSubtitle;
+
+  /// No description provided for @transcribingProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing'**
+  String get transcribingProgressLabel;
+
+  /// No description provided for @statusHelpRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording is in progress.'**
+  String get statusHelpRecording;
+
+  /// No description provided for @statusHelpProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript is being prepared.'**
+  String get statusHelpProcessing;
+
+  /// No description provided for @statusHelpReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript is ready now.'**
+  String get statusHelpReady;
+
+  /// No description provided for @statusHelpIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs your attention.'**
+  String get statusHelpIssue;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @transcriptReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript ready'**
+  String get transcriptReadyTitle;
+
+  /// No description provided for @transcriptReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your recording has been transcribed.'**
+  String get transcriptReadyBody;
+
+  /// No description provided for @summaryReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary ready'**
+  String get summaryReadyTitle;
+
+  /// No description provided for @summaryReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your meeting summary is ready.'**
+  String get summaryReadyBody;
 
   /// No description provided for @summaryPreferences.
   ///
@@ -1421,6 +1613,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No answer received. Please try again.'**
   String get errChatSendFailed;
+
+  /// No description provided for @errSettingsActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get errSettingsActionFailed;
+
+  /// No description provided for @errSettingsSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync failed. Please check your connection and try again.'**
+  String get errSettingsSyncFailed;
+
+  /// No description provided for @errSettingsModelDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t download the model. Please check your connection and try again.'**
+  String get errSettingsModelDownloadFailed;
 }
 
 class _AppLocalizationsDelegate

@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -20,6 +21,12 @@ final class SettingsSummaryProviderChanged extends SettingsEvent {
   const SettingsSummaryProviderChanged(this.value);
 
   final String value;
+}
+
+final class SettingsAutoSummarizeChanged extends SettingsEvent {
+  const SettingsAutoSummarizeChanged({required this.value});
+
+  final bool value;
 }
 
 final class SettingsThemeModeChanged extends SettingsEvent {
@@ -96,7 +103,9 @@ class SettingsState {
     this.syncing = false,
     this.lastSyncAt,
     this.syncErrorMessage,
+    this.syncErrorCode,
     this.errorMessage,
+    this.errorCode,
     this.modelCatalog = const [],
     this.modelCatalogLoading = false,
     this.modelCatalogErrorMessage,
@@ -108,6 +117,7 @@ class SettingsState {
     this.localLlmDownloading = false,
     this.localLlmDownloadProgress,
     this.localLlmErrorMessage,
+    this.localLlmErrorCode,
   });
 
   final AppPreferences preferences;
@@ -116,7 +126,9 @@ class SettingsState {
   final bool syncing;
   final DateTime? lastSyncAt;
   final String? syncErrorMessage;
+  final AppErrorCode? syncErrorCode;
   final String? errorMessage;
+  final AppErrorCode? errorCode;
   final List<TranscriptionModelCatalogEntry> modelCatalog;
   final bool modelCatalogLoading;
   final String? modelCatalogErrorMessage;
@@ -136,6 +148,7 @@ class SettingsState {
   final bool localLlmDownloading;
   final double? localLlmDownloadProgress;
   final String? localLlmErrorMessage;
+  final AppErrorCode? localLlmErrorCode;
 
   SettingsState copyWith({
     AppPreferences? preferences,
@@ -146,8 +159,10 @@ class SettingsState {
     DateTime? lastSyncAt,
     bool clearLastSyncAt = false,
     String? syncErrorMessage,
+    AppErrorCode? syncErrorCode,
     bool clearSyncErrorMessage = false,
     String? errorMessage,
+    AppErrorCode? errorCode,
     bool clearErrorMessage = false,
     List<TranscriptionModelCatalogEntry>? modelCatalog,
     bool? modelCatalogLoading,
@@ -164,6 +179,7 @@ class SettingsState {
     double? localLlmDownloadProgress,
     bool clearLocalLlmDownloadProgress = false,
     String? localLlmErrorMessage,
+    AppErrorCode? localLlmErrorCode,
     bool clearLocalLlmErrorMessage = false,
   }) {
     return SettingsState(
@@ -175,9 +191,13 @@ class SettingsState {
       syncErrorMessage: clearSyncErrorMessage
           ? null
           : syncErrorMessage ?? this.syncErrorMessage,
+      syncErrorCode: clearSyncErrorMessage
+          ? null
+          : syncErrorCode ?? this.syncErrorCode,
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
+      errorCode: clearErrorMessage ? null : errorCode ?? this.errorCode,
       modelCatalog: modelCatalog ?? this.modelCatalog,
       modelCatalogLoading: modelCatalogLoading ?? this.modelCatalogLoading,
       modelCatalogErrorMessage: clearModelCatalogErrorMessage
@@ -202,6 +222,9 @@ class SettingsState {
       localLlmErrorMessage: clearLocalLlmErrorMessage
           ? null
           : localLlmErrorMessage ?? this.localLlmErrorMessage,
+      localLlmErrorCode: clearLocalLlmErrorMessage
+          ? null
+          : localLlmErrorCode ?? this.localLlmErrorCode,
     );
   }
 }
@@ -224,6 +247,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_SettingsSessionChanged>(_onSessionChanged);
     on<_SettingsSyncEventChanged>(_onSyncEventChanged);
     on<SettingsSummaryProviderChanged>(_onSummaryProviderChanged);
+    on<SettingsAutoSummarizeChanged>(_onAutoSummarizeChanged);
     on<SettingsThemeModeChanged>(_onThemeModeChanged);
     on<SettingsLocalePreferenceChanged>(_onLocalePreferenceChanged);
     on<SettingsTranscriptionModelChanged>(_onTranscriptionModelChanged);
@@ -351,7 +375,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
           emit(
             state.copyWith(
               syncing: false,
-              syncErrorMessage: event.event.error ?? 'Sync failed.',
+              syncErrorCode: AppErrorCode.settingsSyncFailed,
             ),
           );
         }
@@ -367,6 +391,16 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       state.preferences.copyWith(
         summaryProvider: AppPreferences.normalizeSummaryProvider(event.value),
       ),
+    );
+  }
+
+  Future<void> _onAutoSummarizeChanged(
+    SettingsAutoSummarizeChanged event,
+    Emitter<SettingsState> emit,
+  ) {
+    return _savePreferences(
+      emit,
+      state.preferences.copyWith(autoSummarize: event.value),
     );
   }
 
@@ -445,7 +479,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         state.copyWith(
           applyingTranscriptionModel: false,
           clearTranscriptionModelDownloadProgress: true,
-          errorMessage: error.toString(),
+          errorCode: AppErrorCode.settingsModelDownloadFailed,
         ),
       );
     }
@@ -480,7 +514,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(loggingOut: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          loggingOut: false,
+          errorCode: AppErrorCode.settingsActionFailed,
+        ),
+      );
     }
   }
 
@@ -512,7 +551,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         state.copyWith(
           localLlmDownloading: false,
           clearLocalLlmDownloadProgress: true,
-          localLlmErrorMessage: error.toString(),
+          localLlmErrorCode: AppErrorCode.settingsModelDownloadFailed,
         ),
       );
     }
@@ -555,7 +594,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         );
       }
     } catch (error) {
-      emit(state.copyWith(localLlmErrorMessage: error.toString()));
+      emit(state.copyWith(localLlmErrorCode: AppErrorCode.settingsActionFailed));
     }
   }
 
@@ -575,7 +614,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(syncing: false, syncErrorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          syncing: false,
+          syncErrorCode: AppErrorCode.settingsSyncFailed,
+        ),
+      );
     }
   }
 
@@ -587,7 +631,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     try {
       await _transcriptRepository.savePreferences(preferences);
     } catch (error) {
-      emit(state.copyWith(errorMessage: error.toString()));
+      emit(state.copyWith(errorCode: AppErrorCode.settingsActionFailed));
     }
   }
 

@@ -87,4 +87,41 @@ class LocalLlmRuntime {
       }
     }
   }
+
+  /// Streaming variant of [generate] — yields the response token-by-token via
+  /// flutter_gemma's `getResponseAsync`, so the UI can render the answer as it
+  /// arrives instead of waiting for the whole completion. Same sampling and
+  /// model-lifecycle semantics as [generate].
+  Stream<String> generateStream({
+    required String systemInstruction,
+    required String userText,
+    int maxTokens = 2048,
+  }) async* {
+    final model =
+        _model ??
+        await FlutterGemma.getActiveModel(
+          maxTokens: maxTokens,
+          preferredBackend: PreferredBackend.gpu,
+        );
+    if (_leases > 0) {
+      _model = model;
+    }
+    InferenceModelSession? session;
+    try {
+      session = await model.createSession(
+        temperature: 0.6,
+        topK: 40,
+        topP: 0.95,
+        systemInstruction: systemInstruction,
+      );
+      await session.addQueryChunk(Message.text(text: userText, isUser: true));
+      yield* session.getResponseAsync();
+    } finally {
+      await session?.close();
+      if (_leases == 0) {
+        _model = null;
+        await model.close();
+      }
+    }
+  }
 }

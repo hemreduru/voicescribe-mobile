@@ -53,7 +53,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatNoSessionsMessage =>
-      'Start a new chat to ask questions across all your recordings.';
+      'Start a new chat to ask questions across all your recordings. Answers are drawn from your own transcripts.';
+
+  @override
+  String get chatNeedsRecordingTitle => 'Record something first';
+
+  @override
+  String get chatNeedsRecordingMessage =>
+      'The assistant answers from your transcripts. Make a recording, then come back to ask about it.';
 
   @override
   String get chatSelectOrNew => 'Select a conversation or start a new chat.';
@@ -254,6 +261,102 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aiLocationOnDeviceUnavailable =>
       'This phone isn\'t powerful enough for on-device AI — use the cloud instead.';
+
+  @override
+  String get autoSummarizeTitle => 'Summarize automatically';
+
+  @override
+  String get autoSummarizeDesc =>
+      'Create the summary as soon as a recording finishes transcribing, with no extra tap.';
+
+  @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get onboardingBack => 'Back';
+
+  @override
+  String get onboardingNext => 'Next';
+
+  @override
+  String get onboardingGetStarted => 'Get started';
+
+  @override
+  String get onboardingWelcomeTitle => 'Welcome to VoiceScribe';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Record anything and get a clean transcript and structured minutes — automatically.';
+
+  @override
+  String get onboardingFeatureRecord =>
+      'Record and transcribe live, on your device';
+
+  @override
+  String get onboardingFeatureSummary => 'Automatic, structured summaries';
+
+  @override
+  String get onboardingFeatureChat => 'Ask questions about your recordings';
+
+  @override
+  String get onboardingLanguageTitle => 'Choose your languages';
+
+  @override
+  String get onboardingRecommended => 'Recommended for your device';
+
+  @override
+  String get onboardingThemeTitle => 'Pick a theme';
+
+  @override
+  String get onboardingPermissionsTitle => 'One last thing';
+
+  @override
+  String get onboardingPermissionsBody =>
+      'VoiceScribe needs the microphone to record, and notifications to let you know when a transcript or summary is ready. Nothing is shared without your action.';
+
+  @override
+  String get onboardingAllowAndFinish => 'Allow & get started';
+
+  @override
+  String onboardingStepProgress(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get replayIntroTitle => 'Replay intro';
+
+  @override
+  String get replayIntroSubtitle => 'See the welcome walkthrough again';
+
+  @override
+  String get transcribingProgressLabel => 'Transcribing';
+
+  @override
+  String get statusHelpRecording => 'Recording is in progress.';
+
+  @override
+  String get statusHelpProcessing => 'Transcript is being prepared.';
+
+  @override
+  String get statusHelpReady => 'Transcript is ready now.';
+
+  @override
+  String get statusHelpIssue => 'Needs your attention.';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
+  String get transcriptReadyTitle => 'Transcript ready';
+
+  @override
+  String get transcriptReadyBody => 'Your recording has been transcribed.';
+
+  @override
+  String get summaryReadyTitle => 'Summary ready';
+
+  @override
+  String get summaryReadyBody => 'Your meeting summary is ready.';
 
   @override
   String get summaryPreferences => 'Choose where summaries and AI chat run.';
@@ -776,4 +879,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errChatSendFailed => 'No answer received. Please try again.';
+
+  @override
+  String get errSettingsActionFailed =>
+      'Something went wrong. Please try again.';
+
+  @override
+  String get errSettingsSyncFailed =>
+      'Sync failed. Please check your connection and try again.';
+
+  @override
+  String get errSettingsModelDownloadFailed =>
+      'Couldn\'t download the model. Please check your connection and try again.';
 }

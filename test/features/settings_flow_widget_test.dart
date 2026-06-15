@@ -7,9 +7,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
+import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
@@ -191,6 +193,7 @@ List<BlocProvider<dynamic>> _createBlocProviders(_Fakes fakes) {
       create: (_) => BootstrapBloc(
         transcriptRepository: fakes.transcripts,
         transcriptionService: fakes.transcription,
+        localLlmModelService: fakes.localLlm,
       )..add(const BootstrapStarted()),
     ),
     BlocProvider<AuthBloc>(
@@ -296,6 +299,9 @@ class _RepositoryHarness extends StatelessWidget {
         ),
         RepositoryProvider<SummaryService>.value(value: fakes.summary),
         RepositoryProvider<SyncQueueService>.value(value: fakes.sync),
+        RepositoryProvider<CompletionNotificationService>.value(
+          value: const NoopCompletionNotificationService(),
+        ),
       ],
       child: child,
     );
@@ -304,7 +310,16 @@ class _RepositoryHarness extends StatelessWidget {
 
 class _Fakes {
   _Fakes()
-    : transcripts = FakeTranscriptRepository(),
+    : transcripts = FakeTranscriptRepository(
+        // Bypass first-run onboarding so the router lands on the app shell
+        // (these tests exercise shell navigation, not the wizard).
+        initial: const TranscriptSnapshot(
+          transcripts: [],
+          chunks: [],
+          summaries: [],
+          preferences: AppPreferences(hasSeenOnboarding: true),
+        ),
+      ),
       auth = FakeAuthRepository(session: FakeAuthRepository.defaultSession),
       recording = FakeRecordingService(),
       transcription = FakeTranscriptionService(),

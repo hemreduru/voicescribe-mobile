@@ -10,11 +10,11 @@ import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/models/meeting_summary.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
-import 'package:voicescribe_mobile/l10n/app_localizations.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/error_messages.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
+import 'package:voicescribe_mobile/ui/core/utils/eta_formatters.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/adaptive_master_detail.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
@@ -484,22 +484,6 @@ class _TranscriptionErrorBanner extends StatelessWidget {
   }
 }
 
-/// Humanizes a remaining-time estimate into a localized, rounded phrase like
-/// "1 dakika" / "30 saniye" (diffForHumans style) — paired with the
-/// `etaRemaining` frame to read "~1 dakika kaldı".
-String humanizeEtaUnit(AppLocalizations l10n, Duration remaining) {
-  final seconds = remaining.inSeconds;
-  if (seconds < 60) {
-    // Round to the nearest 5s (min 5) so it doesn't jitter every second.
-    final rounded = (seconds / 5).round() * 5;
-    return l10n.etaUnitSeconds(rounded < 5 ? 5 : rounded);
-  }
-  if (seconds < 3600) {
-    return l10n.etaUnitMinutes((seconds / 60).round());
-  }
-  return l10n.etaUnitHours((seconds / 3600).round());
-}
-
 class _TranscriptionProgressBar extends StatelessWidget {
   const _TranscriptionProgressBar({
     required this.completed,
@@ -749,6 +733,8 @@ class _TranscriptDetailScope extends StatelessWidget {
               previous.tabIndex != current.tabIndex ||
               previous.generatingSummary != current.generatingSummary ||
               previous.summaryProgress != current.summaryProgress ||
+              previous.errorCode != current.errorCode ||
+              previous.errorMessage != current.errorMessage ||
               previous.completedChunkCount != current.completedChunkCount ||
               previous.totalChunkCount != current.totalChunkCount,
           builder: (context, state) => builder(context, state, recordingState),
@@ -949,6 +935,68 @@ class _TranscriptionRetryCta extends StatelessWidget {
   }
 }
 
+/// Inline, localized summary-failure card with a one-tap retry — so a failed
+/// summary doesn't just flash a snackbar and leave the user hunting for the
+/// button again.
+class _SummaryErrorCard extends StatelessWidget {
+  const _SummaryErrorCard({required this.message, this.onRetry});
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: theme.colorScheme.onErrorContainer,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  message,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (onRetry != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerRight,
+              child: AppButton(
+                label: l10n.tryAgain,
+                icon: Icons.refresh,
+                variant: AppButtonVariant.outline,
+                foregroundColor: theme.colorScheme.onErrorContainer,
+                onPressed: onRetry,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _SummaryTab extends StatelessWidget {
   const _SummaryTab({required this.state});
 
@@ -981,6 +1029,19 @@ class _SummaryTab extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+        if (!state.generatingSummary &&
+            (state.errorCode != null || state.errorMessage != null)) ...[
+          const SizedBox(height: AppSpacing.md),
+          _SummaryErrorCard(
+            message:
+                state.errorCode?.localized(l10n) ?? state.errorMessage!,
+            onRetry: state.mergedText.isEmpty
+                ? null
+                : () => context.read<TranscriptDetailBloc>().add(
+                    const TranscriptDetailSummaryRequested(),
+                  ),
           ),
         ],
         const SizedBox(height: AppSpacing.lg),
@@ -1210,21 +1271,13 @@ IconData statusIcon(TranscriptStatus status) {
 }
 
 String _statusHelpDescription(BuildContext context, TranscriptStatus status) {
-  final turkish = _isTurkish(context);
+  final l10n = context.l10n;
   return switch (displayStatusFor(status)) {
-    TranscriptDisplayStatus.active =>
-      turkish ? 'Kayit devam ediyor.' : 'Recording is in progress.',
-    TranscriptDisplayStatus.processing =>
-      turkish ? 'Metin su an hazirlaniyor.' : 'Transcript is being prepared.',
-    TranscriptDisplayStatus.ready =>
-      turkish ? 'Metin kullanima hazir.' : 'Transcript is ready now.',
-    TranscriptDisplayStatus.issue =>
-      turkish ? 'Kontrol etmen gerekiyor.' : 'Needs your attention.',
+    TranscriptDisplayStatus.active => l10n.statusHelpRecording,
+    TranscriptDisplayStatus.processing => l10n.statusHelpProcessing,
+    TranscriptDisplayStatus.ready => l10n.statusHelpReady,
+    TranscriptDisplayStatus.issue => l10n.statusHelpIssue,
   };
-}
-
-bool _isTurkish(BuildContext context) {
-  return context.l10n.localeName.toLowerCase().startsWith('tr');
 }
 
 /// A lightweight shimmer placeholder shown while the first transcript snapshot

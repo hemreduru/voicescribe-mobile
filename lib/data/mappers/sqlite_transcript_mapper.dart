@@ -144,6 +144,10 @@ class SqliteTranscriptMapper {
       transcriptionLanguage: AppPreferences.normalizeTranscriptionLanguage(
         settings['transcriptionLanguage'] ?? 'auto',
       ),
+      // Defaults on when absent (existing installs) so the proactive summary
+      // ships enabled; only an explicit 'false' disables it.
+      autoSummarize: (settings['autoSummarize'] ?? 'true') != 'false',
+      hasSeenOnboarding: settings['hasSeenOnboarding'] == 'true',
     );
   }
 
@@ -154,6 +158,8 @@ class SqliteTranscriptMapper {
       'localePreference': preferences.localePreference,
       'transcriptionModel': preferences.transcriptionModel,
       'transcriptionLanguage': preferences.transcriptionLanguage,
+      'autoSummarize': preferences.autoSummarize ? 'true' : 'false',
+      'hasSeenOnboarding': preferences.hasSeenOnboarding ? 'true' : 'false',
     };
   }
 

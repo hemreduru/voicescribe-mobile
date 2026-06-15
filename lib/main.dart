@@ -9,10 +9,12 @@ import 'package:voicescribe_mobile/data/repositories/voice_scribe_auth_repositor
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/background_work_service.dart';
 import 'package:voicescribe_mobile/data/services/chat/local_chat_service.dart';
+import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/cloud_summary_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/local_llm_runtime.dart';
 import 'package:voicescribe_mobile/data/services/llm/local_llm_summary_service.dart';
+import 'package:voicescribe_mobile/data/services/summary/auto_summary_coordinator.dart';
 import 'package:voicescribe_mobile/data/services/summary/summary_service_router.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
@@ -129,6 +131,25 @@ class VoiceScribeRoot extends StatelessWidget {
         RepositoryProvider<BackgroundWorkService>(
           create: (_) => ForegroundBackgroundWorkService(),
         ),
+        RepositoryProvider<CompletionNotificationService>(
+          create: (_) => FlutterLocalCompletionNotificationService(),
+        ),
+        // Auto-generates a summary when a recording finishes transcribing
+        // (gated by AppPreferences.autoSummarize). Eager: it must watch the
+        // snapshot stream from launch, not only when a screen reads it.
+        RepositoryProvider<AutoSummaryCoordinator>(
+          lazy: false,
+          create: (context) => AutoSummaryCoordinator(
+            transcriptRepository: context.read<TranscriptRepository>(),
+            summaryService: context.read<SummaryService>(),
+            localLlmModelService: context.read<LocalLlmModelService>(),
+            tokenProvider: () =>
+                context.read<AuthRepository>().currentSession()?.accessToken,
+            completionNotifications: context
+                .read<CompletionNotificationService>(),
+          )..start(),
+          dispose: (coordinator) => coordinator.dispose(),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -136,6 +157,7 @@ class VoiceScribeRoot extends StatelessWidget {
             create: (context) => BootstrapBloc(
               transcriptRepository: context.read<TranscriptRepository>(),
               transcriptionService: context.read<TranscriptionService>(),
+              localLlmModelService: context.read<LocalLlmModelService>(),
             )..add(const BootstrapStarted()),
           ),
           BlocProvider<AuthBloc>(
@@ -158,6 +180,8 @@ class VoiceScribeRoot extends StatelessWidget {
               authRepository: context.read<AuthRepository>(),
               syncQueueService: context.read<SyncQueueService>(),
               backgroundWork: context.read<BackgroundWorkService>(),
+              completionNotifications: context
+                  .read<CompletionNotificationService>(),
             )..add(const RecordingSubscriptionRequested()),
           ),
           BlocProvider<TranscriptListBloc>(

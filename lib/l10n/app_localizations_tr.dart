@@ -53,7 +53,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get chatNoSessionsMessage =>
-      'Tüm kayıtların arasında soru sormak için yeni bir sohbet başlat.';
+      'Tüm kayıtların arasında soru sormak için yeni bir sohbet başlat. Yanıtlar kendi dökümlerinden üretilir.';
+
+  @override
+  String get chatNeedsRecordingTitle => 'Önce bir kayıt al';
+
+  @override
+  String get chatNeedsRecordingMessage =>
+      'Asistan yanıtlarını dökümlerinden üretir. Bir kayıt yap, sonra gelip onun hakkında soru sor.';
 
   @override
   String get chatSelectOrNew => 'Bir sohbet seç ya da yeni bir sohbet başlat.';
@@ -253,6 +260,101 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get aiLocationOnDeviceUnavailable =>
       'Bu telefon cihaz içi yapay zekâ için yeterince güçlü değil — bunun yerine Bulut\'u kullanın.';
+
+  @override
+  String get autoSummarizeTitle => 'Otomatik özetle';
+
+  @override
+  String get autoSummarizeDesc =>
+      'Kayıt yazıya döküldüğü anda özet, ekstra dokunuş gerekmeden oluşturulur.';
+
+  @override
+  String get onboardingSkip => 'Atla';
+
+  @override
+  String get onboardingBack => 'Geri';
+
+  @override
+  String get onboardingNext => 'İleri';
+
+  @override
+  String get onboardingGetStarted => 'Başla';
+
+  @override
+  String get onboardingWelcomeTitle => 'VoiceScribe\'a hoş geldin';
+
+  @override
+  String get onboardingWelcomeBody =>
+      'Her şeyi kaydet; temiz bir döküm ve yapılandırılmış toplantı notları otomatik olarak çıksın.';
+
+  @override
+  String get onboardingFeatureRecord => 'Cihazında canlı kayıt ve yazıya dökme';
+
+  @override
+  String get onboardingFeatureSummary => 'Otomatik, yapılandırılmış özetler';
+
+  @override
+  String get onboardingFeatureChat => 'Kayıtların hakkında soru sor';
+
+  @override
+  String get onboardingLanguageTitle => 'Dillerini seç';
+
+  @override
+  String get onboardingRecommended => 'Cihazın için önerilen';
+
+  @override
+  String get onboardingThemeTitle => 'Bir tema seç';
+
+  @override
+  String get onboardingPermissionsTitle => 'Son bir şey';
+
+  @override
+  String get onboardingPermissionsBody =>
+      'VoiceScribe kayıt için mikrofona, döküm veya özet hazır olduğunda haber vermek için bildirimlere ihtiyaç duyar. Sen istemeden hiçbir şey paylaşılmaz.';
+
+  @override
+  String get onboardingAllowAndFinish => 'İzin ver ve başla';
+
+  @override
+  String onboardingStepProgress(int current, int total) {
+    return 'Adım $current / $total';
+  }
+
+  @override
+  String get replayIntroTitle => 'Tanıtımı tekrar göster';
+
+  @override
+  String get replayIntroSubtitle => 'Karşılama turunu yeniden izle';
+
+  @override
+  String get transcribingProgressLabel => 'Yazıya dökülüyor';
+
+  @override
+  String get statusHelpRecording => 'Kayıt devam ediyor.';
+
+  @override
+  String get statusHelpProcessing => 'Metin şu an hazırlanıyor.';
+
+  @override
+  String get statusHelpReady => 'Metin kullanıma hazır.';
+
+  @override
+  String get statusHelpIssue => 'Kontrol etmen gerekiyor.';
+
+  @override
+  String get tryAgain => 'Tekrar dene';
+
+  @override
+  String get transcriptReadyTitle => 'Döküm hazır';
+
+  @override
+  String get transcriptReadyBody => 'Kaydın yazıya döküldü.';
+
+  @override
+  String get summaryReadyTitle => 'Özet hazır';
+
+  @override
+  String get summaryReadyBody => 'Toplantı özetin hazır.';
 
   @override
   String get summaryPreferences =>
@@ -758,4 +860,16 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get errChatSendFailed => 'Yanıt alınamadı. Lütfen tekrar dene.';
+
+  @override
+  String get errSettingsActionFailed =>
+      'Bir şeyler ters gitti. Lütfen tekrar dene.';
+
+  @override
+  String get errSettingsSyncFailed =>
+      'Eşitleme başarısız. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get errSettingsModelDownloadFailed =>
+      'Model indirilemedi. Bağlantını kontrol edip tekrar dene.';
 }

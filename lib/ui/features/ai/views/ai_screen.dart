@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:voicescribe_mobile/data/repositories/chat_repository.dart';
 import 'package:voicescribe_mobile/domain/models/chat.dart';
+import 'package:voicescribe_mobile/domain/models/domain.dart';
+import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/theme/premium_tokens.dart';
@@ -156,7 +158,7 @@ class _SessionsPane extends StatelessWidget {
                   child: AppSkeletonList(itemCount: 4, lineCount: 1),
                 )
               else if (state.sessions.isEmpty)
-                const _NoSessionsState()
+                const _EmptyChatGuidance()
               else
                 ...state.sessions.map(
                   (session) => Padding(
@@ -265,6 +267,61 @@ class _SessionCard extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             onPressed: onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Picks the right empty state: a "record something first" nudge when the user
+/// has no transcripts (the assistant answers from them), otherwise the standard
+/// "no conversations yet" state. Defaults to the latter while loading so the
+/// nudge never flashes for users who do have recordings.
+class _EmptyChatGuidance extends StatelessWidget {
+  const _EmptyChatGuidance();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<TranscriptSnapshot>(
+      future: context.read<TranscriptRepository>().loadSnapshot(),
+      builder: (context, snapshot) {
+        final hasTranscripts = snapshot.data?.transcripts.isNotEmpty ?? true;
+        return hasTranscripts
+            ? const _NoSessionsState()
+            : const _NoTranscriptsState();
+      },
+    );
+  }
+}
+
+class _NoTranscriptsState extends StatelessWidget {
+  const _NoTranscriptsState();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xl),
+      child: Column(
+        children: [
+          Icon(Icons.mic_none, size: 44, color: theme.colorScheme.primary),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.chatNeedsRecordingTitle,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.chatNeedsRecordingMessage,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
