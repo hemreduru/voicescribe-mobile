@@ -103,16 +103,12 @@ void main() {
       }
     }
 
-    test(
-      'corpus raw files were present',
-      () {
-        expect(
-          any,
-          isTrue,
-          reason: 'no corpus raw files under /tmp/vs_corpus — run the runners',
-        );
-      },
-      skip: any ? false : 'corpus not generated in this environment',
-    );
+    test('corpus raw files were present', () {
+      expect(
+        any,
+        isTrue,
+        reason: 'no corpus raw files under /tmp/vs_corpus — run the runners',
+      );
+    }, skip: any ? false : 'corpus not generated in this environment');
   });
 }

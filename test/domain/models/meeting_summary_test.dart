@@ -186,7 +186,7 @@ void main() {
     });
 
     test('repairs truncation mid-string (model hit token cap)', () {
-      // Gemma q8 routinely stops mid-value at the token cap, leaving an
+      // A model can stop mid-value at the token cap, leaving an
       // unclosed string and unclosed object — recover the fields it did emit.
       const raw =
           '{"schema_version":1,"title":"Veritabanı Migrasyonu","executive_summary":"Bu toplantıda bellek sızıntı';
