@@ -69,7 +69,10 @@ void _paintBars(
       Rect.fromLTWH(b[0] * s, b[1] * s, b[2] * s, b[3] * s),
       Radius.circular(radius * s),
     );
-    c.drawRRect(rrect, Paint()..color = Colors.white.withValues(alpha: opacity));
+    c.drawRRect(
+      rrect,
+      Paint()..color = Colors.white.withValues(alpha: opacity),
+    );
   }
 }
 
@@ -83,7 +86,11 @@ void _paintMark(Canvas c, double size) {
   _paintBars(c, _markBars, 96, size, 4);
 }
 
-Future<void> _writePng(String path, int size, void Function(Canvas) paint) async {
+Future<void> _writePng(
+  String path,
+  int size,
+  void Function(Canvas) paint,
+) async {
   final recorder = ui.PictureRecorder();
   paint(Canvas(recorder));
   final image = await recorder.endRecording().toImage(size, size);

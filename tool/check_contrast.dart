@@ -11,7 +11,9 @@ import 'dart:math' as math;
 
 double _channel(int c) {
   final s = c / 255.0;
-  return s <= 0.03928 ? s / 12.92 : math.pow((s + 0.055) / 1.055, 2.4).toDouble();
+  return s <= 0.03928
+      ? s / 12.92
+      : math.pow((s + 0.055) / 1.055, 2.4).toDouble();
 }
 
 double _luminance(int rgb) {
@@ -41,21 +43,46 @@ void main() {
   const pairs = <Pair>[
     // ---- Light ----
     Pair('L  onPrimary / primary (button)', 0xFFFFFF, 0x0B7884, 4.5),
-    Pair('L  primary / primaryContainer (nav/tab label)', 0x0B7884, 0xD9F7F4, 4.5),
+    Pair(
+      'L  primary / primaryContainer (nav/tab label)',
+      0x0B7884,
+      0xD9F7F4,
+      4.5,
+    ),
     Pair('L  onPrimaryContainer / primaryContainer', 0x053238, 0xD9F7F4, 4.5),
     Pair('L  onSecondary / secondary (button)', 0xFFFFFF, 0x0E6E84, 4.5),
-    Pair('L  onSecondaryContainer / secondaryContainer', 0x082C36, 0xD2ECF1, 4.5),
+    Pair(
+      'L  onSecondaryContainer / secondaryContainer',
+      0x082C36,
+      0xD2ECF1,
+      4.5,
+    ),
     Pair('L  onSurface / surface', 0x1E293B, 0xFFFFFF, 4.5),
     Pair('L  onSurfaceVariant / surface', 0x475569, 0xFFFFFF, 4.5),
     Pair('L  success(positive) / surface [graphic 3:1]', 0x15803D, 0xFFFFFF, 3),
-    Pair('L  glow top / white (idle core icon) [graphic 3:1]', 0xFFFFFF, 0x119A91, 3),
+    Pair(
+      'L  glow top / white (idle core icon) [graphic 3:1]',
+      0xFFFFFF,
+      0x119A91,
+      3,
+    ),
     // ---- Dark ----
     Pair('D  onPrimary / primary (button)', 0x063038, 0x5FE3DC, 4.5),
     Pair('D  primary / surface (text/icon)', 0x5FE3DC, 0x0D1118, 4.5),
-    Pair('D  primary / primaryContainer (nav/tab label)', 0x5FE3DC, 0x0E565C, 4.5),
+    Pair(
+      'D  primary / primaryContainer (nav/tab label)',
+      0x5FE3DC,
+      0x0E565C,
+      4.5,
+    ),
     Pair('D  onPrimaryContainer / primaryContainer', 0xCFF5F1, 0x0E565C, 4.5),
     Pair('D  onSecondary / secondary (button)', 0x04303D, 0x7FDCEA, 4.5),
-    Pair('D  onSecondaryContainer / secondaryContainer', 0xD2ECF1, 0x154A57, 4.5),
+    Pair(
+      'D  onSecondaryContainer / secondaryContainer',
+      0xD2ECF1,
+      0x154A57,
+      4.5,
+    ),
     Pair('D  onSurface / surface', 0xE7EDF8, 0x0D1118, 4.5),
   ];
 

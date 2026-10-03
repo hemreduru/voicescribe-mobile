@@ -8,16 +8,12 @@ import 'package:voicescribe_mobile/data/repositories/sqflite_transcript_reposito
 import 'package:voicescribe_mobile/data/repositories/voice_scribe_auth_repository.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/background_work_service.dart';
-import 'package:voicescribe_mobile/data/services/chat/local_chat_service.dart';
 import 'package:voicescribe_mobile/data/services/llm/cloud_summary_service.dart';
-import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
-import 'package:voicescribe_mobile/data/services/llm/local_llm_runtime.dart';
-import 'package:voicescribe_mobile/data/services/llm/local_llm_summary_service.dart';
-import 'package:voicescribe_mobile/data/services/summary/summary_service_router.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/transcript_api_client.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/data/services/transcription/cloud_transcription_service.dart';
+import 'package:voicescribe_mobile/data/services/transcription_service.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/l10n/app_localizations.dart';
@@ -78,34 +74,17 @@ class VoiceScribeRoot extends StatelessWidget {
           dispose: (service) => service.dispose(),
         ),
         RepositoryProvider<TranscriptionService>(
-          create: (_) => WhisperTranscriptionService(),
-          dispose: (service) => service.dispose(),
-        ),
-        RepositoryProvider<LocalLlmModelService>(
-          create: (context) => LocalLlmModelService(
-            transcriptionService: context.read<TranscriptionService>(),
+          create: (context) => CloudTranscriptionService(
             apiClient: const TranscriptApiClient(),
             tokenProvider: () =>
                 context.read<AuthRepository>().currentSession()?.accessToken,
           ),
-          dispose: (service) => service.dispose(),
         ),
-        // One shared runtime so the summary and chat engines never hold two
-        // copies of the on-device model in memory.
-        RepositoryProvider<LocalLlmRuntime>(create: (_) => LocalLlmRuntime()),
-        // Routes summary generation to the on-device (local) or backend (cloud)
-        // engine based on the user's summaryProvider preference.
         RepositoryProvider<SummaryService>(
-          create: (context) => SummaryServiceRouter(
-            local: LocalLlmSummaryService(
-              modelService: context.read<LocalLlmModelService>(),
-              runtime: context.read<LocalLlmRuntime>(),
-            ),
-            cloud: CloudSummaryService(
-              apiClient: const TranscriptApiClient(),
-              tokenProvider: () =>
-                  context.read<AuthRepository>().currentSession()?.accessToken,
-            ),
+          create: (context) => CloudSummaryService(
+            apiClient: const TranscriptApiClient(),
+            tokenProvider: () =>
+                context.read<AuthRepository>().currentSession()?.accessToken,
           ),
         ),
         RepositoryProvider<ChatRepository>(
@@ -113,13 +92,6 @@ class VoiceScribeRoot extends StatelessWidget {
             apiClient: const TranscriptApiClient(),
             tokenProvider: () =>
                 context.read<AuthRepository>().currentSession()?.accessToken,
-          ),
-        ),
-        RepositoryProvider<LocalChatService>(
-          create: (context) => LocalChatService(
-            repository: context.read<TranscriptRepository>(),
-            modelService: context.read<LocalLlmModelService>(),
-            runtime: context.read<LocalLlmRuntime>(),
           ),
         ),
         RepositoryProvider<SyncQueueService>(
@@ -172,7 +144,6 @@ class VoiceScribeRoot extends StatelessWidget {
               authRepository: context.read<AuthRepository>(),
               syncQueueService: context.read<SyncQueueService>(),
               transcriptionService: context.read<TranscriptionService>(),
-              localLlmModelService: context.read<LocalLlmModelService>(),
             )..add(const SettingsSubscriptionRequested()),
           ),
         ],

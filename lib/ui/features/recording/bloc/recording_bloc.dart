@@ -7,7 +7,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/background_work_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/data/services/transcription_service.dart';
 import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/models/transcript_extensions.dart';
@@ -131,9 +131,8 @@ abstract class RecordingState with _$RecordingState {
     AppErrorCode? userErrorCode,
     String? userMessage,
     @Default(<String>{}) Set<String> retryingChunkIds,
-    // Measured processing-seconds-per-audio-second for the active model on this
-    // device, sourced from the transcription service to drive the live ETA.
-    @Default(1.1) double realtimeFactor,
+    // Estimated processing-seconds-per-audio-second that drives the live ETA.
+    @Default(0.3) double realtimeFactor,
   }) = _RecordingState;
 
   const RecordingState._();
@@ -311,12 +310,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   ) async {
     await _snapshotSubscription?.cancel();
     final snapshot = await _transcriptRepository.loadSnapshot();
-    emit(
-      _stateForSnapshot(
-        state,
-        snapshot,
-      ).copyWith(realtimeFactor: _transcriptionService.currentRealtimeFactor),
-    );
+    emit(_stateForSnapshot(state, snapshot));
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
       (snapshot) => add(_RecordingSnapshotChanged(snapshot)),
       onError: (Object error, StackTrace stack) {
@@ -751,7 +745,10 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     if (current == null) {
       return;
     }
-    final message = event.error.toString();
+    // Typed failures are shown localized through [userErrorCode]; the raw
+    // message is still persisted on the chunk so it stays retryable.
+    final error = event.error;
+    final message = error.toString();
     _emitChunkUpdate(
       emit,
       current.copyWith(
@@ -760,7 +757,8 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
         syncStatus: SyncStatus.pending,
         syncError: null,
       ),
-      errorMessage: message,
+      errorMessage: error is TranscriptionException ? null : message,
+      userErrorCode: error is TranscriptionException ? error.code : null,
     );
   }
 
@@ -773,6 +771,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     TranscriptChunk updatedChunk, {
     String? appendPreview,
     String? errorMessage,
+    AppErrorCode? userErrorCode,
   }) {
     final currentChunks = state.currentChunks
         .map((item) => item.id == updatedChunk.id ? updatedChunk : item)
@@ -816,9 +815,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
               : (isActiveSession ? updatedTranscript : state.currentTranscript),
           liveTranscriptPreview: sessionDone ? '' : livePreview,
           errorMessage: errorMessage,
-          // Refresh the device-specific speed each time a chunk completes so the
-          // live ETA converges on real hardware performance.
-          realtimeFactor: _transcriptionService.currentRealtimeFactor,
+          userErrorCode: userErrorCode,
         ),
         updatedTranscript,
       ),
@@ -940,7 +937,6 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     try {
       final transcription = await _transcriptionService.transcribeChunk(
         chunk.audioPath ?? '',
-        audioLevel: chunk.audioLevel,
       );
       add(
         _RecordingTranscriptionSucceeded(

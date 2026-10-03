@@ -1,7 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
-import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/use_cases/repair_stale_recordings.dart';
@@ -222,7 +221,7 @@ void main() {
             summaries: const [],
           ),
         ),
-        summaryService: const LocalSummaryService(),
+        summaryService: const FakeSummaryService(),
         syncQueueService: FakeSyncQueueService(),
       );
     },

@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
-import 'package:voicescribe_mobile/ui/core/utils/model_download_formatters.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_section.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_segmented_control.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/premium_widgets.dart';
-import 'package:voicescribe_mobile/ui/features/bootstrap/bloc/bootstrap_bloc.dart';
-import 'package:voicescribe_mobile/ui/features/recording/bloc/recording_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/settings/bloc/settings_bloc.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -20,9 +16,6 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final modelState = context.select<BootstrapBloc, ModelBootstrapState>(
-      (bloc) => bloc.state.modelState,
-    );
 
     return BlocBuilder<SettingsBloc, SettingsState>(
       buildWhen: (previous, current) =>
@@ -33,12 +26,6 @@ class SettingsScreen extends StatelessWidget {
           previous.lastSyncAt != current.lastSyncAt ||
           previous.syncErrorMessage != current.syncErrorMessage ||
           previous.errorMessage != current.errorMessage ||
-          previous.modelCatalog != current.modelCatalog ||
-          previous.deviceProfile != current.deviceProfile ||
-          previous.applyingTranscriptionModel !=
-              current.applyingTranscriptionModel ||
-          previous.transcriptionModelDownloadProgress !=
-              current.transcriptionModelDownloadProgress ||
           previous.pendingSyncCount != current.pendingSyncCount,
       builder: (context, state) {
         final session = state.session;
@@ -86,29 +73,14 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                _AiLocationSection(state: state),
-                const SizedBox(height: AppSpacing.lg),
                 AppSectionCard(
-                  title: l10n.transcriptionModelSettings,
-                  subtitle: l10n.transcriptionModelPreferences,
+                  title: l10n.transcriptionSettings,
+                  subtitle: l10n.transcriptionSettingsSubtitle,
                   children: [
-                    _TranscriptionModelSelector(
-                      catalog: state.modelCatalog,
-                      selectedKey: preferences.transcriptionModel,
-                      applying: state.applyingTranscriptionModel,
-                      downloadProgress:
-                          state.transcriptionModelDownloadProgress,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
                     AppSegmentedField<String>(
                       label: l10n.transcriptionLanguage,
                       value: preferences.transcriptionLanguage,
                       segments: [
-                        AppSegment(
-                          value: 'auto',
-                          label: l10n.automatic,
-                          icon: Icons.auto_awesome_outlined,
-                        ),
                         AppSegment(value: 'tr', label: l10n.turkish),
                         AppSegment(value: 'en', label: l10n.english),
                       ],
@@ -263,31 +235,6 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                AppSectionCard(
-                  title: l10n.systemStatus,
-                  children: [
-                    ActionRow(
-                      icon: _modelStatusIcon(modelState),
-                      title: _modelStatusLabel(context, modelState),
-                      trailing: modelState == ModelBootstrapState.failed
-                          ? AppButton(
-                              label: l10n.retrySetup,
-                              icon: Icons.refresh,
-                              onPressed: () => context
-                                  .read<BootstrapBloc>()
-                                  .add(const BootstrapRetried()),
-                              variant: AppButtonVariant.outline,
-                            )
-                          : StatusPill(
-                              icon: _modelStatusIcon(modelState),
-                              label: _modelStatusLabel(context, modelState),
-                              compact: true,
-                              color: _modelStatusColor(context, modelState),
-                            ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -320,423 +267,5 @@ class SettingsScreen extends StatelessWidget {
     if ((confirmed ?? false) && context.mounted) {
       context.read<SettingsBloc>().add(const SettingsLogoutRequested());
     }
-  }
-
-  String _modelStatusLabel(
-    BuildContext context,
-    ModelBootstrapState modelState,
-  ) {
-    final l10n = context.l10n;
-    return switch (modelState) {
-      ModelBootstrapState.ready => l10n.modelReady,
-      ModelBootstrapState.failed => l10n.bootstrapFailed,
-      ModelBootstrapState.bootstrapping => l10n.modelLoading,
-    };
-  }
-
-  IconData _modelStatusIcon(ModelBootstrapState modelState) {
-    return switch (modelState) {
-      ModelBootstrapState.ready => Icons.check_circle,
-      ModelBootstrapState.failed => Icons.error_outline,
-      ModelBootstrapState.bootstrapping => Icons.sync,
-    };
-  }
-
-  Color _modelStatusColor(
-    BuildContext context,
-    ModelBootstrapState modelState,
-  ) {
-    return switch (modelState) {
-      ModelBootstrapState.ready => AppTheme.positive,
-      ModelBootstrapState.failed => Theme.of(context).colorScheme.error,
-      ModelBootstrapState.bootstrapping => Theme.of(
-        context,
-      ).colorScheme.secondary,
-    };
-  }
-}
-
-/// Lets a capable device opt into a heavier Whisper model. Entry-level devices
-/// (where the catalog only allows `base`/`tiny`) just see an informative row.
-/// Selecting a model the device can't run is impossible — the catalog filters
-/// those out and `selectModel` falls back to the current model anyway.
-class _TranscriptionModelSelector extends StatelessWidget {
-  const _TranscriptionModelSelector({
-    required this.catalog,
-    required this.selectedKey,
-    required this.applying,
-    required this.downloadProgress,
-  });
-
-  final List<TranscriptionModelCatalogEntry> catalog;
-  final String selectedKey;
-  final bool applying;
-
-  /// Whisper model download progress (0–100), or null when indeterminate.
-  final double? downloadProgress;
-
-  // Cap the mobile choice at `small`; heavier models are impractical on phones.
-  static const _mobileModels = ['tiny', 'base', 'small'];
-
-  /// Confirms the switch (and warns about the download / blocks while
-  /// recording) before dispatching, so a tap can't silently kick off a
-  /// hundreds-of-MB download or disrupt an active session.
-  Future<void> _onModelSelected(BuildContext context, String value) async {
-    if (applying) {
-      return;
-    }
-    final recording = context.read<RecordingBloc>().state;
-    if (recording.isRecording || recording.isTranscribing) {
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(context.l10n.modelChangeBusyTitle),
-          content: Text(context.l10n.modelChangeBusyMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(context.l10n.ok),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    final entry = _entryForKey(value);
-    final needsDownload = entry != null && !entry.isDownloaded;
-    final downloadBytes = entry?.remainingBytes ?? entry?.totalBytes;
-    final modelLabel = _labelFor(value);
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        final l10n = context.l10n;
-        return AlertDialog(
-          title: Text(l10n.modelChangeConfirmTitle),
-          content: Text(
-            needsDownload && downloadBytes != null
-                ? l10n.modelChangeConfirmDownload(
-                    modelLabel,
-                    formatModelDownloadBytes(downloadBytes),
-                  )
-                : l10n.modelChangeConfirmReady(modelLabel),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(
-                needsDownload
-                    ? l10n.modelChangeConfirmDownloadAction
-                    : l10n.modelChangeConfirmAction,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    if ((confirmed ?? false) && context.mounted) {
-      context.read<SettingsBloc>().add(
-        SettingsTranscriptionModelChanged(value),
-      );
-    }
-  }
-
-  TranscriptionModelCatalogEntry? _entryForKey(String key) {
-    for (final entry in catalog) {
-      if (modelKeyFromWhisperModel(entry.model) == key) {
-        return entry;
-      }
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final allowed =
-        catalog
-            .where(
-              (entry) =>
-                  entry.compatibility !=
-                      TranscriptionModelCompatibility.limited &&
-                  _mobileModels.contains(modelKeyFromWhisperModel(entry.model)),
-            )
-            .toList()
-          ..sort(
-            (a, b) => _mobileModels
-                .indexOf(modelKeyFromWhisperModel(a.model))
-                .compareTo(
-                  _mobileModels.indexOf(modelKeyFromWhisperModel(b.model)),
-                ),
-          );
-
-    final descriptionText = switch (selectedKey) {
-      'tiny' => l10n.modelTinyDescription,
-      'small' => l10n.modelSmallDescription,
-      _ => l10n.modelBaseDescription,
-    };
-    final description = Text(
-      descriptionText,
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
-    );
-
-    if (allowed.length <= 1) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ActionRow(
-            icon: Icons.model_training,
-            title: _labelFor(selectedKey),
-            subtitle: l10n.recommendedForYourDevice,
-            trailing: const SizedBox.shrink(),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          description,
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppSegmentedField<String>(
-          label: l10n.transcriptionModelSize,
-          value: _mobileModels.contains(selectedKey) ? selectedKey : 'base',
-          segments: [
-            for (final entry in allowed)
-              AppSegment(
-                value: modelKeyFromWhisperModel(entry.model),
-                label: _labelFor(modelKeyFromWhisperModel(entry.model)),
-                icon: Icons.model_training,
-              ),
-          ],
-          onChanged: (value) => _onModelSelected(context, value),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        if (applying) ...[
-          _DownloadProgress(progress: downloadProgress),
-          const SizedBox(height: AppSpacing.sm),
-        ],
-        description,
-      ],
-    );
-  }
-
-  String _labelFor(String key) => switch (key) {
-    'tiny' => 'Tiny',
-    'small' => 'Small',
-    _ => 'Base',
-  };
-}
-
-/// Determinate model-download bar with a percent/label caption. Falls back to
-/// an indeterminate bar (e.g. while loading the model, or before the first
-/// progress event arrives) so the user always sees that work is happening.
-class _DownloadProgress extends StatelessWidget {
-  const _DownloadProgress({required this.progress});
-
-  final double? progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final percent = progress;
-    final label = percent == null
-        ? l10n.modelApplying
-        : l10n.modelDownloadingPercent(percent.floor());
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LinearProgressIndicator(
-          value: percent == null ? null : (percent / 100).clamp(0.0, 1.0),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Plain-language "where does AI run" chooser. The single toggle drives both
-/// summaries and chat; the on-device option is disabled (with a reason) on
-/// devices that aren't powerful enough, and the model-download row is surfaced
-/// as a first-class action when on-device is selected.
-class _AiLocationSection extends StatelessWidget {
-  const _AiLocationSection({required this.state});
-
-  final SettingsState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final preferences = state.preferences;
-    final entry = state.localLlmEntry;
-    // Assume supported until the catalog entry resolves, so we don't flash a
-    // disabled state on first paint.
-    final localSupported = entry?.isSupported ?? true;
-    final selected = preferences.summaryProvider;
-
-    return AppSectionCard(
-      title: l10n.aiLocationTitle,
-      subtitle: l10n.summaryPreferences,
-      children: [
-        AppSegmentedField<String>(
-          label: l10n.aiLocationLabel,
-          value: selected,
-          minSegmentWidth: 132,
-          segments: [
-            AppSegment(
-              value: 'local',
-              label: l10n.aiLocationOnDevice,
-              icon: Icons.smartphone_outlined,
-              enabled: localSupported,
-            ),
-            AppSegment(
-              value: 'cloud',
-              label: l10n.aiLocationCloud,
-              icon: Icons.cloud_outlined,
-            ),
-          ],
-          onChanged: (value) {
-            if (value == 'local' && !localSupported) return;
-            context.read<SettingsBloc>().add(
-              SettingsSummaryProviderChanged(value),
-            );
-          },
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          selected == 'local'
-              ? l10n.aiLocationOnDeviceDesc
-              : l10n.aiLocationCloudDesc,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        if (!localSupported) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.info_outline,
-                size: 16,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: AppSpacing.xs + 2),
-              Expanded(
-                child: Text(
-                  l10n.aiLocationOnDeviceUnavailable,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-        if (selected == 'local') ...[
-          const SizedBox(height: AppSpacing.lg),
-          _LocalSummaryModelRow(state: state),
-        ],
-      ],
-    );
-  }
-}
-
-class _LocalSummaryModelRow extends StatelessWidget {
-  const _LocalSummaryModelRow({required this.state});
-
-  final SettingsState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final entry = state.localLlmEntry;
-
-    if (entry == null) {
-      return const SizedBox.shrink();
-    }
-
-    if (!entry.isSupported) {
-      return ActionRow(
-        icon: Icons.memory,
-        title: l10n.localSummaryModel,
-        subtitle: l10n.localSummaryModelUnsupported,
-        trailing: const SizedBox.shrink(),
-      );
-    }
-
-    final progress = state.localLlmDownloadProgress;
-    final Widget trailing;
-    if (state.localLlmDownloading) {
-      trailing = Text(
-        progress == null
-            ? l10n.localSummaryModelDownloading
-            : '${progress.round()}%',
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      );
-    } else if (entry.isDownloaded) {
-      trailing = StatusPill(
-        icon: Icons.check_circle,
-        label: l10n.localSummaryModelReady,
-        color: theme.colorScheme.tertiary,
-        compact: true,
-      );
-    } else {
-      trailing = AppButton(
-        label: l10n.localSummaryModelDownload,
-        icon: Icons.download_outlined,
-        variant: AppButtonVariant.outline,
-        onPressed: () => context.read<SettingsBloc>().add(
-          const SettingsLocalLlmDownloadRequested(),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ActionRow(
-          icon: Icons.memory,
-          title: '${l10n.localSummaryModel} · ${entry.label}',
-          subtitle: _formatSize(entry.totalBytes),
-          trailing: trailing,
-        ),
-        if (state.localLlmDownloading) ...[
-          const SizedBox(height: AppSpacing.sm),
-          LinearProgressIndicator(
-            value: progress == null ? null : (progress / 100).clamp(0.0, 1.0),
-          ),
-        ],
-        if (state.localLlmErrorMessage != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          AppErrorText(message: state.localLlmErrorMessage!),
-        ],
-      ],
-    );
-  }
-
-  String _formatSize(int bytes) {
-    final mb = bytes / (1024 * 1024);
-    return '${mb.toStringAsFixed(0)} MB';
   }
 }

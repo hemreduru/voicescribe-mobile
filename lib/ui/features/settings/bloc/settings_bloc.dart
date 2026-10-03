@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/data/services/transcription_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -14,12 +13,6 @@ sealed class SettingsEvent {
 
 final class SettingsSubscriptionRequested extends SettingsEvent {
   const SettingsSubscriptionRequested();
-}
-
-final class SettingsSummaryProviderChanged extends SettingsEvent {
-  const SettingsSummaryProviderChanged(this.value);
-
-  final String value;
 }
 
 final class SettingsThemeModeChanged extends SettingsEvent {
@@ -34,32 +27,10 @@ final class SettingsLocalePreferenceChanged extends SettingsEvent {
   final String value;
 }
 
-final class SettingsTranscriptionModelChanged extends SettingsEvent {
-  const SettingsTranscriptionModelChanged(this.value);
-
-  final String value;
-}
-
 final class SettingsTranscriptionLanguageChanged extends SettingsEvent {
   const SettingsTranscriptionLanguageChanged(this.value);
 
   final String value;
-}
-
-final class SettingsLocalLlmDownloadRequested extends SettingsEvent {
-  const SettingsLocalLlmDownloadRequested();
-}
-
-final class _SettingsLocalLlmProgressChanged extends SettingsEvent {
-  const _SettingsLocalLlmProgressChanged(this.percent);
-
-  final double? percent;
-}
-
-final class _SettingsTranscriptionModelProgressChanged extends SettingsEvent {
-  const _SettingsTranscriptionModelProgressChanged(this.percent);
-
-  final double? percent;
 }
 
 final class SettingsLogoutRequested extends SettingsEvent {
@@ -97,17 +68,7 @@ class SettingsState {
     this.lastSyncAt,
     this.syncErrorMessage,
     this.errorMessage,
-    this.modelCatalog = const [],
-    this.modelCatalogLoading = false,
-    this.modelCatalogErrorMessage,
-    this.deviceProfile,
-    this.applyingTranscriptionModel = false,
-    this.transcriptionModelDownloadProgress,
     this.pendingSyncCount = 0,
-    this.localLlmEntry,
-    this.localLlmDownloading = false,
-    this.localLlmDownloadProgress,
-    this.localLlmErrorMessage,
   });
 
   final AppPreferences preferences;
@@ -117,25 +78,10 @@ class SettingsState {
   final DateTime? lastSyncAt;
   final String? syncErrorMessage;
   final String? errorMessage;
-  final List<TranscriptionModelCatalogEntry> modelCatalog;
-  final bool modelCatalogLoading;
-  final String? modelCatalogErrorMessage;
-  final DevicePerformanceProfile? deviceProfile;
-  final bool applyingTranscriptionModel;
-
-  /// Whisper model download progress (0–100) while a model switch is applying.
-  /// Null means indeterminate (size unknown yet) or no download in progress.
-  final double? transcriptionModelDownloadProgress;
 
   /// Number of local transcripts not yet backed up to the server. Surfaced so
   /// the user can trust that nothing is stuck unsynced.
   final int pendingSyncCount;
-
-  /// On-device summarization model status (Gemma). Null until resolved.
-  final LocalLlmModelCatalogEntry? localLlmEntry;
-  final bool localLlmDownloading;
-  final double? localLlmDownloadProgress;
-  final String? localLlmErrorMessage;
 
   SettingsState copyWith({
     AppPreferences? preferences,
@@ -149,22 +95,7 @@ class SettingsState {
     bool clearSyncErrorMessage = false,
     String? errorMessage,
     bool clearErrorMessage = false,
-    List<TranscriptionModelCatalogEntry>? modelCatalog,
-    bool? modelCatalogLoading,
-    String? modelCatalogErrorMessage,
-    bool clearModelCatalogErrorMessage = false,
-    DevicePerformanceProfile? deviceProfile,
-    bool clearDeviceProfile = false,
-    bool? applyingTranscriptionModel,
-    double? transcriptionModelDownloadProgress,
-    bool clearTranscriptionModelDownloadProgress = false,
     int? pendingSyncCount,
-    LocalLlmModelCatalogEntry? localLlmEntry,
-    bool? localLlmDownloading,
-    double? localLlmDownloadProgress,
-    bool clearLocalLlmDownloadProgress = false,
-    String? localLlmErrorMessage,
-    bool clearLocalLlmErrorMessage = false,
   }) {
     return SettingsState(
       preferences: preferences ?? this.preferences,
@@ -178,30 +109,7 @@ class SettingsState {
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
-      modelCatalog: modelCatalog ?? this.modelCatalog,
-      modelCatalogLoading: modelCatalogLoading ?? this.modelCatalogLoading,
-      modelCatalogErrorMessage: clearModelCatalogErrorMessage
-          ? null
-          : modelCatalogErrorMessage ?? this.modelCatalogErrorMessage,
-      deviceProfile: clearDeviceProfile
-          ? null
-          : deviceProfile ?? this.deviceProfile,
-      applyingTranscriptionModel:
-          applyingTranscriptionModel ?? this.applyingTranscriptionModel,
-      transcriptionModelDownloadProgress:
-          clearTranscriptionModelDownloadProgress
-          ? null
-          : transcriptionModelDownloadProgress ??
-                this.transcriptionModelDownloadProgress,
       pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
-      localLlmEntry: localLlmEntry ?? this.localLlmEntry,
-      localLlmDownloading: localLlmDownloading ?? this.localLlmDownloading,
-      localLlmDownloadProgress: clearLocalLlmDownloadProgress
-          ? null
-          : localLlmDownloadProgress ?? this.localLlmDownloadProgress,
-      localLlmErrorMessage: clearLocalLlmErrorMessage
-          ? null
-          : localLlmErrorMessage ?? this.localLlmErrorMessage,
     );
   }
 }
@@ -212,27 +120,18 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     required AuthRepository authRepository,
     required SyncQueueService syncQueueService,
     required TranscriptionService transcriptionService,
-    required LocalLlmModelService localLlmModelService,
   }) : _transcriptRepository = transcriptRepository,
        _authRepository = authRepository,
        _syncQueueService = syncQueueService,
        _transcriptionService = transcriptionService,
-       _localLlmModelService = localLlmModelService,
        super(const SettingsState()) {
     on<SettingsSubscriptionRequested>(_onSubscriptionRequested);
     on<_SettingsSnapshotChanged>(_onSnapshotChanged);
     on<_SettingsSessionChanged>(_onSessionChanged);
     on<_SettingsSyncEventChanged>(_onSyncEventChanged);
-    on<SettingsSummaryProviderChanged>(_onSummaryProviderChanged);
     on<SettingsThemeModeChanged>(_onThemeModeChanged);
     on<SettingsLocalePreferenceChanged>(_onLocalePreferenceChanged);
-    on<SettingsTranscriptionModelChanged>(_onTranscriptionModelChanged);
     on<SettingsTranscriptionLanguageChanged>(_onTranscriptionLanguageChanged);
-    on<SettingsLocalLlmDownloadRequested>(_onLocalLlmDownloadRequested);
-    on<_SettingsLocalLlmProgressChanged>(_onLocalLlmProgressChanged);
-    on<_SettingsTranscriptionModelProgressChanged>(
-      _onTranscriptionModelProgressChanged,
-    );
     on<SettingsManualSyncRequested>(_onManualSyncRequested);
     on<SettingsLogoutRequested>(_onLogoutRequested);
   }
@@ -241,12 +140,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final AuthRepository _authRepository;
   final SyncQueueService _syncQueueService;
   final TranscriptionService _transcriptionService;
-  final LocalLlmModelService _localLlmModelService;
   StreamSubscription<TranscriptSnapshot>? _snapshotSubscription;
   StreamSubscription<AuthSessionState?>? _sessionSubscription;
   StreamSubscription<SyncEvent>? _syncSubscription;
-  StreamSubscription<ModelDownloadProgress>? _localLlmProgressSubscription;
-  StreamSubscription<ModelDownloadProgress>? _transcriptionProgressSubscription;
 
   Future<void> _onSubscriptionRequested(
     SettingsSubscriptionRequested event,
@@ -271,19 +167,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         pendingSyncCount: _pendingSyncCount(snapshot),
       ),
     );
-    await _loadModelCatalog(emit);
-    await _loadLocalLlmEntry(emit);
-    await _localLlmProgressSubscription?.cancel();
-    _localLlmProgressSubscription = _localLlmModelService.downloadProgress
-        .listen(
-          (progress) => add(_SettingsLocalLlmProgressChanged(progress.percent)),
-        );
-    await _transcriptionProgressSubscription?.cancel();
-    _transcriptionProgressSubscription = _transcriptionService.downloadProgress
-        .listen(
-          (progress) =>
-              add(_SettingsTranscriptionModelProgressChanged(progress.percent)),
-        );
     _snapshotSubscription = _transcriptRepository.watchSnapshot().listen(
       (snapshot) => add(_SettingsSnapshotChanged(snapshot)),
     );
@@ -358,18 +241,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     }
   }
 
-  Future<void> _onSummaryProviderChanged(
-    SettingsSummaryProviderChanged event,
-    Emitter<SettingsState> emit,
-  ) {
-    return _savePreferences(
-      emit,
-      state.preferences.copyWith(
-        summaryProvider: AppPreferences.normalizeSummaryProvider(event.value),
-      ),
-    );
-  }
-
   Future<void> _onThemeModeChanged(
     SettingsThemeModeChanged event,
     Emitter<SettingsState> emit,
@@ -392,63 +263,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         localePreference: AppPreferences.normalizeLocalePreference(event.value),
       ),
     );
-  }
-
-  Future<void> _onTranscriptionModelChanged(
-    SettingsTranscriptionModelChanged event,
-    Emitter<SettingsState> emit,
-  ) async {
-    final normalized = AppPreferences.normalizeTranscriptionModel(event.value);
-    if (normalized == state.preferences.transcriptionModel) {
-      return;
-    }
-    emit(
-      state.copyWith(
-        applyingTranscriptionModel: true,
-        clearErrorMessage: true,
-        clearTranscriptionModelDownloadProgress: true,
-      ),
-    );
-    try {
-      await _transcriptionService.selectModel(whisperModelFromKey(normalized));
-      await _transcriptionService.ensureModel();
-      // selectModel may reject a model that's too heavy for the device and stay
-      // on the current one, so persist what was actually applied.
-      final applied = AppPreferences.normalizeTranscriptionModel(
-        _transcriptionService.currentModelKey,
-      );
-      await _savePreferences(
-        emit,
-        state.preferences.copyWith(transcriptionModel: applied),
-      );
-      emit(
-        state.copyWith(
-          applyingTranscriptionModel: false,
-          clearTranscriptionModelDownloadProgress: true,
-        ),
-      );
-      await _loadModelCatalog(emit);
-    } catch (error) {
-      // A failed switch (e.g. the new model's download failed) must not leave
-      // the service pointing at a model with no file on disk. Roll it back to
-      // the last persisted (known-good, already-downloaded) model so recording
-      // keeps working and the service matches the saved preference.
-      try {
-        await _transcriptionService.selectModel(
-          whisperModelFromKey(state.preferences.transcriptionModel),
-        );
-        await _transcriptionService.ensureModel();
-      } catch (_) {
-        // Best effort; nothing more we can safely do here.
-      }
-      emit(
-        state.copyWith(
-          applyingTranscriptionModel: false,
-          clearTranscriptionModelDownloadProgress: true,
-          errorMessage: error.toString(),
-        ),
-      );
-    }
   }
 
   Future<void> _onTranscriptionLanguageChanged(
@@ -484,81 +298,6 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     }
   }
 
-  Future<void> _onLocalLlmDownloadRequested(
-    SettingsLocalLlmDownloadRequested event,
-    Emitter<SettingsState> emit,
-  ) async {
-    if (state.localLlmDownloading) {
-      return;
-    }
-    emit(
-      state.copyWith(
-        localLlmDownloading: true,
-        localLlmDownloadProgress: 0,
-        clearLocalLlmErrorMessage: true,
-      ),
-    );
-    try {
-      await _localLlmModelService.download();
-      emit(
-        state.copyWith(
-          localLlmDownloading: false,
-          clearLocalLlmDownloadProgress: true,
-        ),
-      );
-      await _loadLocalLlmEntry(emit);
-    } catch (error) {
-      emit(
-        state.copyWith(
-          localLlmDownloading: false,
-          clearLocalLlmDownloadProgress: true,
-          localLlmErrorMessage: error.toString(),
-        ),
-      );
-    }
-  }
-
-  void _onLocalLlmProgressChanged(
-    _SettingsLocalLlmProgressChanged event,
-    Emitter<SettingsState> emit,
-  ) {
-    if (!state.localLlmDownloading) {
-      return;
-    }
-    emit(state.copyWith(localLlmDownloadProgress: event.percent));
-  }
-
-  void _onTranscriptionModelProgressChanged(
-    _SettingsTranscriptionModelProgressChanged event,
-    Emitter<SettingsState> emit,
-  ) {
-    // The transcription progress stream is always live (bootstrap also uses
-    // it); only reflect it while a user-initiated model switch is applying.
-    if (!state.applyingTranscriptionModel) {
-      return;
-    }
-    emit(state.copyWith(transcriptionModelDownloadProgress: event.percent));
-  }
-
-  Future<void> _loadLocalLlmEntry(Emitter<SettingsState> emit) async {
-    try {
-      final entry = await _localLlmModelService.catalogEntry();
-      emit(state.copyWith(localLlmEntry: entry));
-      // Smart default: a device that can't run on-device AI shouldn't be left
-      // pointing summary + chat at the local engine (it would just fail), so
-      // fall back to cloud automatically. The user can still switch back if the
-      // device later qualifies.
-      if (!entry.isSupported && state.preferences.summaryProvider == 'local') {
-        await _savePreferences(
-          emit,
-          state.preferences.copyWith(summaryProvider: 'cloud'),
-        );
-      }
-    } catch (error) {
-      emit(state.copyWith(localLlmErrorMessage: error.toString()));
-    }
-  }
-
   Future<void> _onManualSyncRequested(
     SettingsManualSyncRequested event,
     Emitter<SettingsState> emit,
@@ -591,41 +330,11 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     }
   }
 
-  Future<void> _loadModelCatalog(Emitter<SettingsState> emit) async {
-    emit(
-      state.copyWith(
-        modelCatalogLoading: true,
-        clearModelCatalogErrorMessage: true,
-      ),
-    );
-    try {
-      final profile = await _transcriptionService.resolveDeviceProfile();
-      final catalog = await _transcriptionService.listModelCatalog();
-      emit(
-        state.copyWith(
-          modelCatalogLoading: false,
-          deviceProfile: profile,
-          modelCatalog: catalog,
-          clearModelCatalogErrorMessage: true,
-        ),
-      );
-    } catch (error) {
-      emit(
-        state.copyWith(
-          modelCatalogLoading: false,
-          modelCatalogErrorMessage: error.toString(),
-        ),
-      );
-    }
-  }
-
   @override
   Future<void> close() async {
     await _snapshotSubscription?.cancel();
     await _sessionSubscription?.cancel();
     await _syncSubscription?.cancel();
-    await _localLlmProgressSubscription?.cancel();
-    await _transcriptionProgressSubscription?.cancel();
     return super.close();
   }
 }

@@ -105,8 +105,8 @@ class PcmChunker {
 
   int get _sampleCount => _buffer.length ~/ bytesPerSample;
 
-  /// Drops the trailing silence that triggered a chunk close so Whisper doesn't
-  /// waste inference on it, while keeping a ~250 ms guard so a word ending is
+  /// Drops the trailing silence that triggered a chunk close so the upload
+  /// doesn't carry it, while keeping a ~250 ms guard so a word ending is
   /// never clipped and never shrinking the chunk below ~1 s. Based on the
   /// existing `_silentSamples` trailing-silence counter; speech resets it.
   Uint8List _trimTrailingSilence(Uint8List pcm) {
