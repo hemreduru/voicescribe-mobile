@@ -20,14 +20,6 @@ class EnvConfig {
     }
 
     _values['API_BASE_URL'] = _defaultApiBaseUrl;
-    _values['MODEL_DOWNLOAD_URL'] =
-        'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin';
-    // On-device summarization model (Gemma 3 1B int8, ~1.0GB). The download URL
-    // and gated-model token are fetched from the backend at download time
-    // (/api/v1/local-summary-model); this URL is only a fallback for the local
-    // "is it downloaded?" filename check. The token is intentionally NOT bundled.
-    _values['LLM_MODEL_DOWNLOAD_URL'] =
-        'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q8_ekv4096.task';
     _values['APP_ENV'] = 'production';
     _values['DEBUG_MODE'] = 'false';
 
@@ -71,20 +63,6 @@ class EnvConfig {
     return _normalizeApiBaseUrl(raw);
   }
 
-  static String get modelDownloadUrl =>
-      _values['MODEL_DOWNLOAD_URL'] ??
-      'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin';
-
-  /// Download URL for the on-device summarization model (Gemma 3 1B `.task`).
-  static String get llmModelDownloadUrl =>
-      _values['LLM_MODEL_DOWNLOAD_URL'] ??
-      'https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q8_ekv4096.task';
-
-  /// HuggingFace token used to download gated models (the Gemma `.task` is gated).
-  /// Empty string means no token configured.
-  static String get huggingFaceToken =>
-      (_values['HUGGING_FACE_TOKEN'] ?? '').trim();
-
   static String get appEnv => _values['APP_ENV'] ?? 'production';
 
   static bool get isDebugMode => _toBool(_values['DEBUG_MODE']);
@@ -127,18 +105,6 @@ class EnvConfig {
     _applyDefinedValue(
       'API_BASE_URL',
       const String.fromEnvironment('API_BASE_URL'),
-    );
-    _applyDefinedValue(
-      'MODEL_DOWNLOAD_URL',
-      const String.fromEnvironment('MODEL_DOWNLOAD_URL'),
-    );
-    _applyDefinedValue(
-      'LLM_MODEL_DOWNLOAD_URL',
-      const String.fromEnvironment('LLM_MODEL_DOWNLOAD_URL'),
-    );
-    _applyDefinedValue(
-      'HUGGING_FACE_TOKEN',
-      const String.fromEnvironment('HUGGING_FACE_TOKEN'),
     );
     _applyDefinedValue('APP_ENV', const String.fromEnvironment('APP_ENV'));
     _applyDefinedValue(

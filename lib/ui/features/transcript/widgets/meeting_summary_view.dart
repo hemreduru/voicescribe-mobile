@@ -10,22 +10,14 @@ import 'package:voicescribe_mobile/ui/core/widgets/premium_widgets.dart';
 /// summary, agenda, decisions, action items, open questions, notes) using the
 /// shared design-system components.
 class MeetingSummaryView extends StatelessWidget {
-  const MeetingSummaryView({
-    required this.summary,
-    required this.providerKey,
-    super.key,
-  });
+  const MeetingSummaryView({required this.summary, super.key});
 
   final MeetingSummary summary;
-  final String providerKey;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    // Only 'local' is on-device; treat any other key (cloud, or a raw backend
-    // provider like gemini/openai that slipped through) as cloud.
-    final isCloud = providerKey != 'local';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -36,10 +28,8 @@ class MeetingSummaryView extends StatelessWidget {
               : summary.title.trim(),
           subtitle: summary.subtitle,
           trailing: StatusPill(
-            icon: isCloud ? Icons.cloud_outlined : Icons.smartphone,
-            label: isCloud
-                ? l10n.summaryProviderCloudLabel
-                : l10n.summaryProviderLocalLabel,
+            icon: Icons.cloud_outlined,
+            label: l10n.summaryProviderCloudLabel,
             color: theme.colorScheme.primary,
             compact: true,
           ),

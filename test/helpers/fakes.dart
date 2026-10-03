@@ -1,14 +1,12 @@
 import 'dart:async';
 
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
-import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
+import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
-import 'package:voicescribe_mobile/data/services/transcript_api_client.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/data/services/transcription_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
-import 'package:whisper_ggml_plus/whisper_ggml_plus.dart';
 
 class FakeTranscriptRepository implements TranscriptRepository {
   FakeTranscriptRepository({TranscriptSnapshot? initial})
@@ -215,37 +213,12 @@ class FakeRecordingService implements RecordingService {
 }
 
 class FakeTranscriptionService implements TranscriptionService {
-  FakeTranscriptionService({
-    Map<String, Object>? responses,
-    WhisperModel initialModel = WhisperModel.base,
-  }) : responses = responses ?? const {},
-       _currentModel = initialModel;
+  FakeTranscriptionService({Map<String, Object>? responses})
+    : responses = responses ?? const {};
 
   final Map<String, Object> responses;
-  final _progress = StreamController<ModelDownloadProgress>.broadcast();
-  final WhisperModel _currentModel;
 
-  @override
-  Stream<ModelDownloadProgress> get downloadProgress => _progress.stream;
-
-  @override
-  WhisperModel get currentModel => _currentModel;
-
-  @override
-  String get currentModelKey => modelKeyFromWhisperModel(_currentModel);
-
-  /// Overridable so tests can simulate a slow device for ETA assertions.
-  double realtimeFactor = 1.1;
-
-  @override
-  double get currentRealtimeFactor => realtimeFactor;
-
-  @override
-  Duration estimateBacklog(double pendingAudioSeconds) => Duration(
-    milliseconds: (pendingAudioSeconds * 1000 * realtimeFactor).round(),
-  );
-
-  String language = 'auto';
+  String language = 'tr';
 
   @override
   void setTranscriptionLanguage(String value) {
@@ -253,60 +226,7 @@ class FakeTranscriptionService implements TranscriptionService {
   }
 
   @override
-  Future<void> selectModel(WhisperModel model) async {
-    // Locked to base; parameter ignored.
-  }
-
-  @override
-  Future<DevicePerformanceProfile> resolveDeviceProfile() async {
-    return const DevicePerformanceProfile(
-      cpuCores: 8,
-      memoryBytes: 8 * 1024 * 1024 * 1024,
-      tier: DevicePerformanceTier.performance,
-    );
-  }
-
-  @override
-  Future<List<TranscriptionModelCatalogEntry>> listModelCatalog() async {
-    return const <WhisperModel>[
-          WhisperModel.tiny,
-          WhisperModel.base,
-          WhisperModel.small,
-          WhisperModel.medium,
-          WhisperModel.large,
-          WhisperModel.largeV3Turbo,
-        ]
-        .map(
-          (model) => TranscriptionModelCatalogEntry(
-            model: model,
-            compatibility: model == WhisperModel.base
-                ? TranscriptionModelCompatibility.recommended
-                : TranscriptionModelCompatibility.supported,
-            isRecommended: model == WhisperModel.base,
-            totalBytes: 100 * 1024 * 1024,
-            localBytes: model == _currentModel ? 100 * 1024 * 1024 : 0,
-          ),
-        )
-        .toList();
-  }
-
-  @override
-  Future<WhisperBootstrapResult> ensureModel() async {
-    return WhisperBootstrapResult(
-      path: '/tmp/ggml-${_currentModel.modelName}.bin',
-      downloaded: false,
-      loaded: true,
-    );
-  }
-
-  @override
-  Future<WhisperBootstrapResult> ensureUsableModel() => ensureModel();
-
-  @override
-  Future<TranscriptionResult> transcribeChunk(
-    String audioPath, {
-    double? audioLevel,
-  }) async {
+  Future<TranscriptionResult> transcribeChunk(String audioPath) async {
     final response = responses[audioPath];
     if (response is Exception) {
       throw response;
@@ -314,54 +234,31 @@ class FakeTranscriptionService implements TranscriptionService {
     if (response is TranscriptionResult) {
       return response;
     }
-    return TranscriptionResult(
-      text: response?.toString() ?? '',
-      segments: const [],
-    );
-  }
-
-  @override
-  Future<void> dispose() async {
-    await _progress.close();
+    return TranscriptionResult(text: response?.toString() ?? '');
   }
 }
 
-class FakeLocalLlmModelService extends LocalLlmModelService {
-  FakeLocalLlmModelService({this.supported = true, this.downloaded = false})
-    : super(
-        transcriptionService: FakeTranscriptionService(),
-        apiClient: const TranscriptApiClient(),
-        tokenProvider: _noToken,
-      );
-
-  static String? _noToken() => null;
-
-  final bool supported;
-  bool downloaded;
+class FakeSummaryService implements SummaryService {
+  const FakeSummaryService();
 
   @override
-  Future<bool> isSupported() async => supported;
-
-  @override
-  Future<bool> isDownloaded() async => downloaded;
-
-  @override
-  Future<LocalLlmModelCatalogEntry> catalogEntry() async {
-    return LocalLlmModelCatalogEntry(
-      label: modelLabel,
-      totalBytes: 555 * 1024 * 1024,
-      isDownloaded: downloaded,
-      isSupported: supported,
+  Future<Summary> generate({
+    required Transcript transcript,
+    required String transcriptText,
+    required String provider,
+  }) async {
+    final now = DateTime.now();
+    return Summary(
+      id: 'summary-${now.microsecondsSinceEpoch}',
+      transcriptId: transcript.id,
+      providerKey: provider,
+      model: 'cloud-default',
+      summaryText: '- ${transcriptText.trim()}',
+      tokenCount: transcriptText.split(' ').where((e) => e.isNotEmpty).length,
+      processingTimeMs: 0,
+      createdAt: now,
     );
   }
-
-  @override
-  Future<void> ensureReady() async {
-    downloaded = true;
-  }
-
-  @override
-  Future<void> download() => ensureReady();
 }
 
 class FakeSyncQueueService extends SyncQueueService {

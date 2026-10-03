@@ -22,12 +22,9 @@
   "refreshFailed": "Yenilenemedi. Bağlantını kontrol edip tekrar dene.",
   "summary": "Özet",
   "bootstrapTitle": "VoiceScribe hazırlanıyor",
-  "bootstrapMessage": "Cihaz içi Whisper modeli yükleniyor...",
-  "bootstrapFailed": "Model kurulumu başarısız oldu.",
+  "bootstrapMessage": "Hazırlanıyor...",
+  "bootstrapFailed": "Kurulum başarısız oldu.",
   "retrySetup": "Tekrar Dene",
-  "downloadingModel": "Model indiriliyor",
-  "modelReady": "AI Hazır",
-  "modelLoading": "Model yükleniyor...",
   "tapToRecord": "Kayıt başlatmak için butona dokunun",
   "isRecording": "Kaydediliyor",
   "recordingPaused": "Kayıt duraklatıldı",
@@ -80,81 +77,17 @@
   "language": "Dil",
   "english": "İngilizce",
   "turkish": "Türkçe",
-  "systemStatus": "Sistem Durumu",
   "summaryProvider": "Özet Sağlayıcısı",
-  "aiLocationTitle": "Yapay zekâ nerede çalışsın?",
-  "aiLocationLabel": "Çalışma yeri",
-  "aiLocationOnDevice": "Bu telefonda",
-  "aiLocationCloud": "Bulutta",
-  "aiLocationOnDeviceDesc": "Her şey telefonunda çalışır; internet gerekmez ve hiçbir şey cihazdan çıkmaz. Güçlü bir telefon ve tek seferlik ~1 GB model indirme gerekir. Hem özet hem yapay zekâ sohbeti için geçerlidir.",
-  "aiLocationCloudDesc": "Daha güçlü ve çok daha hızlı yapay zekâ; uzun toplantılarda daha iyi sonuç verir. İnternet ve giriş gerekir, kayıt önce eşitlenir. Hem özet hem yapay zekâ sohbeti için geçerlidir.",
-  "aiLocationOnDeviceUnavailable": "Bu telefon cihaz içi yapay zekâ için yeterince güçlü değil — bunun yerine Bulut'u kullanın.",
-  "summaryPreferences": "Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.",
-  "transcriptionModelSettings": "Transkripsiyon Modeli",
-  "transcriptionModelPreferences": "Ses transkripsiyonu için cihaz içinde kullanılacak modeli seçin.",
-  "modelChangeConfirmTitle": "Model değiştirilsin mi?",
-  "modelChangeConfirmDownload": "{model} modeline geçiş için tek seferlik {size} indirme gerekir. İndirme arka planda sürer ve hazır olana kadar mevcut model çalışmaya devam eder.",
-  "@modelChangeConfirmDownload": {
-    "placeholders": {
-      "model": {},
-      "size": {}
-    }
-  },
-  "modelChangeConfirmReady": "Transkripsiyon {model} modeline geçirilsin mi?",
-  "@modelChangeConfirmReady": {
-    "placeholders": {
-      "model": {}
-    }
-  },
-  "modelChangeConfirmAction": "Geç",
-  "modelChangeConfirmDownloadAction": "İndir ve geç",
-  "modelChangeBusyTitle": "Kayıt sürüyor",
-  "modelChangeBusyMessage": "Transkripsiyon modelini değiştirmeden önce mevcut kaydı tamamlayın — etkin oturum mevcut modeli kullanmaya devam eder.",
-  "modelApplying": "Uygulanıyor…",
-  "recommendedForYourDevice": "Cihazınız için önerilen",
-  "deviceProfileLabel": "Cihaz profili: {tier}",
-  "@deviceProfileLabel": {
-    "placeholders": {
-      "tier": {}
-    }
-  },
-  "deviceTierEntry": "Giriş",
-  "deviceTierBalanced": "Dengeli",
-  "deviceTierPerformance": "Performans",
-  "deviceTierPremium": "Üst Seviye",
-  "modelDownloadRemaining": "İndirme: {size}",
-  "@modelDownloadRemaining": {
-    "placeholders": {
-      "size": {}
-    }
-  },
-  "modelAlreadyDownloaded": "Zaten indirildi",
-  "modelDownloadSizeUnknown": "İndirme boyutu alınamadı",
-  "modelCompatibilityRecommended": "Önerilen",
-  "modelCompatibilitySupported": "Uyumlu",
-  "modelCompatibilityLimited": "Bu cihazda yavaş olabilir",
-  "modelApplyingSelection": "Seçilen model uygulanıyor...",
-  "modelTinyDescription": "Düşük seviye telefonlar ve hızlı taslaklar için en hızlı seçenek.",
-  "modelBaseDescription": "Günlük transkripsiyon için dengeli varsayılan.",
-  "modelSmallDescription": "Orta düzey cihaz maliyetiyle daha iyi doğruluk.",
-  "modelMediumDescription": "Daha güçlü telefonlar için daha yüksek doğruluk.",
-  "modelLargeV3Description": "En yüksek genel doğruluk, ancak bellek ve pil kullanımı yüksektir.",
-  "modelLargeV3TurboDescription": "Daha hızlı işlemle büyük sınıf doğruluğu.",
+  "transcriptionSettings": "Transkripsiyon",
+  "transcriptionSettingsSubtitle": "Kayıtlarınızın dilini seçin.",
   "userId": "Kullanıcı ID",
   "summarySettings": "Özet Ayarları",
   "latestTranscript": "Son Transkript",
   "readyToSummarize": "Özet için hazır",
   "generateSummary": "Özet Oluştur",
-  "summarizingProgress": "Özetleniyor… ({current}/{total})",
-  "@summarizingProgress": {
-    "placeholders": {
-      "current": {},
-      "total": {}
-    }
-  },
   "summaryPlaceholder": "Henüz özet yok. Bu transkriptten yapılandırılmış toplantı notları oluşturmak için Özet Oluştur'a dokun.",
   "noSummaryYet": "Üretilmiş özet henüz yok.",
-  "summaryUnavailable": "Bu sefer okunabilir bir özet üretilemedi. Tekrar denemek için Özet Oluştur'a dokun veya Ayarlar'dan Bulut'a geç.",
+  "summaryUnavailable": "Bu sefer okunabilir bir özet üretilemedi. Tekrar denemek için Özet Oluştur'a dokun.",
   "summaryExecutiveSummary": "Özet",
   "summaryAgenda": "Gündem",
   "summaryDecisions": "Kararlar",
@@ -165,14 +98,8 @@
   "summaryAbsentees": "Gelmeyenler",
   "summaryRecorder": "Tutanağı Yazan",
   "summaryNextMeeting": "Sonraki Toplantı",
-  "summaryProviderLocalLabel": "Cihazda",
   "summaryProviderCloudLabel": "Bulut",
   "summaryUnassigned": "Atanmadı",
-  "localSummaryModel": "Cihaz içi özet modeli",
-  "localSummaryModelDownload": "İndir",
-  "localSummaryModelReady": "İndirildi",
-  "localSummaryModelDownloading": "İndiriliyor…",
-  "localSummaryModelUnsupported": "Cihaz içi özet için daha güçlü bir cihaz gerekir. Bunun yerine Bulut'u kullanın.",
   "chunks": "Parçalar",
   "duration": "Süre",
   "selected": "Seçildi",
@@ -216,16 +143,6 @@
   "password": "Şifre",
   "authenticatedUser": "Giriş Yapan Kullanıcı",
   "authVerifyEmail": "Kayıt tamamlandı. E-posta adresinizi doğrulayıp giriş yapın.",
-  "modelSetupRequired": "Model kurulumu gerekli",
-  "modelSetupContinueMessage": "Devam etmek için model önce indirilmelidir.",
-  "modelDownloadFailed": "Model indirilemedi. Lütfen tekrar deneyin.",
-  "modelDownloading": "Model indiriliyor...",
-  "modelDownloadingPercent": "Model indiriliyor %{percent}",
-  "@modelDownloadingPercent": {
-    "placeholders": {
-      "percent": {}
-    }
-  },
   "recordingsCount": "{count} kayıt",
   "@recordingsCount": {
     "placeholders": {
@@ -258,23 +175,12 @@
       "total": {}
     }
   },
-  "recommendedModelLabel": "Önerilen model: {model}",
-  "@recommendedModelLabel": {
-    "placeholders": {
-      "model": {}
-    }
-  },
-  "usingHeavierModelWarning": "Önerilenden daha ağır bir model kullanıyorsunuz. Bu yavaş transkripsiyona neden olabilir.",
-  "modelWarningHeavy": "Önerilenden ağır",
-  "modelWarningSlow": "Çok yavaş olabilir",
   "retryTranscription": "Tekrar Dene",
   "transcriptionFailedRetry": "Transkripsiyon başarısız oldu. Tekrar denemek için dokunun.",
   "retrying": "Tekrar deneniyor...",
   "statusIconsTitle": "Statü ikonları",
   "transcriptionLanguage": "Transkripsiyon dili",
-  "transcriptionModelSize": "Model boyutu",
   "recordingNotificationContent": "Kayıt sürüyor",
-  "automatic": "Otomatik",
   "unsyncedCount": "{count, plural, =1{1 kayıt henüz yedeklenmedi} other{{count} kayıt henüz yedeklenmedi}}",
   "@unsyncedCount": {
     "placeholders": {
@@ -319,19 +225,22 @@
   "errAuthRequired": "Kayda başlamak için giriş yapın.",
   "errMicPermissionRequired": "Mikrofon izni gerekiyor.",
   "errStorageFull": "Depolama dolu. Kayıt durduruldu; yer açıp tekrar deneyin.",
+  "errTranscriptionAuthRequired": "Kaydı yazıya dökmek için lütfen tekrar giriş yapın.",
+  "errTranscriptionRateLimited": "Şu anda çok fazla transkripsiyon isteği var. Lütfen kısa süre sonra tekrar deneyin.",
+  "errTranscriptionUnavailable": "Transkripsiyon servisi şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
+  "errTranscriptionOffline": "Bağlantı yok. Ses kaydınız saklandı; çevrimiçi olunca transkripsiyonu tekrar deneyin.",
+  "errTranscriptionGeneric": "Kaydın bir bölümü yazıya dökülemedi. Tekrar denemek için dokunun.",
   "errSummaryEmptyTranscript": "Özetlenecek transkript metni yok.",
-  "errSummaryLocalFailed": "Cihaz üstü model bu sefer geçerli bir özet üretemedi. Lütfen tekrar deneyin veya Bulut özetine geçin.",
-  "errSummaryTimeout": "Özet beklenenden uzun sürdü. Lütfen tekrar deneyin veya Bulut özetini kullanın.",
-  "errSummaryNotSynced": "Bu kayıt henüz eşitlenmedi. İnternete bağlanıp eşitledikten sonra bulut özetini tekrar deneyin.",
-  "errSummaryAuthRequired": "Bulut özeti için giriş yapmış olmanız gerekiyor.",
-  "errSummaryOffline": "Bağlantı yok. Yerel özete geçin veya çevrimiçi olunca tekrar deneyin.",
+  "errSummaryTimeout": "Özet beklenenden uzun sürdü. Lütfen tekrar deneyin.",
+  "errSummaryNotSynced": "Bu kayıt henüz eşitlenmedi. İnternete bağlanıp eşitledikten sonra tekrar deneyin.",
+  "errSummaryAuthRequired": "Özet oluşturmak için giriş yapmış olmanız gerekiyor.",
+  "errSummaryOffline": "Bağlantı yok. Çevrimiçi olunca tekrar deneyin.",
   "errSummaryServerError": "Özet şu an oluşturulamadı. Lütfen biraz sonra tekrar deneyin.",
   "errSummaryInvalidResponse": "Sunucudan geçersiz yanıt alındı.",
   "errSummaryEmptyResponse": "Sunucu boş bir özet döndürdü.",
   "errSummaryGeneric": "Özet oluşturulamadı. Lütfen tekrar deneyin.",
   "errChatEmptyQuestion": "Lütfen bir soru yazın.",
-  "errChatTimeout": "Yanıt beklenenden uzun sürdü. Lütfen tekrar deneyin veya Bulut moduna geçin.",
-  "errChatLocalFailed": "Cihaz üstü yapay zekâ şu an yanıt veremedi. Lütfen tekrar deneyin.",
+  "errChatTimeout": "Yanıt beklenenden uzun sürdü. Lütfen tekrar deneyin.",
   "errChatEmptyAnswer": "Boş bir yanıt alındı. Lütfen tekrar deneyin.",
   "errChatLoadFailed": "Sohbet yüklenemedi.",
   "errChatSendFailed": "Yanıt alınamadı. Lütfen tekrar dene."

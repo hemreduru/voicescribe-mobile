@@ -83,8 +83,10 @@ class SyncPayloadMapper {
       'clientLocalId': localId,
       'transcript_client_local_id': _toText(row['transcriptId']),
       'transcriptClientLocalId': _toText(row['transcriptId']),
-      'provider_key': row['providerKey'],
-      'providerKey': row['providerKey'],
+      // Summaries are cloud-only; a legacy on-device row still goes up as
+      // 'cloud' so the app never sends a 'local' provider key.
+      'provider_key': 'cloud',
+      'providerKey': 'cloud',
       'model': row['model'],
       'summary_text': row['summaryText'],
       'summaryText': row['summaryText'],
@@ -220,8 +222,8 @@ class SyncPayloadMapper {
       'id': localId,
       'transcriptId': transcriptLocalId,
       'remoteId': remoteId,
-      'providerKey': _clientProviderKey(_toText(row['provider_key'])),
-      'model': _toText(row['model']) ?? 'local-default',
+      'providerKey': 'cloud',
+      'model': _toText(row['model']) ?? 'cloud-default',
       'summaryText': _toText(row['summary_text']) ?? '',
       'tokenCount': row['token_count'],
       'processingTimeMs': row['processing_time_ms'],
@@ -309,17 +311,6 @@ class SyncPayloadMapper {
       return null;
     }
     return _toText(rows.first['id']);
-  }
-
-  /// The client models providers as just 'local' or 'cloud'. The server stores
-  /// concrete remote keys ('gemini', 'openai', ...); collapse any non-local key
-  /// to 'cloud'. The push side sends 'local'/'cloud' and the backend resolves
-  /// 'cloud' to its configured provider, so the mapping stays config-driven.
-  String _clientProviderKey(String? serverKey) {
-    if (serverKey == null || serverKey == 'local') {
-      return 'local';
-    }
-    return 'cloud';
   }
 
   String _normalizeTranscriptStatusKey(String? key) {

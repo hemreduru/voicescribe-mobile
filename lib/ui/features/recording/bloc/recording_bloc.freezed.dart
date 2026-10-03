@@ -16,8 +16,7 @@ mixin _$RecordingState {
 
  List<Transcript> get transcripts; List<TranscriptChunk> get allChunks; Transcript? get currentTranscript; List<TranscriptChunk> get currentChunks; bool get isRecording; bool get isPaused; int get durationSeconds; int get chunkCount; double get audioLevel; String get liveTranscriptPreview; String? get errorMessage;// Machine-readable user-facing failure; the UI maps it to the active
 // locale. [userMessage] is the raw fallback for unrecognized errors.
- AppErrorCode? get userErrorCode; String? get userMessage; Set<String> get retryingChunkIds;// Measured processing-seconds-per-audio-second for the active model on this
-// device, sourced from the transcription service to drive the live ETA.
+ AppErrorCode? get userErrorCode; String? get userMessage; Set<String> get retryingChunkIds;// Estimated processing-seconds-per-audio-second that drives the live ETA.
  double get realtimeFactor;
 /// Create a copy of RecordingState
 /// with the given fields replaced by the non-null parameter values.
@@ -236,7 +235,7 @@ return $default(_that.transcripts,_that.allChunks,_that.currentTranscript,_that.
 
 
 class _RecordingState extends RecordingState {
-  const _RecordingState({final  List<Transcript> transcripts = const <Transcript>[], final  List<TranscriptChunk> allChunks = const <TranscriptChunk>[], this.currentTranscript, final  List<TranscriptChunk> currentChunks = const <TranscriptChunk>[], this.isRecording = false, this.isPaused = false, this.durationSeconds = 0, this.chunkCount = 0, this.audioLevel = 0.0, this.liveTranscriptPreview = '', this.errorMessage, this.userErrorCode, this.userMessage, final  Set<String> retryingChunkIds = const <String>{}, this.realtimeFactor = 1.1}): _transcripts = transcripts,_allChunks = allChunks,_currentChunks = currentChunks,_retryingChunkIds = retryingChunkIds,super._();
+  const _RecordingState({final  List<Transcript> transcripts = const <Transcript>[], final  List<TranscriptChunk> allChunks = const <TranscriptChunk>[], this.currentTranscript, final  List<TranscriptChunk> currentChunks = const <TranscriptChunk>[], this.isRecording = false, this.isPaused = false, this.durationSeconds = 0, this.chunkCount = 0, this.audioLevel = 0.0, this.liveTranscriptPreview = '', this.errorMessage, this.userErrorCode, this.userMessage, final  Set<String> retryingChunkIds = const <String>{}, this.realtimeFactor = 0.3}): _transcripts = transcripts,_allChunks = allChunks,_currentChunks = currentChunks,_retryingChunkIds = retryingChunkIds,super._();
   
 
  final  List<Transcript> _transcripts;
@@ -279,8 +278,7 @@ class _RecordingState extends RecordingState {
   return EqualUnmodifiableSetView(_retryingChunkIds);
 }
 
-// Measured processing-seconds-per-audio-second for the active model on this
-// device, sourced from the transcription service to drive the live ETA.
+// Estimated processing-seconds-per-audio-second that drives the live ETA.
 @override@JsonKey() final  double realtimeFactor;
 
 /// Create a copy of RecordingState

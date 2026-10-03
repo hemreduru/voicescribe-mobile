@@ -95,8 +95,8 @@ class SqliteTranscriptMapper {
           _readString(row['id']) ??
           'summary-${createdAt.millisecondsSinceEpoch}',
       transcriptId: _readString(row['transcriptId']) ?? '',
-      providerKey: _readString(row['providerKey']) ?? 'local',
-      model: _readString(row['model']) ?? 'local-default',
+      providerKey: _readString(row['providerKey']) ?? 'cloud',
+      model: _readString(row['model']) ?? 'cloud-default',
       summaryText: _readString(row['summaryText']) ?? '',
       tokenCount: _readNullableInt(row['tokenCount']),
       processingTimeMs: _readNullableInt(row['processingTimeMs']),
@@ -130,7 +130,7 @@ class SqliteTranscriptMapper {
   static AppPreferences preferencesFromSettings(Map<String, String> settings) {
     return AppPreferences(
       summaryProvider: AppPreferences.normalizeSummaryProvider(
-        settings['summaryProvider'] ?? 'local',
+        settings['summaryProvider'] ?? 'cloud',
       ),
       themeMode: AppPreferences.normalizeThemeMode(
         settings['themeMode'] ?? 'system',
@@ -138,11 +138,8 @@ class SqliteTranscriptMapper {
       localePreference: AppPreferences.normalizeLocalePreference(
         settings['localePreference'] ?? 'system',
       ),
-      transcriptionModel: AppPreferences.normalizeTranscriptionModel(
-        settings['transcriptionModel'] ?? 'base',
-      ),
       transcriptionLanguage: AppPreferences.normalizeTranscriptionLanguage(
-        settings['transcriptionLanguage'] ?? 'auto',
+        settings['transcriptionLanguage'] ?? 'tr',
       ),
     );
   }
@@ -152,7 +149,6 @@ class SqliteTranscriptMapper {
       'summaryProvider': preferences.summaryProvider,
       'themeMode': preferences.themeMode,
       'localePreference': preferences.localePreference,
-      'transcriptionModel': preferences.transcriptionModel,
       'transcriptionLanguage': preferences.transcriptionLanguage,
     };
   }

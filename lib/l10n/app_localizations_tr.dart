@@ -78,22 +78,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get bootstrapTitle => 'VoiceScribe hazırlanıyor';
 
   @override
-  String get bootstrapMessage => 'Cihaz içi Whisper modeli yükleniyor...';
+  String get bootstrapMessage => 'Hazırlanıyor...';
 
   @override
-  String get bootstrapFailed => 'Model kurulumu başarısız oldu.';
+  String get bootstrapFailed => 'Kurulum başarısız oldu.';
 
   @override
   String get retrySetup => 'Tekrar Dene';
-
-  @override
-  String get downloadingModel => 'Model indiriliyor';
-
-  @override
-  String get modelReady => 'AI Hazır';
-
-  @override
-  String get modelLoading => 'Model yükleniyor...';
 
   @override
   String get tapToRecord => 'Kayıt başlatmak için butona dokunun';
@@ -225,141 +216,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get turkish => 'Türkçe';
 
   @override
-  String get systemStatus => 'Sistem Durumu';
-
-  @override
   String get summaryProvider => 'Özet Sağlayıcısı';
 
   @override
-  String get aiLocationTitle => 'Yapay zekâ nerede çalışsın?';
+  String get transcriptionSettings => 'Transkripsiyon';
 
   @override
-  String get aiLocationLabel => 'Çalışma yeri';
-
-  @override
-  String get aiLocationOnDevice => 'Bu telefonda';
-
-  @override
-  String get aiLocationCloud => 'Bulutta';
-
-  @override
-  String get aiLocationOnDeviceDesc =>
-      'Her şey telefonunda çalışır; internet gerekmez ve hiçbir şey cihazdan çıkmaz. Güçlü bir telefon ve tek seferlik ~1 GB model indirme gerekir. Hem özet hem yapay zekâ sohbeti için geçerlidir.';
-
-  @override
-  String get aiLocationCloudDesc =>
-      'Daha güçlü ve çok daha hızlı yapay zekâ; uzun toplantılarda daha iyi sonuç verir. İnternet ve giriş gerekir, kayıt önce eşitlenir. Hem özet hem yapay zekâ sohbeti için geçerlidir.';
-
-  @override
-  String get aiLocationOnDeviceUnavailable =>
-      'Bu telefon cihaz içi yapay zekâ için yeterince güçlü değil — bunun yerine Bulut\'u kullanın.';
-
-  @override
-  String get summaryPreferences =>
-      'Özetlerin ve yapay zekâ sohbetinin nerede çalışacağını seçin.';
-
-  @override
-  String get transcriptionModelSettings => 'Transkripsiyon Modeli';
-
-  @override
-  String get transcriptionModelPreferences =>
-      'Ses transkripsiyonu için cihaz içinde kullanılacak modeli seçin.';
-
-  @override
-  String get modelChangeConfirmTitle => 'Model değiştirilsin mi?';
-
-  @override
-  String modelChangeConfirmDownload(Object model, Object size) {
-    return '$model modeline geçiş için tek seferlik $size indirme gerekir. İndirme arka planda sürer ve hazır olana kadar mevcut model çalışmaya devam eder.';
-  }
-
-  @override
-  String modelChangeConfirmReady(Object model) {
-    return 'Transkripsiyon $model modeline geçirilsin mi?';
-  }
-
-  @override
-  String get modelChangeConfirmAction => 'Geç';
-
-  @override
-  String get modelChangeConfirmDownloadAction => 'İndir ve geç';
-
-  @override
-  String get modelChangeBusyTitle => 'Kayıt sürüyor';
-
-  @override
-  String get modelChangeBusyMessage =>
-      'Transkripsiyon modelini değiştirmeden önce mevcut kaydı tamamlayın — etkin oturum mevcut modeli kullanmaya devam eder.';
-
-  @override
-  String get modelApplying => 'Uygulanıyor…';
-
-  @override
-  String get recommendedForYourDevice => 'Cihazınız için önerilen';
-
-  @override
-  String deviceProfileLabel(Object tier) {
-    return 'Cihaz profili: $tier';
-  }
-
-  @override
-  String get deviceTierEntry => 'Giriş';
-
-  @override
-  String get deviceTierBalanced => 'Dengeli';
-
-  @override
-  String get deviceTierPerformance => 'Performans';
-
-  @override
-  String get deviceTierPremium => 'Üst Seviye';
-
-  @override
-  String modelDownloadRemaining(Object size) {
-    return 'İndirme: $size';
-  }
-
-  @override
-  String get modelAlreadyDownloaded => 'Zaten indirildi';
-
-  @override
-  String get modelDownloadSizeUnknown => 'İndirme boyutu alınamadı';
-
-  @override
-  String get modelCompatibilityRecommended => 'Önerilen';
-
-  @override
-  String get modelCompatibilitySupported => 'Uyumlu';
-
-  @override
-  String get modelCompatibilityLimited => 'Bu cihazda yavaş olabilir';
-
-  @override
-  String get modelApplyingSelection => 'Seçilen model uygulanıyor...';
-
-  @override
-  String get modelTinyDescription =>
-      'Düşük seviye telefonlar ve hızlı taslaklar için en hızlı seçenek.';
-
-  @override
-  String get modelBaseDescription =>
-      'Günlük transkripsiyon için dengeli varsayılan.';
-
-  @override
-  String get modelSmallDescription =>
-      'Orta düzey cihaz maliyetiyle daha iyi doğruluk.';
-
-  @override
-  String get modelMediumDescription =>
-      'Daha güçlü telefonlar için daha yüksek doğruluk.';
-
-  @override
-  String get modelLargeV3Description =>
-      'En yüksek genel doğruluk, ancak bellek ve pil kullanımı yüksektir.';
-
-  @override
-  String get modelLargeV3TurboDescription =>
-      'Daha hızlı işlemle büyük sınıf doğruluğu.';
+  String get transcriptionSettingsSubtitle => 'Kayıtlarınızın dilini seçin.';
 
   @override
   String get userId => 'Kullanıcı ID';
@@ -377,11 +240,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get generateSummary => 'Özet Oluştur';
 
   @override
-  String summarizingProgress(Object current, Object total) {
-    return 'Özetleniyor… ($current/$total)';
-  }
-
-  @override
   String get summaryPlaceholder =>
       'Henüz özet yok. Bu transkriptten yapılandırılmış toplantı notları oluşturmak için Özet Oluştur\'a dokun.';
 
@@ -390,7 +248,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get summaryUnavailable =>
-      'Bu sefer okunabilir bir özet üretilemedi. Tekrar denemek için Özet Oluştur\'a dokun veya Ayarlar\'dan Bulut\'a geç.';
+      'Bu sefer okunabilir bir özet üretilemedi. Tekrar denemek için Özet Oluştur\'a dokun.';
 
   @override
   String get summaryExecutiveSummary => 'Özet';
@@ -423,29 +281,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get summaryNextMeeting => 'Sonraki Toplantı';
 
   @override
-  String get summaryProviderLocalLabel => 'Cihazda';
-
-  @override
   String get summaryProviderCloudLabel => 'Bulut';
 
   @override
   String get summaryUnassigned => 'Atanmadı';
-
-  @override
-  String get localSummaryModel => 'Cihaz içi özet modeli';
-
-  @override
-  String get localSummaryModelDownload => 'İndir';
-
-  @override
-  String get localSummaryModelReady => 'İndirildi';
-
-  @override
-  String get localSummaryModelDownloading => 'İndiriliyor…';
-
-  @override
-  String get localSummaryModelUnsupported =>
-      'Cihaz içi özet için daha güçlü bir cihaz gerekir. Bunun yerine Bulut\'u kullanın.';
 
   @override
   String get chunks => 'Parçalar';
@@ -566,25 +405,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kayıt tamamlandı. E-posta adresinizi doğrulayıp giriş yapın.';
 
   @override
-  String get modelSetupRequired => 'Model kurulumu gerekli';
-
-  @override
-  String get modelSetupContinueMessage =>
-      'Devam etmek için model önce indirilmelidir.';
-
-  @override
-  String get modelDownloadFailed =>
-      'Model indirilemedi. Lütfen tekrar deneyin.';
-
-  @override
-  String get modelDownloading => 'Model indiriliyor...';
-
-  @override
-  String modelDownloadingPercent(Object percent) {
-    return 'Model indiriliyor %$percent';
-  }
-
-  @override
   String recordingsCount(Object count) {
     return '$count kayıt';
   }
@@ -619,21 +439,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String recommendedModelLabel(Object model) {
-    return 'Önerilen model: $model';
-  }
-
-  @override
-  String get usingHeavierModelWarning =>
-      'Önerilenden daha ağır bir model kullanıyorsunuz. Bu yavaş transkripsiyona neden olabilir.';
-
-  @override
-  String get modelWarningHeavy => 'Önerilenden ağır';
-
-  @override
-  String get modelWarningSlow => 'Çok yavaş olabilir';
-
-  @override
   String get retryTranscription => 'Tekrar Dene';
 
   @override
@@ -650,13 +455,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get transcriptionLanguage => 'Transkripsiyon dili';
 
   @override
-  String get transcriptionModelSize => 'Model boyutu';
-
-  @override
   String get recordingNotificationContent => 'Kayıt sürüyor';
-
-  @override
-  String get automatic => 'Otomatik';
 
   @override
   String unsyncedCount(int count) {
@@ -703,27 +502,43 @@ class AppLocalizationsTr extends AppLocalizations {
       'Depolama dolu. Kayıt durduruldu; yer açıp tekrar deneyin.';
 
   @override
+  String get errTranscriptionAuthRequired =>
+      'Kaydı yazıya dökmek için lütfen tekrar giriş yapın.';
+
+  @override
+  String get errTranscriptionRateLimited =>
+      'Şu anda çok fazla transkripsiyon isteği var. Lütfen kısa süre sonra tekrar deneyin.';
+
+  @override
+  String get errTranscriptionUnavailable =>
+      'Transkripsiyon servisi şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.';
+
+  @override
+  String get errTranscriptionOffline =>
+      'Bağlantı yok. Ses kaydınız saklandı; çevrimiçi olunca transkripsiyonu tekrar deneyin.';
+
+  @override
+  String get errTranscriptionGeneric =>
+      'Kaydın bir bölümü yazıya dökülemedi. Tekrar denemek için dokunun.';
+
+  @override
   String get errSummaryEmptyTranscript => 'Özetlenecek transkript metni yok.';
 
   @override
-  String get errSummaryLocalFailed =>
-      'Cihaz üstü model bu sefer geçerli bir özet üretemedi. Lütfen tekrar deneyin veya Bulut özetine geçin.';
-
-  @override
   String get errSummaryTimeout =>
-      'Özet beklenenden uzun sürdü. Lütfen tekrar deneyin veya Bulut özetini kullanın.';
+      'Özet beklenenden uzun sürdü. Lütfen tekrar deneyin.';
 
   @override
   String get errSummaryNotSynced =>
-      'Bu kayıt henüz eşitlenmedi. İnternete bağlanıp eşitledikten sonra bulut özetini tekrar deneyin.';
+      'Bu kayıt henüz eşitlenmedi. İnternete bağlanıp eşitledikten sonra tekrar deneyin.';
 
   @override
   String get errSummaryAuthRequired =>
-      'Bulut özeti için giriş yapmış olmanız gerekiyor.';
+      'Özet oluşturmak için giriş yapmış olmanız gerekiyor.';
 
   @override
   String get errSummaryOffline =>
-      'Bağlantı yok. Yerel özete geçin veya çevrimiçi olunca tekrar deneyin.';
+      'Bağlantı yok. Çevrimiçi olunca tekrar deneyin.';
 
   @override
   String get errSummaryServerError =>
@@ -743,11 +558,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get errChatTimeout =>
-      'Yanıt beklenenden uzun sürdü. Lütfen tekrar deneyin veya Bulut moduna geçin.';
-
-  @override
-  String get errChatLocalFailed =>
-      'Cihaz üstü yapay zekâ şu an yanıt veremedi. Lütfen tekrar deneyin.';
+      'Yanıt beklenenden uzun sürdü. Lütfen tekrar deneyin.';
 
   @override
   String get errChatEmptyAnswer =>

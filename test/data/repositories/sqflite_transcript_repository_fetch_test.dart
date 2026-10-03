@@ -85,7 +85,7 @@ void main() {
           'summaries': [
             {
               'remote_id': '20',
-              'client_local_id': 'local-summary-1',
+              'client_local_id': 'summary-1',
               'provider_key': 'openai',
               'model': 'gpt-4',
               'summary_text': 'A greeting.',
@@ -224,11 +224,9 @@ void main() {
       await repository.clearCache();
 
       final snapshot = await repository.loadSnapshot();
-      expect(
-        snapshot.transcripts.map((t) => t.id),
-        ['pending-1'],
-        reason: 'synced rows cleared, pending row preserved',
-      );
+      expect(snapshot.transcripts.map((t) => t.id), [
+        'pending-1',
+      ], reason: 'synced rows cleared, pending row preserved');
       expect(snapshot.chunks.map((c) => c.id), ['pending-chunk']);
     },
   );

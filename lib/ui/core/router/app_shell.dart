@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
-import 'package:voicescribe_mobile/ui/core/utils/model_download_formatters.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_navigation.dart';
@@ -19,7 +18,6 @@ class BootstrapGate extends StatelessWidget {
       buildWhen: (previous, current) =>
           previous.initialized != current.initialized ||
           previous.modelState != current.modelState ||
-          previous.downloadProgress != current.downloadProgress ||
           previous.errorMessage != current.errorMessage,
       builder: (context, state) {
         if (state.initialized) {
@@ -40,8 +38,6 @@ class BootstrapScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final progress = state.downloadProgress;
-    final percent = progress?.percent;
 
     return Scaffold(
       body: SafeArea(
@@ -75,17 +71,6 @@ class BootstrapScreen extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  if (progress != null) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    LinearProgressIndicator(
-                      value: percent == null ? null : percent / 100,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      formatModelDownloadProgress(l10n, progress),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
                   const SizedBox(height: AppSpacing.xl),
                   if (state.modelState == ModelBootstrapState.failed)
                     AppButton(

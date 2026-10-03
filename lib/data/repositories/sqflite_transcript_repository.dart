@@ -361,10 +361,8 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
             'id': summaryLocalId,
             'transcriptId': localId,
             'remoteId': summaryRemoteId,
-            'providerKey': _clientProviderKey(
-              _toText(summaryData['provider_key']),
-            ),
-            'model': _toText(summaryData['model']) ?? 'local-default',
+            'providerKey': 'cloud',
+            'model': _toText(summaryData['model']) ?? 'cloud-default',
             'summaryText': _toText(summaryData['summary_text']) ?? '',
             'tokenCount': _toNullableInt(summaryData['token_count']),
             'processingTimeMs': _toNullableInt(
@@ -421,13 +419,6 @@ class SqfliteTranscriptRepository implements TranscriptRepository {
   // --------------------------------------------------------------------------
   // JSON helpers for server responses
   // --------------------------------------------------------------------------
-
-  /// Collapse the backend provider key (local | gemini | openai | claude | …)
-  /// into the client's two-value space so the summary badge is correct: only
-  /// 'local' is on-device, everything else is a cloud provider.
-  static String _clientProviderKey(String? serverKey) {
-    return (serverKey == null || serverKey == 'local') ? 'local' : 'cloud';
-  }
 
   static String? _toText(Object? value) {
     if (value == null) {
