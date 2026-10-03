@@ -10,9 +10,15 @@ enum AppErrorCode {
   micPermissionRequired,
   storageFull,
 
+  // Transcription
+  transcriptionAuthRequired,
+  transcriptionRateLimited,
+  transcriptionUnavailable,
+  transcriptionOffline,
+  transcriptionGeneric,
+
   // Summary
   summaryEmptyTranscript,
-  summaryLocalFailed,
   summaryTimeout,
   summaryNotSynced,
   summaryAuthRequired,
@@ -25,7 +31,6 @@ enum AppErrorCode {
   // Chat
   chatEmptyQuestion,
   chatTimeout,
-  chatLocalFailed,
   chatEmptyAnswer,
   chatLoadFailed,
   chatSendFailed,
