@@ -79,22 +79,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bootstrapTitle => 'Preparing VoiceScribe';
 
   @override
-  String get bootstrapMessage => 'Loading on-device Whisper model...';
+  String get bootstrapMessage => 'Getting things ready...';
 
   @override
-  String get bootstrapFailed => 'Model setup failed.';
+  String get bootstrapFailed => 'Setup failed.';
 
   @override
   String get retrySetup => 'Retry';
-
-  @override
-  String get downloadingModel => 'Downloading model';
-
-  @override
-  String get modelReady => 'AI Ready';
-
-  @override
-  String get modelLoading => 'Loading model...';
 
   @override
   String get tapToRecord => 'Tap the button to start recording';
@@ -226,139 +217,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get turkish => 'Turkish';
 
   @override
-  String get systemStatus => 'System Status';
-
-  @override
   String get summaryProvider => 'Summary Provider';
 
   @override
-  String get aiLocationTitle => 'Where should AI run?';
+  String get transcriptionSettings => 'Transcription';
 
   @override
-  String get aiLocationLabel => 'AI location';
-
-  @override
-  String get aiLocationOnDevice => 'On this phone';
-
-  @override
-  String get aiLocationCloud => 'In the cloud';
-
-  @override
-  String get aiLocationOnDeviceDesc =>
-      'Everything runs on your phone — no internet needed and nothing leaves the device. Needs a powerful phone and a one-time ~1 GB model download. Applies to both summaries and AI chat.';
-
-  @override
-  String get aiLocationCloudDesc =>
-      'More capable, much faster AI that handles long meetings better. Needs internet and sign-in, and the recording is synced first. Applies to both summaries and AI chat.';
-
-  @override
-  String get aiLocationOnDeviceUnavailable =>
-      'This phone isn\'t powerful enough for on-device AI — use the cloud instead.';
-
-  @override
-  String get summaryPreferences => 'Choose where summaries and AI chat run.';
-
-  @override
-  String get transcriptionModelSettings => 'Transcription Model';
-
-  @override
-  String get transcriptionModelPreferences =>
-      'Choose the on-device model used for speech transcription.';
-
-  @override
-  String get modelChangeConfirmTitle => 'Change model?';
-
-  @override
-  String modelChangeConfirmDownload(Object model, Object size) {
-    return 'Switching to $model needs a one-time $size download. It runs in the background and the current model keeps working until it\'s ready.';
-  }
-
-  @override
-  String modelChangeConfirmReady(Object model) {
-    return 'Switch transcription to the $model model?';
-  }
-
-  @override
-  String get modelChangeConfirmAction => 'Switch';
-
-  @override
-  String get modelChangeConfirmDownloadAction => 'Download & switch';
-
-  @override
-  String get modelChangeBusyTitle => 'Recording in progress';
-
-  @override
-  String get modelChangeBusyMessage =>
-      'Finish the current recording before changing the transcription model — the active session keeps using the current model.';
-
-  @override
-  String get modelApplying => 'Applying…';
-
-  @override
-  String get recommendedForYourDevice => 'Recommended for your device';
-
-  @override
-  String deviceProfileLabel(Object tier) {
-    return 'Device profile: $tier';
-  }
-
-  @override
-  String get deviceTierEntry => 'Entry';
-
-  @override
-  String get deviceTierBalanced => 'Balanced';
-
-  @override
-  String get deviceTierPerformance => 'Performance';
-
-  @override
-  String get deviceTierPremium => 'Premium';
-
-  @override
-  String modelDownloadRemaining(Object size) {
-    return 'Download: $size';
-  }
-
-  @override
-  String get modelAlreadyDownloaded => 'Already downloaded';
-
-  @override
-  String get modelDownloadSizeUnknown => 'Download size unavailable';
-
-  @override
-  String get modelCompatibilityRecommended => 'Recommended';
-
-  @override
-  String get modelCompatibilitySupported => 'Supported';
-
-  @override
-  String get modelCompatibilityLimited => 'Can be slow on this device';
-
-  @override
-  String get modelApplyingSelection => 'Applying selected model...';
-
-  @override
-  String get modelTinyDescription =>
-      'Fastest option for low-end phones and quick drafts.';
-
-  @override
-  String get modelBaseDescription =>
-      'Balanced default for everyday transcription.';
-
-  @override
-  String get modelSmallDescription =>
-      'Better accuracy with moderate device cost.';
-
-  @override
-  String get modelMediumDescription => 'Higher accuracy for stronger phones.';
-
-  @override
-  String get modelLargeV3Description =>
-      'Best overall accuracy, but heavy on memory and battery.';
-
-  @override
-  String get modelLargeV3TurboDescription =>
-      'Large-class accuracy with faster throughput.';
+  String get transcriptionSettingsSubtitle =>
+      'Choose the language of your recordings.';
 
   @override
   String get userId => 'User ID';
@@ -376,11 +242,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generateSummary => 'Generate Summary';
 
   @override
-  String summarizingProgress(Object current, Object total) {
-    return 'Summarizing… ($current/$total)';
-  }
-
-  @override
   String get summaryPlaceholder =>
       'No summary yet. Tap Generate to create structured meeting minutes from this transcript.';
 
@@ -389,7 +250,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get summaryUnavailable =>
-      'Couldn\'t produce a readable summary this time. Tap Generate to try again, or switch to Cloud in Settings.';
+      'Couldn\'t produce a readable summary this time. Tap Generate to try again.';
 
   @override
   String get summaryExecutiveSummary => 'Summary';
@@ -422,29 +283,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get summaryNextMeeting => 'Next Meeting';
 
   @override
-  String get summaryProviderLocalLabel => 'On-device';
-
-  @override
   String get summaryProviderCloudLabel => 'Cloud';
 
   @override
   String get summaryUnassigned => 'Unassigned';
-
-  @override
-  String get localSummaryModel => 'On-device summary model';
-
-  @override
-  String get localSummaryModelDownload => 'Download';
-
-  @override
-  String get localSummaryModelReady => 'Downloaded';
-
-  @override
-  String get localSummaryModelDownloading => 'Downloading…';
-
-  @override
-  String get localSummaryModelUnsupported =>
-      'On-device summary needs a more capable device. Use Cloud instead.';
 
   @override
   String get chunks => 'Chunks';
@@ -565,24 +407,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Registration completed. Verify your email address, then log in.';
 
   @override
-  String get modelSetupRequired => 'Model setup required';
-
-  @override
-  String get modelSetupContinueMessage =>
-      'Model must be downloaded before continuing.';
-
-  @override
-  String get modelDownloadFailed => 'Model download failed. Please try again.';
-
-  @override
-  String get modelDownloading => 'Downloading model...';
-
-  @override
-  String modelDownloadingPercent(Object percent) {
-    return 'Downloading model $percent%';
-  }
-
-  @override
   String recordingsCount(Object count) {
     return '$count recordings';
   }
@@ -617,21 +441,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String recommendedModelLabel(Object model) {
-    return 'Recommended model: $model';
-  }
-
-  @override
-  String get usingHeavierModelWarning =>
-      'You are using a heavier model than recommended. This may cause slow transcription.';
-
-  @override
-  String get modelWarningHeavy => 'Heavier than recommended';
-
-  @override
-  String get modelWarningSlow => 'May be very slow';
-
-  @override
   String get retryTranscription => 'Retry';
 
   @override
@@ -647,13 +456,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transcriptionLanguage => 'Transcription language';
 
   @override
-  String get transcriptionModelSize => 'Model size';
-
-  @override
   String get recordingNotificationContent => 'Recording in progress';
-
-  @override
-  String get automatic => 'Automatic';
 
   @override
   String unsyncedCount(int count) {
@@ -718,28 +521,44 @@ class AppLocalizationsEn extends AppLocalizations {
       'Storage is full. Recording was stopped; free up space and try again.';
 
   @override
+  String get errTranscriptionAuthRequired =>
+      'Sign in again to transcribe your recording.';
+
+  @override
+  String get errTranscriptionRateLimited =>
+      'Too many transcription requests right now. Please retry in a moment.';
+
+  @override
+  String get errTranscriptionUnavailable =>
+      'The transcription service is unavailable right now. Please retry later.';
+
+  @override
+  String get errTranscriptionOffline =>
+      'No connection. Your audio is saved; retry the transcription when you\'re back online.';
+
+  @override
+  String get errTranscriptionGeneric =>
+      'Part of the recording could not be transcribed. Tap retry to try again.';
+
+  @override
   String get errSummaryEmptyTranscript =>
       'There is no transcript text to summarize.';
 
   @override
-  String get errSummaryLocalFailed =>
-      'The on-device model could not produce a valid summary this time. Try again or switch to the Cloud summary.';
-
-  @override
   String get errSummaryTimeout =>
-      'The summary took longer than expected. Try again or use the Cloud summary.';
+      'The summary took longer than expected. Please try again.';
 
   @override
   String get errSummaryNotSynced =>
-      'This recording hasn\'t been synced yet. Connect to the internet, sync, then retry the cloud summary.';
+      'This recording hasn\'t been synced yet. Connect to the internet, sync, then try again.';
 
   @override
   String get errSummaryAuthRequired =>
-      'You need to be signed in for cloud summaries.';
+      'You need to be signed in to create summaries.';
 
   @override
   String get errSummaryOffline =>
-      'No connection. Switch to the on-device summary or retry when online.';
+      'No connection. Retry when you\'re back online.';
 
   @override
   String get errSummaryServerError =>
@@ -761,11 +580,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errChatTimeout =>
-      'The answer took longer than expected. Try again or switch to Cloud mode.';
-
-  @override
-  String get errChatLocalFailed =>
-      'The on-device AI couldn\'t answer right now. Please try again.';
+      'The answer took longer than expected. Please try again.';
 
   @override
   String get errChatEmptyAnswer =>

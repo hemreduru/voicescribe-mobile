@@ -22,12 +22,9 @@
   "refreshFailed": "Couldn't refresh. Check your connection and try again.",
   "summary": "Summary",
   "bootstrapTitle": "Preparing VoiceScribe",
-  "bootstrapMessage": "Loading on-device Whisper model...",
-  "bootstrapFailed": "Model setup failed.",
+  "bootstrapMessage": "Getting things ready...",
+  "bootstrapFailed": "Setup failed.",
   "retrySetup": "Retry",
-  "downloadingModel": "Downloading model",
-  "modelReady": "AI Ready",
-  "modelLoading": "Loading model...",
   "tapToRecord": "Tap the button to start recording",
   "isRecording": "Recording",
   "recordingPaused": "Recording paused",
@@ -80,81 +77,17 @@
   "language": "Language",
   "english": "English",
   "turkish": "Turkish",
-  "systemStatus": "System Status",
   "summaryProvider": "Summary Provider",
-  "aiLocationTitle": "Where should AI run?",
-  "aiLocationLabel": "AI location",
-  "aiLocationOnDevice": "On this phone",
-  "aiLocationCloud": "In the cloud",
-  "aiLocationOnDeviceDesc": "Everything runs on your phone — no internet needed and nothing leaves the device. Needs a powerful phone and a one-time ~1 GB model download. Applies to both summaries and AI chat.",
-  "aiLocationCloudDesc": "More capable, much faster AI that handles long meetings better. Needs internet and sign-in, and the recording is synced first. Applies to both summaries and AI chat.",
-  "aiLocationOnDeviceUnavailable": "This phone isn't powerful enough for on-device AI — use the cloud instead.",
-  "summaryPreferences": "Choose where summaries and AI chat run.",
-  "transcriptionModelSettings": "Transcription Model",
-  "transcriptionModelPreferences": "Choose the on-device model used for speech transcription.",
-  "modelChangeConfirmTitle": "Change model?",
-  "modelChangeConfirmDownload": "Switching to {model} needs a one-time {size} download. It runs in the background and the current model keeps working until it's ready.",
-  "@modelChangeConfirmDownload": {
-    "placeholders": {
-      "model": {},
-      "size": {}
-    }
-  },
-  "modelChangeConfirmReady": "Switch transcription to the {model} model?",
-  "@modelChangeConfirmReady": {
-    "placeholders": {
-      "model": {}
-    }
-  },
-  "modelChangeConfirmAction": "Switch",
-  "modelChangeConfirmDownloadAction": "Download & switch",
-  "modelChangeBusyTitle": "Recording in progress",
-  "modelChangeBusyMessage": "Finish the current recording before changing the transcription model — the active session keeps using the current model.",
-  "modelApplying": "Applying…",
-  "recommendedForYourDevice": "Recommended for your device",
-  "deviceProfileLabel": "Device profile: {tier}",
-  "@deviceProfileLabel": {
-    "placeholders": {
-      "tier": {}
-    }
-  },
-  "deviceTierEntry": "Entry",
-  "deviceTierBalanced": "Balanced",
-  "deviceTierPerformance": "Performance",
-  "deviceTierPremium": "Premium",
-  "modelDownloadRemaining": "Download: {size}",
-  "@modelDownloadRemaining": {
-    "placeholders": {
-      "size": {}
-    }
-  },
-  "modelAlreadyDownloaded": "Already downloaded",
-  "modelDownloadSizeUnknown": "Download size unavailable",
-  "modelCompatibilityRecommended": "Recommended",
-  "modelCompatibilitySupported": "Supported",
-  "modelCompatibilityLimited": "Can be slow on this device",
-  "modelApplyingSelection": "Applying selected model...",
-  "modelTinyDescription": "Fastest option for low-end phones and quick drafts.",
-  "modelBaseDescription": "Balanced default for everyday transcription.",
-  "modelSmallDescription": "Better accuracy with moderate device cost.",
-  "modelMediumDescription": "Higher accuracy for stronger phones.",
-  "modelLargeV3Description": "Best overall accuracy, but heavy on memory and battery.",
-  "modelLargeV3TurboDescription": "Large-class accuracy with faster throughput.",
+  "transcriptionSettings": "Transcription",
+  "transcriptionSettingsSubtitle": "Choose the language of your recordings.",
   "userId": "User ID",
   "summarySettings": "Summary Settings",
   "latestTranscript": "Latest Transcript",
   "readyToSummarize": "Ready to summarize",
   "generateSummary": "Generate Summary",
-  "summarizingProgress": "Summarizing… ({current}/{total})",
-  "@summarizingProgress": {
-    "placeholders": {
-      "current": {},
-      "total": {}
-    }
-  },
   "summaryPlaceholder": "No summary yet. Tap Generate to create structured meeting minutes from this transcript.",
   "noSummaryYet": "No summary generated yet.",
-  "summaryUnavailable": "Couldn't produce a readable summary this time. Tap Generate to try again, or switch to Cloud in Settings.",
+  "summaryUnavailable": "Couldn't produce a readable summary this time. Tap Generate to try again.",
   "summaryExecutiveSummary": "Summary",
   "summaryAgenda": "Agenda",
   "summaryDecisions": "Decisions",
@@ -165,14 +98,8 @@
   "summaryAbsentees": "Absentees",
   "summaryRecorder": "Recorder",
   "summaryNextMeeting": "Next Meeting",
-  "summaryProviderLocalLabel": "On-device",
   "summaryProviderCloudLabel": "Cloud",
   "summaryUnassigned": "Unassigned",
-  "localSummaryModel": "On-device summary model",
-  "localSummaryModelDownload": "Download",
-  "localSummaryModelReady": "Downloaded",
-  "localSummaryModelDownloading": "Downloading…",
-  "localSummaryModelUnsupported": "On-device summary needs a more capable device. Use Cloud instead.",
   "chunks": "Chunks",
   "duration": "Duration",
   "selected": "Selected",
@@ -216,16 +143,6 @@
   "password": "Password",
   "authenticatedUser": "Authenticated User",
   "authVerifyEmail": "Registration completed. Verify your email address, then log in.",
-  "modelSetupRequired": "Model setup required",
-  "modelSetupContinueMessage": "Model must be downloaded before continuing.",
-  "modelDownloadFailed": "Model download failed. Please try again.",
-  "modelDownloading": "Downloading model...",
-  "modelDownloadingPercent": "Downloading model {percent}%",
-  "@modelDownloadingPercent": {
-    "placeholders": {
-      "percent": {}
-    }
-  },
   "recordingsCount": "{count} recordings",
   "@recordingsCount": {
     "placeholders": {
@@ -258,23 +175,12 @@
       "total": {}
     }
   },
-  "recommendedModelLabel": "Recommended model: {model}",
-  "@recommendedModelLabel": {
-    "placeholders": {
-      "model": {}
-    }
-  },
-  "usingHeavierModelWarning": "You are using a heavier model than recommended. This may cause slow transcription.",
-  "modelWarningHeavy": "Heavier than recommended",
-  "modelWarningSlow": "May be very slow",
   "retryTranscription": "Retry",
   "transcriptionFailedRetry": "Transcription failed. Tap to retry.",
   "retrying": "Retrying...",
   "statusIconsTitle": "Status icons",
   "transcriptionLanguage": "Transcription language",
-  "transcriptionModelSize": "Model size",
   "recordingNotificationContent": "Recording in progress",
-  "automatic": "Automatic",
   "unsyncedCount": "{count, plural, =1{1 recording not backed up yet} other{{count} recordings not backed up yet}}",
   "@unsyncedCount": {
     "placeholders": {
@@ -319,19 +225,22 @@
   "errAuthRequired": "Sign in to start recording.",
   "errMicPermissionRequired": "Microphone permission is required.",
   "errStorageFull": "Storage is full. Recording was stopped; free up space and try again.",
+  "errTranscriptionAuthRequired": "Sign in again to transcribe your recording.",
+  "errTranscriptionRateLimited": "Too many transcription requests right now. Please retry in a moment.",
+  "errTranscriptionUnavailable": "The transcription service is unavailable right now. Please retry later.",
+  "errTranscriptionOffline": "No connection. Your audio is saved; retry the transcription when you're back online.",
+  "errTranscriptionGeneric": "Part of the recording could not be transcribed. Tap retry to try again.",
   "errSummaryEmptyTranscript": "There is no transcript text to summarize.",
-  "errSummaryLocalFailed": "The on-device model could not produce a valid summary this time. Try again or switch to the Cloud summary.",
-  "errSummaryTimeout": "The summary took longer than expected. Try again or use the Cloud summary.",
-  "errSummaryNotSynced": "This recording hasn't been synced yet. Connect to the internet, sync, then retry the cloud summary.",
-  "errSummaryAuthRequired": "You need to be signed in for cloud summaries.",
-  "errSummaryOffline": "No connection. Switch to the on-device summary or retry when online.",
+  "errSummaryTimeout": "The summary took longer than expected. Please try again.",
+  "errSummaryNotSynced": "This recording hasn't been synced yet. Connect to the internet, sync, then try again.",
+  "errSummaryAuthRequired": "You need to be signed in to create summaries.",
+  "errSummaryOffline": "No connection. Retry when you're back online.",
   "errSummaryServerError": "The summary couldn't be created right now. Please try again shortly.",
   "errSummaryInvalidResponse": "The server returned an invalid response.",
   "errSummaryEmptyResponse": "The server returned an empty summary.",
   "errSummaryGeneric": "The summary could not be created. Please try again.",
   "errChatEmptyQuestion": "Please type a question.",
-  "errChatTimeout": "The answer took longer than expected. Try again or switch to Cloud mode.",
-  "errChatLocalFailed": "The on-device AI couldn't answer right now. Please try again.",
+  "errChatTimeout": "The answer took longer than expected. Please try again.",
   "errChatEmptyAnswer": "An empty answer was received. Please try again.",
   "errChatLoadFailed": "The conversation could not be loaded.",
   "errChatSendFailed": "No answer received. Please try again."

@@ -233,13 +233,13 @@ abstract class AppLocalizations {
   /// No description provided for @bootstrapMessage.
   ///
   /// In en, this message translates to:
-  /// **'Loading on-device Whisper model...'**
+  /// **'Getting things ready...'**
   String get bootstrapMessage;
 
   /// No description provided for @bootstrapFailed.
   ///
   /// In en, this message translates to:
-  /// **'Model setup failed.'**
+  /// **'Setup failed.'**
   String get bootstrapFailed;
 
   /// No description provided for @retrySetup.
@@ -247,24 +247,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get retrySetup;
-
-  /// No description provided for @downloadingModel.
-  ///
-  /// In en, this message translates to:
-  /// **'Downloading model'**
-  String get downloadingModel;
-
-  /// No description provided for @modelReady.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Ready'**
-  String get modelReady;
-
-  /// No description provided for @modelLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading model...'**
-  String get modelLoading;
 
   /// No description provided for @tapToRecord.
   ///
@@ -510,239 +492,23 @@ abstract class AppLocalizations {
   /// **'Turkish'**
   String get turkish;
 
-  /// No description provided for @systemStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'System Status'**
-  String get systemStatus;
-
   /// No description provided for @summaryProvider.
   ///
   /// In en, this message translates to:
   /// **'Summary Provider'**
   String get summaryProvider;
 
-  /// No description provided for @aiLocationTitle.
+  /// No description provided for @transcriptionSettings.
   ///
   /// In en, this message translates to:
-  /// **'Where should AI run?'**
-  String get aiLocationTitle;
+  /// **'Transcription'**
+  String get transcriptionSettings;
 
-  /// No description provided for @aiLocationLabel.
+  /// No description provided for @transcriptionSettingsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'AI location'**
-  String get aiLocationLabel;
-
-  /// No description provided for @aiLocationOnDevice.
-  ///
-  /// In en, this message translates to:
-  /// **'On this phone'**
-  String get aiLocationOnDevice;
-
-  /// No description provided for @aiLocationCloud.
-  ///
-  /// In en, this message translates to:
-  /// **'In the cloud'**
-  String get aiLocationCloud;
-
-  /// No description provided for @aiLocationOnDeviceDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Everything runs on your phone — no internet needed and nothing leaves the device. Needs a powerful phone and a one-time ~1 GB model download. Applies to both summaries and AI chat.'**
-  String get aiLocationOnDeviceDesc;
-
-  /// No description provided for @aiLocationCloudDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'More capable, much faster AI that handles long meetings better. Needs internet and sign-in, and the recording is synced first. Applies to both summaries and AI chat.'**
-  String get aiLocationCloudDesc;
-
-  /// No description provided for @aiLocationOnDeviceUnavailable.
-  ///
-  /// In en, this message translates to:
-  /// **'This phone isn\'t powerful enough for on-device AI — use the cloud instead.'**
-  String get aiLocationOnDeviceUnavailable;
-
-  /// No description provided for @summaryPreferences.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose where summaries and AI chat run.'**
-  String get summaryPreferences;
-
-  /// No description provided for @transcriptionModelSettings.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcription Model'**
-  String get transcriptionModelSettings;
-
-  /// No description provided for @transcriptionModelPreferences.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose the on-device model used for speech transcription.'**
-  String get transcriptionModelPreferences;
-
-  /// No description provided for @modelChangeConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Change model?'**
-  String get modelChangeConfirmTitle;
-
-  /// No description provided for @modelChangeConfirmDownload.
-  ///
-  /// In en, this message translates to:
-  /// **'Switching to {model} needs a one-time {size} download. It runs in the background and the current model keeps working until it\'s ready.'**
-  String modelChangeConfirmDownload(Object model, Object size);
-
-  /// No description provided for @modelChangeConfirmReady.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch transcription to the {model} model?'**
-  String modelChangeConfirmReady(Object model);
-
-  /// No description provided for @modelChangeConfirmAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch'**
-  String get modelChangeConfirmAction;
-
-  /// No description provided for @modelChangeConfirmDownloadAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Download & switch'**
-  String get modelChangeConfirmDownloadAction;
-
-  /// No description provided for @modelChangeBusyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recording in progress'**
-  String get modelChangeBusyTitle;
-
-  /// No description provided for @modelChangeBusyMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Finish the current recording before changing the transcription model — the active session keeps using the current model.'**
-  String get modelChangeBusyMessage;
-
-  /// No description provided for @modelApplying.
-  ///
-  /// In en, this message translates to:
-  /// **'Applying…'**
-  String get modelApplying;
-
-  /// No description provided for @recommendedForYourDevice.
-  ///
-  /// In en, this message translates to:
-  /// **'Recommended for your device'**
-  String get recommendedForYourDevice;
-
-  /// No description provided for @deviceProfileLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Device profile: {tier}'**
-  String deviceProfileLabel(Object tier);
-
-  /// No description provided for @deviceTierEntry.
-  ///
-  /// In en, this message translates to:
-  /// **'Entry'**
-  String get deviceTierEntry;
-
-  /// No description provided for @deviceTierBalanced.
-  ///
-  /// In en, this message translates to:
-  /// **'Balanced'**
-  String get deviceTierBalanced;
-
-  /// No description provided for @deviceTierPerformance.
-  ///
-  /// In en, this message translates to:
-  /// **'Performance'**
-  String get deviceTierPerformance;
-
-  /// No description provided for @deviceTierPremium.
-  ///
-  /// In en, this message translates to:
-  /// **'Premium'**
-  String get deviceTierPremium;
-
-  /// No description provided for @modelDownloadRemaining.
-  ///
-  /// In en, this message translates to:
-  /// **'Download: {size}'**
-  String modelDownloadRemaining(Object size);
-
-  /// No description provided for @modelAlreadyDownloaded.
-  ///
-  /// In en, this message translates to:
-  /// **'Already downloaded'**
-  String get modelAlreadyDownloaded;
-
-  /// No description provided for @modelDownloadSizeUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'Download size unavailable'**
-  String get modelDownloadSizeUnknown;
-
-  /// No description provided for @modelCompatibilityRecommended.
-  ///
-  /// In en, this message translates to:
-  /// **'Recommended'**
-  String get modelCompatibilityRecommended;
-
-  /// No description provided for @modelCompatibilitySupported.
-  ///
-  /// In en, this message translates to:
-  /// **'Supported'**
-  String get modelCompatibilitySupported;
-
-  /// No description provided for @modelCompatibilityLimited.
-  ///
-  /// In en, this message translates to:
-  /// **'Can be slow on this device'**
-  String get modelCompatibilityLimited;
-
-  /// No description provided for @modelApplyingSelection.
-  ///
-  /// In en, this message translates to:
-  /// **'Applying selected model...'**
-  String get modelApplyingSelection;
-
-  /// No description provided for @modelTinyDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Fastest option for low-end phones and quick drafts.'**
-  String get modelTinyDescription;
-
-  /// No description provided for @modelBaseDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Balanced default for everyday transcription.'**
-  String get modelBaseDescription;
-
-  /// No description provided for @modelSmallDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Better accuracy with moderate device cost.'**
-  String get modelSmallDescription;
-
-  /// No description provided for @modelMediumDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Higher accuracy for stronger phones.'**
-  String get modelMediumDescription;
-
-  /// No description provided for @modelLargeV3Description.
-  ///
-  /// In en, this message translates to:
-  /// **'Best overall accuracy, but heavy on memory and battery.'**
-  String get modelLargeV3Description;
-
-  /// No description provided for @modelLargeV3TurboDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Large-class accuracy with faster throughput.'**
-  String get modelLargeV3TurboDescription;
+  /// **'Choose the language of your recordings.'**
+  String get transcriptionSettingsSubtitle;
 
   /// No description provided for @userId.
   ///
@@ -774,12 +540,6 @@ abstract class AppLocalizations {
   /// **'Generate Summary'**
   String get generateSummary;
 
-  /// No description provided for @summarizingProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'Summarizing… ({current}/{total})'**
-  String summarizingProgress(Object current, Object total);
-
   /// No description provided for @summaryPlaceholder.
   ///
   /// In en, this message translates to:
@@ -795,7 +555,7 @@ abstract class AppLocalizations {
   /// No description provided for @summaryUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t produce a readable summary this time. Tap Generate to try again, or switch to Cloud in Settings.'**
+  /// **'Couldn\'t produce a readable summary this time. Tap Generate to try again.'**
   String get summaryUnavailable;
 
   /// No description provided for @summaryExecutiveSummary.
@@ -858,12 +618,6 @@ abstract class AppLocalizations {
   /// **'Next Meeting'**
   String get summaryNextMeeting;
 
-  /// No description provided for @summaryProviderLocalLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'On-device'**
-  String get summaryProviderLocalLabel;
-
   /// No description provided for @summaryProviderCloudLabel.
   ///
   /// In en, this message translates to:
@@ -875,36 +629,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unassigned'**
   String get summaryUnassigned;
-
-  /// No description provided for @localSummaryModel.
-  ///
-  /// In en, this message translates to:
-  /// **'On-device summary model'**
-  String get localSummaryModel;
-
-  /// No description provided for @localSummaryModelDownload.
-  ///
-  /// In en, this message translates to:
-  /// **'Download'**
-  String get localSummaryModelDownload;
-
-  /// No description provided for @localSummaryModelReady.
-  ///
-  /// In en, this message translates to:
-  /// **'Downloaded'**
-  String get localSummaryModelReady;
-
-  /// No description provided for @localSummaryModelDownloading.
-  ///
-  /// In en, this message translates to:
-  /// **'Downloading…'**
-  String get localSummaryModelDownloading;
-
-  /// No description provided for @localSummaryModelUnsupported.
-  ///
-  /// In en, this message translates to:
-  /// **'On-device summary needs a more capable device. Use Cloud instead.'**
-  String get localSummaryModelUnsupported;
 
   /// No description provided for @chunks.
   ///
@@ -1134,36 +858,6 @@ abstract class AppLocalizations {
   /// **'Registration completed. Verify your email address, then log in.'**
   String get authVerifyEmail;
 
-  /// No description provided for @modelSetupRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Model setup required'**
-  String get modelSetupRequired;
-
-  /// No description provided for @modelSetupContinueMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Model must be downloaded before continuing.'**
-  String get modelSetupContinueMessage;
-
-  /// No description provided for @modelDownloadFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Model download failed. Please try again.'**
-  String get modelDownloadFailed;
-
-  /// No description provided for @modelDownloading.
-  ///
-  /// In en, this message translates to:
-  /// **'Downloading model...'**
-  String get modelDownloading;
-
-  /// No description provided for @modelDownloadingPercent.
-  ///
-  /// In en, this message translates to:
-  /// **'Downloading model {percent}%'**
-  String modelDownloadingPercent(Object percent);
-
   /// No description provided for @recordingsCount.
   ///
   /// In en, this message translates to:
@@ -1200,30 +894,6 @@ abstract class AppLocalizations {
   /// **'{completed} of {total}'**
   String transcriptionProgressChunks(Object completed, Object total);
 
-  /// No description provided for @recommendedModelLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Recommended model: {model}'**
-  String recommendedModelLabel(Object model);
-
-  /// No description provided for @usingHeavierModelWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'You are using a heavier model than recommended. This may cause slow transcription.'**
-  String get usingHeavierModelWarning;
-
-  /// No description provided for @modelWarningHeavy.
-  ///
-  /// In en, this message translates to:
-  /// **'Heavier than recommended'**
-  String get modelWarningHeavy;
-
-  /// No description provided for @modelWarningSlow.
-  ///
-  /// In en, this message translates to:
-  /// **'May be very slow'**
-  String get modelWarningSlow;
-
   /// No description provided for @retryTranscription.
   ///
   /// In en, this message translates to:
@@ -1254,23 +924,11 @@ abstract class AppLocalizations {
   /// **'Transcription language'**
   String get transcriptionLanguage;
 
-  /// No description provided for @transcriptionModelSize.
-  ///
-  /// In en, this message translates to:
-  /// **'Model size'**
-  String get transcriptionModelSize;
-
   /// No description provided for @recordingNotificationContent.
   ///
   /// In en, this message translates to:
   /// **'Recording in progress'**
   String get recordingNotificationContent;
-
-  /// No description provided for @automatic.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatic'**
-  String get automatic;
 
   /// No description provided for @unsyncedCount.
   ///
@@ -1326,40 +984,64 @@ abstract class AppLocalizations {
   /// **'Storage is full. Recording was stopped; free up space and try again.'**
   String get errStorageFull;
 
+  /// No description provided for @errTranscriptionAuthRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again to transcribe your recording.'**
+  String get errTranscriptionAuthRequired;
+
+  /// No description provided for @errTranscriptionRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many transcription requests right now. Please retry in a moment.'**
+  String get errTranscriptionRateLimited;
+
+  /// No description provided for @errTranscriptionUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The transcription service is unavailable right now. Please retry later.'**
+  String get errTranscriptionUnavailable;
+
+  /// No description provided for @errTranscriptionOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection. Your audio is saved; retry the transcription when you\'re back online.'**
+  String get errTranscriptionOffline;
+
+  /// No description provided for @errTranscriptionGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of the recording could not be transcribed. Tap retry to try again.'**
+  String get errTranscriptionGeneric;
+
   /// No description provided for @errSummaryEmptyTranscript.
   ///
   /// In en, this message translates to:
   /// **'There is no transcript text to summarize.'**
   String get errSummaryEmptyTranscript;
 
-  /// No description provided for @errSummaryLocalFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'The on-device model could not produce a valid summary this time. Try again or switch to the Cloud summary.'**
-  String get errSummaryLocalFailed;
-
   /// No description provided for @errSummaryTimeout.
   ///
   /// In en, this message translates to:
-  /// **'The summary took longer than expected. Try again or use the Cloud summary.'**
+  /// **'The summary took longer than expected. Please try again.'**
   String get errSummaryTimeout;
 
   /// No description provided for @errSummaryNotSynced.
   ///
   /// In en, this message translates to:
-  /// **'This recording hasn\'t been synced yet. Connect to the internet, sync, then retry the cloud summary.'**
+  /// **'This recording hasn\'t been synced yet. Connect to the internet, sync, then try again.'**
   String get errSummaryNotSynced;
 
   /// No description provided for @errSummaryAuthRequired.
   ///
   /// In en, this message translates to:
-  /// **'You need to be signed in for cloud summaries.'**
+  /// **'You need to be signed in to create summaries.'**
   String get errSummaryAuthRequired;
 
   /// No description provided for @errSummaryOffline.
   ///
   /// In en, this message translates to:
-  /// **'No connection. Switch to the on-device summary or retry when online.'**
+  /// **'No connection. Retry when you\'re back online.'**
   String get errSummaryOffline;
 
   /// No description provided for @errSummaryServerError.
@@ -1395,14 +1077,8 @@ abstract class AppLocalizations {
   /// No description provided for @errChatTimeout.
   ///
   /// In en, this message translates to:
-  /// **'The answer took longer than expected. Try again or switch to Cloud mode.'**
+  /// **'The answer took longer than expected. Please try again.'**
   String get errChatTimeout;
-
-  /// No description provided for @errChatLocalFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'The on-device AI couldn\'t answer right now. Please try again.'**
-  String get errChatLocalFailed;
 
   /// No description provided for @errChatEmptyAnswer.
   ///
