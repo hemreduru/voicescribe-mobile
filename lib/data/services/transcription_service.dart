@@ -20,6 +20,9 @@ class TranscriptionException implements Exception {
 }
 
 abstract class TranscriptionService {
+  /// The currently configured transcription language code (`tr` or `en`).
+  String get currentTranscriptionLanguage;
+
   /// Sets the transcription language (`tr` or `en`).
   void setTranscriptionLanguage(String language);
 

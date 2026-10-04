@@ -34,4 +34,8 @@ enum AppErrorCode {
   chatEmptyAnswer,
   chatLoadFailed,
   chatSendFailed,
+
+  // Settings
+  settingsActionFailed,
+  settingsSyncFailed,
 }

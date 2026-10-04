@@ -1,5 +1,17 @@
+import 'dart:convert';
+
 import 'package:voicescribe_mobile/data/services/transcript_api_client.dart';
 import 'package:voicescribe_mobile/domain/models/chat.dart';
+
+/// One parsed Server-Sent Event from the streaming chat endpoint. [type] is the
+/// SSE `event:` name (`meta` / `delta` / `done` / `error`); [data] is the parsed
+/// JSON payload (null when the payload wasn't valid JSON).
+class ChatStreamEvent {
+  const ChatStreamEvent(this.type, this.data);
+
+  final String type;
+  final Map<String, dynamic>? data;
+}
 
 /// Thrown when a chat operation fails; [message] is user-facing (Turkish).
 class ChatException implements Exception {
@@ -117,6 +129,62 @@ class ChatRepository {
         _stringKeyed(map['assistant_message'] as Map<Object?, Object?>),
       ),
     );
+  }
+
+  /// Streaming variant of [sendMessage] over Server-Sent Events. Yields a `meta`
+  /// event (session + persisted user message + sources), then `delta` events as
+  /// the answer is generated, then a `done` event with the saved assistant
+  /// message — or an `error` event. Throws [ChatException] on a non-2xx status
+  /// so the caller can fall back to the buffered [sendMessage].
+  Stream<ChatStreamEvent> streamMessage({
+    required String content,
+    int? sessionId,
+  }) async* {
+    final token = _token();
+    final response = await _apiClient.openStream(
+      method: 'POST',
+      path: '/api/v1/chat/messages/stream',
+      payload: <String, Object?>{
+        if (sessionId != null) 'session_id': sessionId,
+        'content': content,
+      },
+      token: token,
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ChatException('Akış başlatılamadı (HTTP ${response.statusCode}).');
+    }
+
+    String? event;
+    final dataBuf = StringBuffer();
+    await for (final line
+        in response.transform(utf8.decoder).transform(const LineSplitter())) {
+      if (line.isEmpty) {
+        final raw = dataBuf.toString();
+        if (event != null || raw.isNotEmpty) {
+          Map<String, dynamic>? data;
+          if (raw.isNotEmpty) {
+            try {
+              final decoded = jsonDecode(raw);
+              if (decoded is Map) {
+                data = decoded.map((k, v) => MapEntry(k.toString(), v));
+              }
+            } on FormatException {
+              data = null;
+            }
+          }
+          yield ChatStreamEvent(event ?? 'message', data);
+        }
+        event = null;
+        dataBuf.clear();
+        continue;
+      }
+      if (line.startsWith('event:')) {
+        event = line.substring(6).trim();
+      } else if (line.startsWith('data:')) {
+        final part = line.substring(5);
+        dataBuf.write(part.startsWith(' ') ? part.substring(1) : part);
+      }
+    }
   }
 
   Future<void> deleteSession(int id) async {

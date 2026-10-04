@@ -6,6 +6,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/background_work_service.dart';
+import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/transcription_service.dart';
 import 'package:voicescribe_mobile/domain/models/app_error.dart';
@@ -203,12 +204,15 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
     required AuthRepository authRepository,
     required SyncQueueService syncQueueService,
     BackgroundWorkService backgroundWork = const NoopBackgroundWorkService(),
+    CompletionNotificationService completionNotifications =
+        const NoopCompletionNotificationService(),
   }) : _transcriptRepository = transcriptRepository,
        _recordingService = recordingService,
        _transcriptionService = transcriptionService,
        _authRepository = authRepository,
        _syncQueueService = syncQueueService,
        _backgroundWork = backgroundWork,
+       _completionNotifications = completionNotifications,
        super(const RecordingState()) {
     on<RecordingSubscriptionRequested>(_onSubscriptionRequested);
     on<RecordingStarted>(_onStarted, transformer: droppable());
@@ -240,6 +244,7 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
   final AuthRepository _authRepository;
   final SyncQueueService _syncQueueService;
   final BackgroundWorkService _backgroundWork;
+  final CompletionNotificationService _completionNotifications;
 
   // Notification copy for the background-transcription foreground service.
   // Localized strings are pushed in from the UI via
@@ -301,6 +306,10 @@ class RecordingBloc extends Bloc<RecordingEvent, RecordingState> {
       );
     } else {
       unawaited(_backgroundWork.stop());
+      // The post-stop transcription backlog just drained. If the user had
+      // backgrounded the app, let them know the transcript is ready (the
+      // service no-ops the notification when the app is in the foreground).
+      unawaited(_completionNotifications.showTranscriptReady());
     }
   }
 

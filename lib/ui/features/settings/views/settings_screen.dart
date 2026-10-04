@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
+import 'package:voicescribe_mobile/ui/core/i18n/error_messages.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
@@ -8,6 +10,7 @@ import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_section.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_segmented_control.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/premium_widgets.dart';
+import 'package:voicescribe_mobile/ui/features/bootstrap/bloc/bootstrap_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/settings/bloc/settings_bloc.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -25,7 +28,9 @@ class SettingsScreen extends StatelessWidget {
           previous.syncing != current.syncing ||
           previous.lastSyncAt != current.lastSyncAt ||
           previous.syncErrorMessage != current.syncErrorMessage ||
+          previous.syncErrorCode != current.syncErrorCode ||
           previous.errorMessage != current.errorMessage ||
+          previous.errorCode != current.errorCode ||
           previous.pendingSyncCount != current.pendingSyncCount,
       builder: (context, state) {
         final session = state.session;
@@ -66,9 +71,14 @@ class SettingsScreen extends StatelessWidget {
                       variant: AppButtonVariant.outline,
                       foregroundColor: Theme.of(context).colorScheme.error,
                     ),
-                    if (state.errorMessage != null) ...[
+                    if (state.errorCode != null ||
+                        state.errorMessage != null) ...[
                       const SizedBox(height: AppSpacing.sm),
-                      AppErrorText(message: state.errorMessage!),
+                      AppErrorText(
+                        message:
+                            state.errorCode?.localized(l10n) ??
+                            state.errorMessage!,
+                      ),
                     ],
                   ],
                 ),
@@ -86,6 +96,22 @@ class SettingsScreen extends StatelessWidget {
                       ],
                       onChanged: (value) => context.read<SettingsBloc>().add(
                         SettingsTranscriptionLanguageChanged(value),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppSectionCard(
+                  title: l10n.summarySettings,
+                  subtitle: l10n.autoSummarizeDesc,
+                  children: [
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      value: preferences.autoSummarize,
+                      title: Text(l10n.autoSummarizeTitle),
+                      subtitle: Text(l10n.autoSummarizeDesc),
+                      onChanged: (value) => context.read<SettingsBloc>().add(
+                        SettingsAutoSummarizeChanged(value: value),
                       ),
                     ),
                   ],
@@ -137,6 +163,13 @@ class SettingsScreen extends StatelessWidget {
                       onChanged: (value) => context.read<SettingsBloc>().add(
                         SettingsLocalePreferenceChanged(value),
                       ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    ActionRow(
+                      icon: Icons.replay,
+                      title: l10n.replayIntroTitle,
+                      subtitle: l10n.replayIntroSubtitle,
+                      onTap: () => _replayIntro(context),
                     ),
                   ],
                 ),
@@ -227,9 +260,14 @@ class SettingsScreen extends StatelessWidget {
                           variant: AppButtonVariant.outline,
                           expanded: true,
                         ),
-                        if (state.syncErrorMessage != null) ...[
+                        if (state.syncErrorCode != null ||
+                            state.syncErrorMessage != null) ...[
                           const SizedBox(height: AppSpacing.sm),
-                          AppErrorText(message: state.syncErrorMessage!),
+                          AppErrorText(
+                            message:
+                                state.syncErrorCode?.localized(l10n) ??
+                                state.syncErrorMessage!,
+                          ),
                         ],
                       ],
                     ),
@@ -241,6 +279,16 @@ class SettingsScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<void> _replayIntro(BuildContext context) async {
+    final bootstrapBloc = context.read<BootstrapBloc>();
+    final repository = context.read<TranscriptRepository>();
+    final snapshot = await repository.loadSnapshot();
+    await repository.savePreferences(
+      snapshot.preferences.copyWith(hasSeenOnboarding: false),
+    );
+    bootstrapBloc.add(const BootstrapOnboardingReset());
   }
 
   Future<void> _confirmLogout(BuildContext context) async {

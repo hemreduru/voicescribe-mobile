@@ -38,6 +38,9 @@ class CloudTranscriptionService implements TranscriptionService {
   static const Duration _maxRetryAfter = Duration(minutes: 1);
 
   @override
+  String get currentTranscriptionLanguage => _language;
+
+  @override
   void setTranscriptionLanguage(String language) {
     _language = AppPreferences.normalizeTranscriptionLanguage(language);
     AppLogger.info('[Transcription] Language set to $_language');

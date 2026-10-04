@@ -7,6 +7,7 @@ import 'package:voicescribe_mobile/ui/features/ai/views/ai_screen.dart';
 import 'package:voicescribe_mobile/ui/features/auth/bloc/auth_bloc.dart';
 import 'package:voicescribe_mobile/ui/features/auth/views/auth_screen.dart';
 import 'package:voicescribe_mobile/ui/features/bootstrap/bloc/bootstrap_bloc.dart';
+import 'package:voicescribe_mobile/ui/features/onboarding/views/onboarding_screen.dart';
 import 'package:voicescribe_mobile/ui/features/recording/views/recording_screen.dart';
 import 'package:voicescribe_mobile/ui/features/settings/views/settings_screen.dart';
 import 'package:voicescribe_mobile/ui/features/transcript/views/transcript_screen.dart';
@@ -28,6 +29,7 @@ GoRouter createAppRouter({
       final path = state.uri.path;
       final isAuthRoute = path == '/auth';
       final isRootRoute = path == '/';
+      final isOnboardingRoute = path == '/onboarding';
 
       if (!bootstrapBloc.state.initialized || !authBloc.state.isResolved) {
         return isRootRoute ? null : '/';
@@ -41,7 +43,13 @@ GoRouter createAppRouter({
         return isAuthRoute ? null : '/auth';
       }
 
-      if (isAuthRoute || isRootRoute) {
+      // First run: show the wizard before the app. Gated on the persisted
+      // hasSeenOnboarding flag (surfaced via BootstrapState.onboardingComplete).
+      if (!bootstrapBloc.state.onboardingComplete) {
+        return isOnboardingRoute ? null : '/onboarding';
+      }
+
+      if (isAuthRoute || isRootRoute || isOnboardingRoute) {
         return '/recording';
       }
 
@@ -56,6 +64,11 @@ GoRouter createAppRouter({
       GoRoute(
         path: '/auth',
         pageBuilder: (context, state) => _fadePage(const AuthScreen(), state),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        pageBuilder: (context, state) =>
+            _fadePage(const OnboardingScreen(), state),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

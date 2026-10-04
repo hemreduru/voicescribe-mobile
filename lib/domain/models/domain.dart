@@ -146,6 +146,8 @@ abstract class AppPreferences with _$AppPreferences {
     @Default('system') String themeMode,
     @Default('system') String localePreference,
     @Default('tr') String transcriptionLanguage,
+    @Default(true) bool autoSummarize,
+    @Default(false) bool hasSeenOnboarding,
   }) = _AppPreferences;
 
   const AppPreferences._();

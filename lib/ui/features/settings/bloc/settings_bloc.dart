@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
 import 'package:voicescribe_mobile/data/services/transcription_service.dart';
+import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -13,6 +14,12 @@ sealed class SettingsEvent {
 
 final class SettingsSubscriptionRequested extends SettingsEvent {
   const SettingsSubscriptionRequested();
+}
+
+final class SettingsAutoSummarizeChanged extends SettingsEvent {
+  const SettingsAutoSummarizeChanged({required this.value});
+
+  final bool value;
 }
 
 final class SettingsThemeModeChanged extends SettingsEvent {
@@ -67,7 +74,9 @@ class SettingsState {
     this.syncing = false,
     this.lastSyncAt,
     this.syncErrorMessage,
+    this.syncErrorCode,
     this.errorMessage,
+    this.errorCode,
     this.pendingSyncCount = 0,
   });
 
@@ -77,7 +86,9 @@ class SettingsState {
   final bool syncing;
   final DateTime? lastSyncAt;
   final String? syncErrorMessage;
+  final AppErrorCode? syncErrorCode;
   final String? errorMessage;
+  final AppErrorCode? errorCode;
 
   /// Number of local transcripts not yet backed up to the server. Surfaced so
   /// the user can trust that nothing is stuck unsynced.
@@ -92,8 +103,10 @@ class SettingsState {
     DateTime? lastSyncAt,
     bool clearLastSyncAt = false,
     String? syncErrorMessage,
+    AppErrorCode? syncErrorCode,
     bool clearSyncErrorMessage = false,
     String? errorMessage,
+    AppErrorCode? errorCode,
     bool clearErrorMessage = false,
     int? pendingSyncCount,
   }) {
@@ -106,9 +119,13 @@ class SettingsState {
       syncErrorMessage: clearSyncErrorMessage
           ? null
           : syncErrorMessage ?? this.syncErrorMessage,
+      syncErrorCode: clearSyncErrorMessage
+          ? null
+          : syncErrorCode ?? this.syncErrorCode,
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
+      errorCode: clearErrorMessage ? null : errorCode ?? this.errorCode,
       pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
     );
   }
@@ -129,6 +146,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<_SettingsSnapshotChanged>(_onSnapshotChanged);
     on<_SettingsSessionChanged>(_onSessionChanged);
     on<_SettingsSyncEventChanged>(_onSyncEventChanged);
+    on<SettingsAutoSummarizeChanged>(_onAutoSummarizeChanged);
     on<SettingsThemeModeChanged>(_onThemeModeChanged);
     on<SettingsLocalePreferenceChanged>(_onLocalePreferenceChanged);
     on<SettingsTranscriptionLanguageChanged>(_onTranscriptionLanguageChanged);
@@ -234,11 +252,22 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
           emit(
             state.copyWith(
               syncing: false,
-              syncErrorMessage: event.event.error ?? 'Sync failed.',
+              syncErrorCode: AppErrorCode.settingsSyncFailed,
+              syncErrorMessage: event.event.error,
             ),
           );
         }
     }
+  }
+
+  Future<void> _onAutoSummarizeChanged(
+    SettingsAutoSummarizeChanged event,
+    Emitter<SettingsState> emit,
+  ) {
+    return _savePreferences(
+      emit,
+      state.preferences.copyWith(autoSummarize: event.value),
+    );
   }
 
   Future<void> _onThemeModeChanged(
@@ -294,7 +323,13 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(loggingOut: false, errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          loggingOut: false,
+          errorCode: AppErrorCode.settingsActionFailed,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -314,7 +349,13 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         ),
       );
     } catch (error) {
-      emit(state.copyWith(syncing: false, syncErrorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          syncing: false,
+          syncErrorCode: AppErrorCode.settingsSyncFailed,
+          syncErrorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -326,7 +367,12 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     try {
       await _transcriptRepository.savePreferences(preferences);
     } catch (error) {
-      emit(state.copyWith(errorMessage: error.toString()));
+      emit(
+        state.copyWith(
+          errorCode: AppErrorCode.settingsActionFailed,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
