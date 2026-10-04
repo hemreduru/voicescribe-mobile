@@ -1023,8 +1023,7 @@ class _SummaryTab extends StatelessWidget {
             (state.errorCode != null || state.errorMessage != null)) ...[
           const SizedBox(height: AppSpacing.md),
           _SummaryErrorCard(
-            message:
-                state.errorCode?.localized(l10n) ?? state.errorMessage!,
+            message: state.errorCode?.localized(l10n) ?? state.errorMessage!,
             onRetry: state.mergedText.isEmpty
                 ? null
                 : () => context.read<TranscriptDetailBloc>().add(

@@ -45,8 +45,9 @@ class _RecordingScreenState extends State<RecordingScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _sessionLanguage ??=
-        context.read<TranscriptionService>().currentTranscriptionLanguage;
+    _sessionLanguage ??= context
+        .read<TranscriptionService>()
+        .currentTranscriptionLanguage;
   }
 
   @override
@@ -147,7 +148,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
                     _SessionLanguageSelector(
                       value: _sessionLanguage ?? 'tr',
                       onChanged: (value) {
-                        context.read<TranscriptionService>()
+                        context
+                            .read<TranscriptionService>()
                             .setTranscriptionLanguage(value);
                         setState(() => _sessionLanguage = value);
                       },
@@ -336,7 +338,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
 /// recording only via the transcription service; it never overwrites the saved
 /// default in Settings.
 class _SessionLanguageSelector extends StatelessWidget {
-  const _SessionLanguageSelector({required this.value, required this.onChanged});
+  const _SessionLanguageSelector({
+    required this.value,
+    required this.onChanged,
+  });
 
   final String value;
   final ValueChanged<String> onChanged;
@@ -395,9 +400,7 @@ class _TranscriptionStatusStrip extends StatelessWidget {
         final theme = Theme.of(context);
         final completed = state.transcribedProgressChunks;
         final total = state.totalProgressChunks;
-        final percent = total == 0
-            ? null
-            : (completed / total).clamp(0.0, 1.0);
+        final percent = total == 0 ? null : (completed / total).clamp(0.0, 1.0);
         final remaining = state.estimatedTranscriptionRemaining;
         final detail = remaining == null || remaining.inSeconds <= 0
             ? l10n.transcriptionProgressChunks(completed, total)

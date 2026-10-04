@@ -107,27 +107,36 @@ void main() {
     await repo.dispose();
   });
 
-  test('auto-generates a summary when a transcript completes and is synced', () async {
-    repo = FakeTranscriptRepository(initial: _snapshot(const [], const []));
-    coordinator = build()..start();
+  test(
+    'auto-generates a summary when a transcript completes and is synced',
+    () async {
+      repo = FakeTranscriptRepository(initial: _snapshot(const [], const []));
+      coordinator = build()..start();
 
-    repo.snapshot = _snapshot(
-      [_transcript('t1', status: TranscriptStatus.completed, remoteId: 'r1')],
-      [_chunk('t1', 'Hello world. This is the meeting.')],
-    );
-    repo.emit();
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+      repo.snapshot = _snapshot(
+        [_transcript('t1', status: TranscriptStatus.completed, remoteId: 'r1')],
+        [_chunk('t1', 'Hello world. This is the meeting.')],
+      );
+      repo.emit();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
 
-    expect(summary.calls, 1);
-    expect(notifier.summaryReadyCount, 1);
-  });
+      expect(summary.calls, 1);
+      expect(notifier.summaryReadyCount, 1);
+    },
+  );
 
   test('does not summarize while still transcribing', () async {
     repo = FakeTranscriptRepository(initial: _snapshot(const [], const []));
     coordinator = build()..start();
 
     repo.snapshot = _snapshot(
-      [_transcript('t1', status: TranscriptStatus.transcribing, remoteId: 'r1')],
+      [
+        _transcript(
+          't1',
+          status: TranscriptStatus.transcribing,
+          remoteId: 'r1',
+        ),
+      ],
       [_chunk('t1', 'partial text')],
     );
     repo.emit();
@@ -170,28 +179,29 @@ void main() {
     expect(summary.calls, 1);
   });
 
-  test('cloud waits until the transcript is synced and a token exists', () async {
-    repo = FakeTranscriptRepository(initial: _snapshot(const [], const []));
-    coordinator = build(token: 'tok')..start();
+  test(
+    'cloud waits until the transcript is synced and a token exists',
+    () async {
+      repo = FakeTranscriptRepository(initial: _snapshot(const [], const []));
+      coordinator = build(token: 'tok')..start();
 
-    // Completed but not synced (no remoteId) → should not run yet.
-    repo.snapshot = _snapshot(
-      [_transcript('t1', status: TranscriptStatus.completed)],
-      [_chunk('t1', 'Hello world.')],
-    );
-    repo.emit();
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-    expect(summary.calls, 0);
+      // Completed but not synced (no remoteId) → should not run yet.
+      repo.snapshot = _snapshot(
+        [_transcript('t1', status: TranscriptStatus.completed)],
+        [_chunk('t1', 'Hello world.')],
+      );
+      repo.emit();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(summary.calls, 0);
 
-    // remoteId now present (sync landed) → runs.
-    repo.snapshot = _snapshot(
-      [
-        _transcript('t1', status: TranscriptStatus.completed, remoteId: 'r1'),
-      ],
-      [_chunk('t1', 'Hello world.')],
-    );
-    repo.emit();
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-    expect(summary.calls, 1);
-  });
+      // remoteId now present (sync landed) → runs.
+      repo.snapshot = _snapshot(
+        [_transcript('t1', status: TranscriptStatus.completed, remoteId: 'r1')],
+        [_chunk('t1', 'Hello world.')],
+      );
+      repo.emit();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(summary.calls, 1);
+    },
+  );
 }

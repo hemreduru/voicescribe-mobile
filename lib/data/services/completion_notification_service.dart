@@ -52,8 +52,9 @@ class NoopCompletionNotificationService
 
 class FlutterLocalCompletionNotificationService
     implements CompletionNotificationService {
-  FlutterLocalCompletionNotificationService({FlutterLocalNotificationsPlugin? plugin})
-    : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+  FlutterLocalCompletionNotificationService({
+    FlutterLocalNotificationsPlugin? plugin,
+  }) : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
 
   final FlutterLocalNotificationsPlugin _plugin;
   bool _initialized = false;
@@ -114,8 +115,7 @@ class FlutterLocalCompletionNotificationService
         android: AndroidNotificationDetails(
           _channelId,
           'Ready',
-          channelDescription:
-              'Notifies when a transcript or summary is ready.',
+          channelDescription: 'Notifies when a transcript or summary is ready.',
         ),
       );
       await _plugin.show(id, title, body, details);

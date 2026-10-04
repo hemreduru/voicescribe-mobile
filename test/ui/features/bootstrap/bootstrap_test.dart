@@ -32,9 +32,7 @@ void main() {
         transcripts: [],
         chunks: [],
         summaries: [],
-        preferences: AppPreferences(
-          transcriptionLanguage: 'en',
-        ),
+        preferences: AppPreferences(transcriptionLanguage: 'en'),
       ),
     );
     final bloc = BootstrapBloc(

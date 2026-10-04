@@ -196,6 +196,7 @@ class ChatCubit extends Cubit<ChatState> {
       );
     }
   }
+
   ChatSession? _session(Object? raw) {
     if (raw is! Map) return null;
     try {

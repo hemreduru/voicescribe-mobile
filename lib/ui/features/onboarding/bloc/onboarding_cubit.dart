@@ -58,8 +58,9 @@ class OnboardingCubit extends Cubit<OnboardingState> {
     emit(
       state.copyWith(
         draft: state.draft.copyWith(
-          transcriptionLanguage:
-              AppPreferences.normalizeTranscriptionLanguage(initialLanguage),
+          transcriptionLanguage: AppPreferences.normalizeTranscriptionLanguage(
+            initialLanguage,
+          ),
         ),
       ),
     );

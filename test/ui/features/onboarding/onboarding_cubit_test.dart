@@ -7,9 +7,7 @@ void main() {
   late FakeTranscriptRepository repo;
   late FakeTranscriptionService transcription;
 
-  OnboardingCubit build({
-    String deviceLanguageCode = 'en',
-  }) {
+  OnboardingCubit build({String deviceLanguageCode = 'en'}) {
     return OnboardingCubit(
       transcriptRepository: repo,
       transcriptionService: transcription,

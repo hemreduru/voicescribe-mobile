@@ -61,7 +61,9 @@ class _OnboardingViewState extends State<_OnboardingView> {
       listener: (context, state) {
         if (state.completed) {
           // Router redirects to the app once bootstrap reports onboarding done.
-          context.read<BootstrapBloc>().add(const BootstrapOnboardingCompleted());
+          context.read<BootstrapBloc>().add(
+            const BootstrapOnboardingCompleted(),
+          );
           return;
         }
         if (_controller.hasClients &&
@@ -384,9 +386,9 @@ class _FieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
