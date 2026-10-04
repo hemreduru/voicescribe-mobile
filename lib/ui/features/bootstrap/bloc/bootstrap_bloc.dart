@@ -4,8 +4,7 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 // ignore_for_file: avoid_slow_async_io
 import 'package:path_provider/path_provider.dart';
-import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/data/services/transcription_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/use_cases/repair_stale_recordings.dart';
@@ -37,25 +36,15 @@ final class BootstrapOnboardingReset extends BootstrapEvent {
   const BootstrapOnboardingReset();
 }
 
-final class _BootstrapProgressChanged extends BootstrapEvent {
-  const _BootstrapProgressChanged(this.progress);
-
-  final ModelDownloadProgress progress;
-}
-
 class BootstrapState {
   const BootstrapState({
     this.modelState = ModelBootstrapState.bootstrapping,
-    this.selectedModelKey = 'base',
-    this.downloadProgress,
     this.errorMessage,
     this.initialized = false,
     this.onboardingComplete = true,
   });
 
   final ModelBootstrapState modelState;
-  final String selectedModelKey;
-  final ModelDownloadProgress? downloadProgress;
   final String? errorMessage;
   final bool initialized;
 
@@ -68,9 +57,6 @@ class BootstrapState {
 
   BootstrapState copyWith({
     ModelBootstrapState? modelState,
-    String? selectedModelKey,
-    ModelDownloadProgress? downloadProgress,
-    bool clearDownloadProgress = false,
     String? errorMessage,
     bool clearErrorMessage = false,
     bool? initialized,
@@ -78,10 +64,6 @@ class BootstrapState {
   }) {
     return BootstrapState(
       modelState: modelState ?? this.modelState,
-      selectedModelKey: selectedModelKey ?? this.selectedModelKey,
-      downloadProgress: clearDownloadProgress
-          ? null
-          : downloadProgress ?? this.downloadProgress,
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
@@ -95,25 +77,17 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
   BootstrapBloc({
     required TranscriptRepository transcriptRepository,
     required TranscriptionService transcriptionService,
-    required LocalLlmModelService localLlmModelService,
   }) : _transcriptRepository = transcriptRepository,
        _transcriptionService = transcriptionService,
-       _localLlmModelService = localLlmModelService,
        super(const BootstrapState()) {
     on<BootstrapStarted>(_onStarted);
     on<BootstrapRetried>(_onRetried);
     on<BootstrapOnboardingCompleted>(_onOnboardingCompleted);
     on<BootstrapOnboardingReset>(_onOnboardingReset);
-    on<_BootstrapProgressChanged>(_onProgressChanged);
-    _progressSubscription = _transcriptionService.downloadProgress.listen(
-      (progress) => add(_BootstrapProgressChanged(progress)),
-    );
   }
 
   final TranscriptRepository _transcriptRepository;
   final TranscriptionService _transcriptionService;
-  final LocalLlmModelService _localLlmModelService;
-  StreamSubscription<ModelDownloadProgress>? _progressSubscription;
 
   Future<void> _onStarted(
     BootstrapStarted event,
@@ -127,13 +101,6 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     Emitter<BootstrapState> emit,
   ) async {
     await _bootstrap(emit);
-  }
-
-  void _onProgressChanged(
-    _BootstrapProgressChanged event,
-    Emitter<BootstrapState> emit,
-  ) {
-    emit(state.copyWith(downloadProgress: event.progress));
   }
 
   void _onOnboardingCompleted(
@@ -154,7 +121,6 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
     emit(
       state.copyWith(
         modelState: ModelBootstrapState.bootstrapping,
-        clearDownloadProgress: true,
         clearErrorMessage: true,
       ),
     );
@@ -173,42 +139,14 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
       // be treated as an orphan.
       final snapshotLoadedAt = DateTime.now();
 
-      // Apply the persisted transcription language before the model loads so
-      // the very first recording already uses the user's choice.
+      // Apply the persisted transcription language so the very first
+      // recording already uses the user's choice.
       _transcriptionService.setTranscriptionLanguage(
         snapshot.preferences.transcriptionLanguage,
-      );
-      // Honor the persisted model; selectModel safely falls back to base when
-      // the chosen model is too heavy for this device.
-      await _transcriptionService.selectModel(
-        whisperModelFromKey(snapshot.preferences.transcriptionModel),
       );
       await RepairStaleRecordingsUseCase(
         _transcriptRepository,
       ).execute(snapshot);
-      // Non-blocking: if the persisted model isn't downloaded yet (e.g. an
-      // interrupted switch left only a `.part`), boot on an already-downloaded
-      // model instead of locking the app on the splash re-downloading it.
-      await _transcriptionService.ensureUsableModel();
-      // Persist any preference corrections discovered at boot in a single write:
-      // (1) whatever model actually loaded (so Settings reflects reality and the
-      // next launch doesn't re-download a missing one), and (2) a provider
-      // smart-default — a device that can't run the on-device engine must not be
-      // left on `local` (summary + chat would just fail), so fall back to cloud
-      // once. This runs even when the user never opens Settings.
-      var prefs = snapshot.preferences;
-      final activeModelKey = AppPreferences.normalizeTranscriptionModel(
-        _transcriptionService.currentModelKey,
-      );
-      if (activeModelKey != prefs.transcriptionModel) {
-        prefs = prefs.copyWith(transcriptionModel: activeModelKey);
-      }
-      if (prefs.summaryProvider == 'local' && !await _localCanRun()) {
-        prefs = prefs.copyWith(summaryProvider: 'cloud');
-      }
-      if (prefs != snapshot.preferences) {
-        await _transcriptRepository.savePreferences(prefs);
-      }
       // Fetch the latest server data into cache in the background — the app is
       // offline-first, so becoming usable must never wait on the network (a
       // slow server would otherwise hold the splash screen for up to the full
@@ -221,9 +159,7 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
       emit(
         state.copyWith(
           modelState: ModelBootstrapState.ready,
-          selectedModelKey: _transcriptionService.currentModelKey,
           initialized: true,
-          clearDownloadProgress: true,
           clearErrorMessage: true,
         ),
       );
@@ -236,20 +172,9 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
         state.copyWith(
           modelState: ModelBootstrapState.failed,
           initialized: true,
-          clearDownloadProgress: true,
           errorMessage: error.toString(),
         ),
       );
-    }
-  }
-
-  /// Whether the on-device engine can run here. Defaults to optimistic (true)
-  /// on error so a transient failure never silently downgrades a capable device.
-  Future<bool> _localCanRun() async {
-    try {
-      return await _localLlmModelService.isSupported();
-    } catch (_) {
-      return true;
     }
   }
 
@@ -300,11 +225,5 @@ class BootstrapBloc extends Bloc<BootstrapEvent, BootstrapState> {
         stackTrace,
       );
     }
-  }
-
-  @override
-  Future<void> close() async {
-    await _progressSubscription?.cancel();
-    return super.close();
   }
 }

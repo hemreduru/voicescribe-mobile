@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:voicescribe_mobile/ui/core/utils/env_config.dart';
 import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 
 class TranscriptApiClient {
-  const TranscriptApiClient();
+  /// [baseUrl] overrides [EnvConfig.apiBaseUrl]; tests use it to target a
+  /// local server.
+  const TranscriptApiClient({this.baseUrl});
+
+  final String? baseUrl;
 
   /// One process-wide client so keep-alive connections are reused across
   /// requests instead of a fresh TCP/TLS handshake per call.
@@ -56,11 +61,81 @@ class TranscriptApiClient {
     Map<String, Object?>? payload,
     String? token,
     Duration? readTimeout,
+  }) {
+    return _send(
+      method: method,
+      path: path,
+      contentType: 'application/json; charset=utf-8',
+      // UTF-8 bytes, not request.write (which defaults to latin1 here and
+      // throws on Turkish text like 'ı'/'İ').
+      requestBody: payload == null ? null : utf8.encode(jsonEncode(payload)),
+      token: token,
+      readTimeout: readTimeout,
+    );
+  }
+
+  /// Uploads one audio chunk to the backend speech-to-text relay
+  /// (`POST /api/v1/transcribe`). [language] is a 2-letter ISO code; [prompt]
+  /// is optional context (max 500 chars on the server).
+  Future<ApiResponse> transcribe({
+    required Uint8List audio,
+    required String filename,
+    required String token,
+    required String language,
+    String? prompt,
+  }) {
+    final boundary = 'voicescribe-${DateTime.now().microsecondsSinceEpoch}';
+    final body = BytesBuilder(copy: false);
+    void addField(String name, String value) {
+      body.add(
+        utf8.encode(
+          '--$boundary\r\n'
+          'Content-Disposition: form-data; name="$name"\r\n\r\n'
+          '$value\r\n',
+        ),
+      );
+    }
+
+    addField('language', language);
+    if (prompt != null && prompt.isNotEmpty) {
+      addField('prompt', prompt);
+    }
+    body
+      ..add(
+        utf8.encode(
+          '--$boundary\r\n'
+          'Content-Disposition: form-data; name="audio"; '
+          'filename="$filename"\r\n'
+          'Content-Type: audio/wav\r\n\r\n',
+        ),
+      )
+      ..add(audio)
+      ..add(utf8.encode('\r\n--$boundary--\r\n'));
+
+    return _send(
+      method: 'POST',
+      path: '/api/v1/transcribe',
+      contentType: 'multipart/form-data; boundary=$boundary',
+      requestBody: body.takeBytes(),
+      token: token,
+      // The upload itself (~0.5 MB) shares this window with the server-side
+      // speech-to-text call.
+      readTimeout: const Duration(seconds: 60),
+    );
+  }
+
+  Future<ApiResponse> _send({
+    required String method,
+    required String path,
+    required String contentType,
+    required String? token,
+    required Duration? readTimeout,
+    List<int>? requestBody,
   }) async {
     // LLM summarization can take much longer than CRUD calls, so callers may
     // widen the read timeout; defaults stay at 20s for normal requests.
     final responseTimeout = readTimeout ?? const Duration(seconds: 20);
-    final uri = Uri.parse('${EnvConfig.apiBaseUrl}$path');
+    final uri = Uri.parse('${baseUrl ?? EnvConfig.apiBaseUrl}$path');
     final client = _sharedClient;
 
     try {
@@ -69,17 +144,13 @@ class TranscriptApiClient {
           .openUrl(method, uri)
           .timeout(const Duration(seconds: 10));
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
-      request.headers.set(
-        HttpHeaders.contentTypeHeader,
-        'application/json; charset=utf-8',
-      );
+      request.headers.set(HttpHeaders.contentTypeHeader, contentType);
       if (token != null && token.isNotEmpty) {
         request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
       }
-      if (payload != null) {
-        // UTF-8 bytes, not request.write (which defaults to latin1 here and
-        // throws on Turkish text like 'ı'/'İ').
-        request.add(utf8.encode(jsonEncode(payload)));
+      if (requestBody != null) {
+        request.contentLength = requestBody.length;
+        request.add(requestBody);
       }
 
       final response = await request.close().timeout(responseTimeout);
@@ -113,6 +184,9 @@ class TranscriptApiClient {
         success: rawSuccess is bool ? rawSuccess : null,
         message: message,
         data: data,
+        retryAfterSeconds: int.tryParse(
+          response.headers.value(HttpHeaders.retryAfterHeader) ?? '',
+        ),
       );
     } on SocketException catch (error) {
       AppLogger.warning('Transcript API socket error: $method $uri', error);
@@ -211,12 +285,17 @@ class ApiResponse {
     this.success,
     this.message,
     this.data,
+    this.retryAfterSeconds,
   });
 
   final int statusCode;
   final bool? success;
   final String? message;
   final Object? data;
+
+  /// Seconds from a numeric `Retry-After` header (429/503); null when absent
+  /// or given as an HTTP date.
+  final int? retryAfterSeconds;
 
   bool get isSuccess {
     final httpSuccess = statusCode >= 200 && statusCode < 300;

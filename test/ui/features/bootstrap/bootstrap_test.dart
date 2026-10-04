@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/ui/features/bootstrap/bloc/bootstrap_bloc.dart';
 
 import '../../../helpers/fakes.dart';
@@ -24,35 +25,40 @@ void main() {
         );
   });
 
-  BootstrapBloc build(FakeTranscriptRepository repo, {required bool supported}) {
-    return BootstrapBloc(
-      transcriptRepository: repo,
-      transcriptionService: FakeTranscriptionService(),
-      localLlmModelService: FakeLocalLlmModelService(supported: supported),
+  test('loads onboarding status and applies transcription language', () async {
+    final transcription = FakeTranscriptionService();
+    final repo = FakeTranscriptRepository(
+      initial: const TranscriptSnapshot(
+        transcripts: [],
+        chunks: [],
+        summaries: [],
+        preferences: AppPreferences(
+          transcriptionLanguage: 'en',
+        ),
+      ),
     );
-  }
-
-  test('an unsupported device falls back local->cloud at bootstrap', () async {
-    final repo = FakeTranscriptRepository();
-    final bloc = build(repo, supported: false);
+    final bloc = BootstrapBloc(
+      transcriptRepository: repo,
+      transcriptionService: transcription,
+    );
     addTearDown(bloc.close);
 
     bloc.add(const BootstrapStarted());
     await bloc.stream.firstWhere((s) => s.isReady);
 
-    expect(repo.savedPreferences['latest']?.summaryProvider, 'cloud');
-  });
-
-  test('a capable device keeps the on-device default', () async {
-    final repo = FakeTranscriptRepository();
-    final bloc = build(repo, supported: true);
-    addTearDown(bloc.close);
-
-    bloc.add(const BootstrapStarted());
-    await bloc.stream.firstWhere((s) => s.isReady);
-
-    // No preference correction was needed, so nothing was persisted.
-    expect(repo.savedPreferences['latest'], isNull);
     expect(bloc.state.onboardingComplete, isFalse);
+    expect(transcription.currentTranscriptionLanguage, 'en');
+
+    bloc.add(const BootstrapOnboardingCompleted());
+    await expectLater(
+      bloc.stream,
+      emitsThrough(predicate<BootstrapState>((s) => s.onboardingComplete)),
+    );
+
+    bloc.add(const BootstrapOnboardingReset());
+    await expectLater(
+      bloc.stream,
+      emitsThrough(predicate<BootstrapState>((s) => !s.onboardingComplete)),
+    );
   });
 }

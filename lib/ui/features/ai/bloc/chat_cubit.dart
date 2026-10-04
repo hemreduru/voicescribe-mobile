@@ -1,9 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:voicescribe_mobile/data/repositories/chat_repository.dart';
-import 'package:voicescribe_mobile/data/services/chat/local_chat_service.dart';
 import 'package:voicescribe_mobile/domain/models/app_error.dart';
 import 'package:voicescribe_mobile/domain/models/chat.dart';
-import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 
 class ChatState {
   const ChatState({
@@ -50,33 +48,11 @@ class ChatState {
 /// Drives a single conversation. [lastTouchedSessionId] lets the parent list
 /// refresh after a send creates/updates a session.
 class ChatCubit extends Cubit<ChatState> {
-  ChatCubit(
-    this._repository, {
-    LocalChatService? localChat,
-    TranscriptRepository? transcriptRepository,
-  }) : _localChat = localChat,
-       _transcriptRepository = transcriptRepository,
-       super(const ChatState());
+  ChatCubit(this._repository) : super(const ChatState());
 
   final ChatRepository _repository;
-  final LocalChatService? _localChat;
-  final TranscriptRepository? _transcriptRepository;
 
   int? lastTouchedSessionId;
-
-  /// True when the user's AI provider preference is on-device and the local
-  /// engine is wired in.
-  Future<bool> _useLocal() async {
-    if (_localChat == null || _transcriptRepository == null) {
-      return false;
-    }
-    try {
-      final prefs = (await _transcriptRepository.loadSnapshot()).preferences;
-      return prefs.summaryProvider == 'local';
-    } catch (_) {
-      return false;
-    }
-  }
 
   Future<void> openExisting(int id) async {
     emit(ChatState(sessionId: id, loading: true));
@@ -112,11 +88,6 @@ class ChatCubit extends Cubit<ChatState> {
         clearError: true,
       ),
     );
-
-    if (await _useLocal()) {
-      await _sendLocal(text, optimistic);
-      return;
-    }
 
     await _sendCloudStreaming(text, optimistic);
   }
@@ -225,7 +196,6 @@ class ChatCubit extends Cubit<ChatState> {
       );
     }
   }
-
   ChatSession? _session(Object? raw) {
     if (raw is! Map) return null;
     try {
@@ -241,62 +211,6 @@ class ChatCubit extends Cubit<ChatState> {
       return ChatMessage.fromJson(raw.map((k, v) => MapEntry(k.toString(), v)));
     } catch (_) {
       return null;
-    }
-  }
-
-  /// On-device RAG answer (no backend session — kept in-memory for this
-  /// conversation). [optimistic] is the already-shown user message. Streams the
-  /// answer token-by-token so the bubble fills in as the model generates.
-  Future<void> _sendLocal(String text, ChatMessage optimistic) async {
-    final base = state.messages.where((m) => m.id != optimistic.id).toList();
-    final history = base.toList();
-    try {
-      final result = await _localChat!.answerStream(
-        question: text,
-        history: history,
-      );
-      final now = DateTime.now();
-      final userMessage = ChatMessage(
-        id: optimistic.id,
-        role: 'user',
-        content: text,
-        createdAt: now,
-      );
-      final assistantId = -now.microsecondsSinceEpoch;
-      final buffer = StringBuffer();
-      var assistant = ChatMessage(
-        id: assistantId,
-        role: 'assistant',
-        sources: result.sources,
-        createdAt: now.add(const Duration(milliseconds: 1)),
-      );
-      emit(
-        state.copyWith(
-          messages: [...base, userMessage, assistant],
-          sending: true,
-        ),
-      );
-      await for (final delta in result.deltas) {
-        buffer.write(delta);
-        assistant = assistant.copyWith(content: buffer.toString());
-        emit(state.copyWith(messages: [...base, userMessage, assistant]));
-      }
-      if (buffer.toString().trim().isEmpty) {
-        emit(
-          state.copyWith(
-            sending: false,
-            errorCode: AppErrorCode.chatEmptyAnswer,
-          ),
-        );
-        return;
-      }
-      emit(state.copyWith(sending: false));
-    } on LocalChatException catch (e) {
-      emit(state.copyWith(sending: false, errorCode: e.code));
-    } catch (_) {
-      emit(
-        state.copyWith(sending: false, errorCode: AppErrorCode.chatSendFailed),
-      );
     }
   }
 }

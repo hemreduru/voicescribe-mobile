@@ -142,23 +142,18 @@ abstract class Summary with _$Summary {
 @freezed
 abstract class AppPreferences with _$AppPreferences {
   const factory AppPreferences({
-    @Default('local') String summaryProvider,
+    @Default('cloud') String summaryProvider,
     @Default('system') String themeMode,
     @Default('system') String localePreference,
-    @Default('base') String transcriptionModel,
-    @Default('auto') String transcriptionLanguage,
+    @Default('tr') String transcriptionLanguage,
     @Default(true) bool autoSummarize,
     @Default(false) bool hasSeenOnboarding,
   }) = _AppPreferences;
 
   const AppPreferences._();
 
-  static String normalizeSummaryProvider(String value) {
-    return switch (value) {
-      'cloud' => 'cloud',
-      _ => 'local',
-    };
-  }
+  /// Summaries are cloud-only; a stored legacy `local` value maps to `cloud`.
+  static String normalizeSummaryProvider(String value) => 'cloud';
 
   static String normalizeThemeMode(String value) {
     return switch (value) {
@@ -176,29 +171,13 @@ abstract class AppPreferences with _$AppPreferences {
     };
   }
 
-  /// Transcription language. `auto` lets Whisper detect per window (best for
-  /// code-switching / bilingual sessions); `tr`/`en` force a single language.
+  /// Transcription language sent to the speech-to-text backend: `en`, or `tr`
+  /// (default; also what a legacy `auto` value maps to — the backend has no
+  /// auto-detection).
   static String normalizeTranscriptionLanguage(String value) {
     return switch (value) {
-      'tr' => 'tr',
       'en' => 'en',
-      _ => 'auto',
-    };
-  }
-
-  static String normalizeTranscriptionModel(String value) {
-    return switch (value) {
-      'tiny' => 'tiny',
-      'base' => 'base',
-      'small' => 'small',
-      'medium' => 'medium',
-      'large-v3' => 'large-v3',
-      'large-v3-turbo' => 'large-v3-turbo',
-      'tiny.en' => 'tiny',
-      'base.en' => 'base',
-      'small.en' => 'small',
-      'medium.en' => 'medium',
-      _ => 'base',
+      _ => 'tr',
     };
   }
 }

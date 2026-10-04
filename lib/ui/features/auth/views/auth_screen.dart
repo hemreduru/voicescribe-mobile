@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
 import 'package:voicescribe_mobile/ui/core/theme/app_theme.dart';
-import 'package:voicescribe_mobile/ui/core/utils/model_download_formatters.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_button.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_card.dart';
 import 'package:voicescribe_mobile/ui/core/widgets/app_page.dart';
@@ -234,10 +232,6 @@ class _AuthenticatedView extends StatelessWidget {
     final modelState = context.select<BootstrapBloc, ModelBootstrapState>(
       (bloc) => bloc.state.modelState,
     );
-    final downloadProgress = context
-        .select<BootstrapBloc, ModelDownloadProgress?>(
-          (bloc) => bloc.state.downloadProgress,
-        );
     final bootstrapError = context.select<BootstrapBloc, String?>(
       (bloc) => bloc.state.errorMessage,
     );
@@ -245,11 +239,7 @@ class _AuthenticatedView extends StatelessWidget {
     return AppPageListView(
       children: [
         if (!isReady)
-          _ModelSetupCard(
-            state: modelState,
-            progress: downloadProgress,
-            error: bootstrapError,
-          ),
+          _BootstrapRetryCard(state: modelState, error: bootstrapError),
         if (!isReady) const SizedBox(height: AppSpacing.md),
         AppButton(
           label: l10n.logout,
@@ -264,37 +254,25 @@ class _AuthenticatedView extends StatelessWidget {
   }
 }
 
-class _ModelSetupCard extends StatelessWidget {
-  const _ModelSetupCard({
-    required this.state,
-    required this.progress,
-    this.error,
-  });
+class _BootstrapRetryCard extends StatelessWidget {
+  const _BootstrapRetryCard({required this.state, this.error});
 
   final ModelBootstrapState state;
-  final ModelDownloadProgress? progress;
   final String? error;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final percent = progress?.percent;
     final isFailed = state == ModelBootstrapState.failed;
 
     return AppSectionCard(
-      title: l10n.modelSetupRequired,
+      title: l10n.bootstrapTitle,
       children: [
-        Text(
-          isFailed ? l10n.modelDownloadFailed : l10n.modelSetupContinueMessage,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        LinearProgressIndicator(value: percent == null ? null : percent / 100),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          progress == null
-              ? l10n.modelDownloading
-              : formatModelDownloadProgress(l10n, progress!),
-        ),
+        Text(isFailed ? l10n.bootstrapFailed : l10n.bootstrapMessage),
+        if (!isFailed) ...[
+          const SizedBox(height: AppSpacing.md),
+          const LinearProgressIndicator(),
+        ],
         if (isFailed) ...[
           const SizedBox(height: AppSpacing.md),
           AppButton(

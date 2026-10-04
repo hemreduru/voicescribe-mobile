@@ -192,16 +192,22 @@ class DatabaseProvider {
   }
 
   Future<void> _migrateV3ToV4(Database db) async {
-    await _normalizeLegacySpeakerStatuses(db);
+    await _normalizeLegacyAnalysisStatuses(db);
     await db.execute('DROP TABLE IF EXISTS processing_jobs');
   }
 
   Future<void> _migrateV2ToV3(Database db) async {
     await db.execute('DROP TABLE IF EXISTS speakers');
-    await _normalizeLegacySpeakerStatuses(db);
+    await _normalizeLegacyAnalysisStatuses(db);
   }
 
-  Future<void> _normalizeLegacySpeakerStatuses(Database db) async {
+  /// Rewrites transcript statuses written by app versions that still had the
+  /// removed speaker-analysis feature. Deliberately kept (with the `speakers`
+  /// table drop in [_migrateV2ToV3]) so devices upgrading from those versions
+  /// do not end up with statuses the app can no longer map.
+  ///
+  /// [db] is the database being migrated.
+  Future<void> _normalizeLegacyAnalysisStatuses(Database db) async {
     await db.update(
       'transcripts',
       {'statusKey': TranscriptStatus.completed.key},

@@ -7,7 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/data/services/transcription_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/utils/text_utils.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/error_messages.dart';
@@ -145,7 +145,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   if (!state.isRecording) ...[
                     const SizedBox(height: AppSpacing.md),
                     _SessionLanguageSelector(
-                      value: _sessionLanguage ?? 'auto',
+                      value: _sessionLanguage ?? 'tr',
                       onChanged: (value) {
                         context.read<TranscriptionService>()
                             .setTranscriptionLanguage(value);
@@ -359,7 +359,6 @@ class _SessionLanguageSelector extends StatelessWidget {
           AppSegmentedControl<String>(
             value: value,
             segments: [
-              AppSegment(value: 'auto', label: l10n.automatic),
               AppSegment(value: 'tr', label: l10n.turkish),
               AppSegment(value: 'en', label: l10n.english),
             ],

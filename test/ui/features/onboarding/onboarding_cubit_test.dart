@@ -8,12 +8,10 @@ void main() {
   late FakeTranscriptionService transcription;
 
   OnboardingCubit build({
-    bool supported = true,
     String deviceLanguageCode = 'en',
   }) {
     return OnboardingCubit(
       transcriptRepository: repo,
-      localLlmModelService: FakeLocalLlmModelService(supported: supported),
       transcriptionService: transcription,
       deviceLanguageCode: deviceLanguageCode,
     );
@@ -26,28 +24,24 @@ void main() {
 
   tearDown(() => repo.dispose());
 
-  test('init seeds language from device locale and recommends on-device', () async {
+  test('init seeds language from device locale (tr)', () async {
     final cubit = build(deviceLanguageCode: 'tr');
     await cubit.init();
     expect(cubit.state.draft.transcriptionLanguage, 'tr');
-    expect(cubit.state.deviceSupportsLocal, isTrue);
-    expect(cubit.state.draft.summaryProvider, 'local');
     await cubit.close();
   });
 
-  test('init recommends cloud when the device cannot run on-device AI', () async {
-    final cubit = build(supported: false);
+  test('init defaults to en when device locale is en', () async {
+    final cubit = build();
     await cubit.init();
-    expect(cubit.state.deviceSupportsLocal, isFalse);
-    expect(cubit.state.draft.summaryProvider, 'cloud');
+    expect(cubit.state.draft.transcriptionLanguage, 'en');
     await cubit.close();
   });
 
-  test('cannot pick on-device when unsupported', () async {
-    final cubit = build(supported: false);
+  test('init falls back to tr for other locales', () async {
+    final cubit = build(deviceLanguageCode: 'de');
     await cubit.init();
-    cubit.setSummaryProvider('local');
-    expect(cubit.state.draft.summaryProvider, 'cloud');
+    expect(cubit.state.draft.transcriptionLanguage, 'tr');
     await cubit.close();
   });
 

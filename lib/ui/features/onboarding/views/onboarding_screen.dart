@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/data/services/transcription_service.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
 import 'package:voicescribe_mobile/domain/utils/locale_utils.dart';
 import 'package:voicescribe_mobile/ui/core/i18n/l10n.dart';
@@ -28,7 +27,6 @@ class OnboardingScreen extends StatelessWidget {
     return BlocProvider<OnboardingCubit>(
       create: (context) => OnboardingCubit(
         transcriptRepository: context.read<TranscriptRepository>(),
-        localLlmModelService: context.read<LocalLlmModelService>(),
         transcriptionService: context.read<TranscriptionService>(),
         deviceLanguageCode: deviceLanguageCode(),
       )..init(),
@@ -106,7 +104,6 @@ class _OnboardingViewState extends State<_OnboardingView> {
                       children: [
                         _WelcomeSlide(),
                         _LanguageSlide(state: state),
-                        _EngineSlide(state: state),
                         _ThemeSlide(state: state),
                         _PermissionsSlide(),
                       ],
@@ -320,69 +317,10 @@ class _LanguageSlide extends StatelessWidget {
         AppSegmentedControl<String>(
           value: state.draft.transcriptionLanguage,
           segments: [
-            AppSegment(value: 'auto', label: l10n.automatic),
             AppSegment(value: 'tr', label: l10n.turkish),
             AppSegment(value: 'en', label: l10n.english),
           ],
           onChanged: cubit.setTranscriptionLanguage,
-        ),
-      ],
-    );
-  }
-}
-
-class _EngineSlide extends StatelessWidget {
-  const _EngineSlide({required this.state});
-
-  final OnboardingState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final cubit = context.read<OnboardingCubit>();
-    final selected = state.draft.summaryProvider;
-    return _Slide(
-      icon: Icons.psychology_outlined,
-      title: l10n.aiLocationTitle,
-      children: [
-        AppSegmentedControl<String>(
-          value: selected,
-          minSegmentWidth: 132,
-          segments: [
-            AppSegment(
-              value: 'local',
-              label: l10n.aiLocationOnDevice,
-              icon: Icons.smartphone_outlined,
-              enabled: state.deviceSupportsLocal,
-            ),
-            AppSegment(
-              value: 'cloud',
-              label: l10n.aiLocationCloud,
-              icon: Icons.cloud_outlined,
-            ),
-          ],
-          onChanged: cubit.setSummaryProvider,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          selected == 'local'
-              ? l10n.aiLocationOnDeviceDesc
-              : l10n.aiLocationCloudDesc,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          state.deviceSupportsLocal
-              ? l10n.onboardingRecommended
-              : l10n.aiLocationOnDeviceUnavailable,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.primary,
-          ),
         ),
       ],
     );

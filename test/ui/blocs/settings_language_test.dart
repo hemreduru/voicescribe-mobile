@@ -21,7 +21,6 @@ void main() {
       authRepository: auth,
       syncQueueService: sync,
       transcriptionService: transcription,
-      localLlmModelService: FakeLocalLlmModelService(),
     );
   });
 
@@ -30,7 +29,6 @@ void main() {
     await transcripts.dispose();
     await auth.dispose();
     await sync.dispose();
-    await transcription.dispose();
   });
 
   test(
@@ -49,12 +47,12 @@ void main() {
     },
   );
 
-  test('unknown language values fall back to auto', () async {
+  test('unknown language values fall back to tr', () async {
     bloc.add(const SettingsTranscriptionLanguageChanged('fr'));
     await Future<void>.delayed(Duration.zero);
 
-    expect(bloc.state.preferences.transcriptionLanguage, 'auto');
-    expect(transcription.language, 'auto');
+    expect(bloc.state.preferences.transcriptionLanguage, 'tr');
+    expect(transcription.language, 'tr');
   });
 
   test('pendingSyncCount counts only un-synced transcripts', () async {
@@ -105,7 +103,6 @@ void main() {
       authRepository: auth,
       syncQueueService: sync,
       transcriptionService: transcription,
-      localLlmModelService: FakeLocalLlmModelService(),
     );
     addTearDown(() async {
       await scopedBloc.close();

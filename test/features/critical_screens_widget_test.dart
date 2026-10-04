@@ -6,7 +6,7 @@ import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/data/services/transcription_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -21,25 +21,18 @@ import 'package:voicescribe_mobile/ui/features/transcript/views/transcript_scree
 import '../helpers/fakes.dart';
 
 void main() {
-  testWidgets('bootstrap screen shows percent and byte totals', (tester) async {
+  testWidgets('bootstrap screen shows the preparing message', (tester) async {
     await tester.pumpWidget(
       _wrapWithApp(
         fakes: _Fakes(),
         blocs: const <BlocProvider<dynamic>>[],
-        child: const BootstrapScreen(
-          state: BootstrapState(
-            downloadProgress: ModelDownloadProgress(
-              bytesDownloaded: 150 * 1024 * 1024,
-              totalBytes: 300 * 1024 * 1024,
-            ),
-          ),
-        ),
+        child: const BootstrapScreen(state: BootstrapState()),
       ),
     );
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.textContaining('Downloading model 50%'), findsOneWidget);
-    expect(find.textContaining('150 MB / 300 MB'), findsOneWidget);
+    expect(find.text('Preparing VoiceScribe'), findsOneWidget);
+    expect(find.text('Getting things ready...'), findsOneWidget);
   });
 
   testWidgets('recording screen shows localized title', (tester) async {
@@ -194,13 +187,13 @@ class _Fakes {
       auth = FakeAuthRepository(session: FakeAuthRepository.defaultSession),
       recording = FakeRecordingService(),
       transcription = FakeTranscriptionService(),
-      summary = const LocalSummaryService(),
+      summary = const FakeSummaryService(),
       sync = FakeSyncQueueService();
 
   final FakeTranscriptRepository transcripts;
   final FakeAuthRepository auth;
   final FakeRecordingService recording;
   final FakeTranscriptionService transcription;
-  final LocalSummaryService summary;
+  final FakeSummaryService summary;
   final FakeSyncQueueService sync;
 }

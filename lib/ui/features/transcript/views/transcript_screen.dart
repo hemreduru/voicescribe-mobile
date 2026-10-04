@@ -732,7 +732,6 @@ class _TranscriptDetailScope extends StatelessWidget {
               previous.mergedText != current.mergedText ||
               previous.tabIndex != current.tabIndex ||
               previous.generatingSummary != current.generatingSummary ||
-              previous.summaryProgress != current.summaryProgress ||
               previous.errorCode != current.errorCode ||
               previous.errorMessage != current.errorMessage ||
               previous.completedChunkCount != current.completedChunkCount ||
@@ -1020,17 +1019,6 @@ class _SummaryTab extends StatelessWidget {
           isLoading: state.generatingSummary,
           expanded: true,
         ),
-        if (state.generatingSummary && state.summaryProgress != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            l10n.summarizingProgress(
-              state.summaryProgress!.current,
-              state.summaryProgress!.total,
-            ),
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
         if (!state.generatingSummary &&
             (state.errorCode != null || state.errorMessage != null)) ...[
           const SizedBox(height: AppSpacing.md),
@@ -1068,10 +1056,7 @@ class _SummaryTab extends StatelessWidget {
 
     final structured = MeetingSummary.tryParse(summary.summaryText);
     if (structured != null) {
-      return MeetingSummaryView(
-        summary: structured,
-        providerKey: summary.providerKey,
-      );
+      return MeetingSummaryView(summary: structured);
     }
 
     // A summary that was meant to be structured but didn't parse must NEVER be

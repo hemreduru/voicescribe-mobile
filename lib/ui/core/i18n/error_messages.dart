@@ -9,8 +9,13 @@ extension AppErrorCodeL10n on AppErrorCode {
       AppErrorCode.authRequired => l10n.errAuthRequired,
       AppErrorCode.micPermissionRequired => l10n.errMicPermissionRequired,
       AppErrorCode.storageFull => l10n.errStorageFull,
+      AppErrorCode.transcriptionAuthRequired =>
+        l10n.errTranscriptionAuthRequired,
+      AppErrorCode.transcriptionRateLimited => l10n.errTranscriptionRateLimited,
+      AppErrorCode.transcriptionUnavailable => l10n.errTranscriptionUnavailable,
+      AppErrorCode.transcriptionOffline => l10n.errTranscriptionOffline,
+      AppErrorCode.transcriptionGeneric => l10n.errTranscriptionGeneric,
       AppErrorCode.summaryEmptyTranscript => l10n.errSummaryEmptyTranscript,
-      AppErrorCode.summaryLocalFailed => l10n.errSummaryLocalFailed,
       AppErrorCode.summaryTimeout => l10n.errSummaryTimeout,
       AppErrorCode.summaryNotSynced => l10n.errSummaryNotSynced,
       AppErrorCode.summaryAuthRequired => l10n.errSummaryAuthRequired,
@@ -21,14 +26,11 @@ extension AppErrorCodeL10n on AppErrorCode {
       AppErrorCode.summaryGeneric => l10n.errSummaryGeneric,
       AppErrorCode.chatEmptyQuestion => l10n.errChatEmptyQuestion,
       AppErrorCode.chatTimeout => l10n.errChatTimeout,
-      AppErrorCode.chatLocalFailed => l10n.errChatLocalFailed,
       AppErrorCode.chatEmptyAnswer => l10n.errChatEmptyAnswer,
       AppErrorCode.chatLoadFailed => l10n.errChatLoadFailed,
       AppErrorCode.chatSendFailed => l10n.errChatSendFailed,
       AppErrorCode.settingsActionFailed => l10n.errSettingsActionFailed,
       AppErrorCode.settingsSyncFailed => l10n.errSettingsSyncFailed,
-      AppErrorCode.settingsModelDownloadFailed =>
-        l10n.errSettingsModelDownloadFailed,
     };
   }
 }

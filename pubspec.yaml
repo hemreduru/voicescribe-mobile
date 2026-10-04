@@ -38,7 +38,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_local_notifications: ^18.0.1
   record: ^6.2.0
-  whisper_ggml_plus: ^1.5.2
   path_provider: ^2.1.5
   uuid: ^4.5.3
   intl: ^0.20.2
@@ -58,7 +57,6 @@ dependencies:
   waveform_visualizer: ^1.0.0
   permission_handler: ^12.0.3
   flutter_foreground_task: ^9.2.2
-  flutter_gemma: ^0.13.6
 
 dev_dependencies:
   flutter_test:
@@ -93,14 +91,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # Test-only fixture: a 16 kHz mono Turkish speech sample used by
-  # integration_test/whisper_turkish_test.dart to validate on-device
-  # transcription (the emulator does not forward host mic audio).
   assets:
-    - test_assets/turkish16k.wav
-    # Meeting-transcript corpus for the on-device summary stress test
-    # (integration_test/local_summary_corpus_test.dart).
-    - test_assets/corpus/
     # Bundled Plus Jakarta Sans (OFL) so google_fonts loads it locally instead
     # of fetching at runtime — offline-capable, no FOUT, and deterministic in
     # widget tests.

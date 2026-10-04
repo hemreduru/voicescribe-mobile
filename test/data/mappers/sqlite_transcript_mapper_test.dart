@@ -29,28 +29,17 @@ void main() {
     expect(decoded.syncStatus, SyncStatus.synced);
   });
 
-  test('TranscriptStatus no longer maps legacy speaker statuses', () {
-    expect(
-      TranscriptStatus.fromKey('speaker_analysis_completed'),
-      TranscriptStatus.empty,
-    );
-    expect(
-      TranscriptStatus.fromKey('speaker_analysis_pending'),
-      TranscriptStatus.empty,
-    );
-  });
-
   test('preferences normalize unsupported values', () {
     final preferences = SqliteTranscriptMapper.preferencesFromSettings(const {
       'themeMode': 'sepia',
       'localePreference': 'de',
-      'summaryProvider': 'remote',
-      'transcriptionModel': 'mega',
+      'summaryProvider': 'local',
+      'transcriptionLanguage': 'de',
     });
 
     expect(preferences.themeMode, 'system');
     expect(preferences.localePreference, 'system');
-    expect(preferences.summaryProvider, 'local');
-    expect(preferences.transcriptionModel, 'base');
+    expect(preferences.summaryProvider, 'cloud');
+    expect(preferences.transcriptionLanguage, 'tr');
   });
 }

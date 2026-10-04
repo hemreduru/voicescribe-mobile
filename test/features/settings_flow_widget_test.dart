@@ -10,7 +10,7 @@ import 'package:voicescribe_mobile/data/services/audio_recording_service.dart';
 import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/data/services/sync/sync_queue_service.dart';
-import 'package:voicescribe_mobile/data/services/whisper_service.dart';
+import 'package:voicescribe_mobile/data/services/transcription_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/auth_repository.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -66,22 +66,21 @@ void main() {
     expect(find.widgetWithText(AppButton, 'Logout'), findsOneWidget);
 
     await tester.dragUntilVisible(
-      find.text('Transcription Model'),
+      find.text('Choose the language of your recordings.'),
       find.byType(Scrollable).first,
       const Offset(0, -260),
     );
     await tester.pumpAndSettle();
 
-    // The fake device reports a `performance` tier, so the model selector
-    // offers a real choice (Base + Small) rather than the single-model row.
-    expect(find.text('Transcription Model'), findsOneWidget);
-    expect(find.text('Model size'), findsWidgets);
-    expect(find.text('Base'), findsWidgets);
-    expect(find.text('Small'), findsWidgets);
-    expect(find.text('Tiny (EN)'), findsNothing);
+    expect(
+      find.text('Choose the language of your recordings.'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('model descriptions follow the active locale', (tester) async {
+  testWidgets('transcription language card follows the active locale', (
+    tester,
+  ) async {
     final fakes = _Fakes();
 
     await tester.pumpWidget(
@@ -94,17 +93,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     await tester.dragUntilVisible(
-      find.text('Transkripsiyon Modeli'),
+      find.text('Kayıtlarınızın dilini seçin.'),
       find.byType(Scrollable).first,
       const Offset(0, -260),
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Günlük transkripsiyon için dengeli varsayılan.'),
-      findsWidgets,
-    );
-    expect(find.textContaining('(EN)'), findsNothing);
+    expect(find.text('Kayıtlarınızın dilini seçin.'), findsOneWidget);
   });
 
   testWidgets('shell navigation exposes settings as the last destination', (
@@ -193,7 +188,6 @@ List<BlocProvider<dynamic>> _createBlocProviders(_Fakes fakes) {
       create: (_) => BootstrapBloc(
         transcriptRepository: fakes.transcripts,
         transcriptionService: fakes.transcription,
-        localLlmModelService: fakes.localLlm,
       )..add(const BootstrapStarted()),
     ),
     BlocProvider<AuthBloc>(
@@ -224,7 +218,6 @@ List<BlocProvider<dynamic>> _createBlocProviders(_Fakes fakes) {
         authRepository: fakes.auth,
         syncQueueService: fakes.sync,
         transcriptionService: fakes.transcription,
-        localLlmModelService: fakes.localLlm,
       )..add(const SettingsSubscriptionRequested()),
     ),
   ];
@@ -323,15 +316,13 @@ class _Fakes {
       auth = FakeAuthRepository(session: FakeAuthRepository.defaultSession),
       recording = FakeRecordingService(),
       transcription = FakeTranscriptionService(),
-      summary = const LocalSummaryService(),
-      localLlm = FakeLocalLlmModelService(),
+      summary = const FakeSummaryService(),
       sync = FakeSyncQueueService();
 
   final FakeTranscriptRepository transcripts;
   final FakeAuthRepository auth;
   final FakeRecordingService recording;
   final FakeTranscriptionService transcription;
-  final LocalSummaryService summary;
-  final FakeLocalLlmModelService localLlm;
+  final FakeSummaryService summary;
   final FakeSyncQueueService sync;
 }

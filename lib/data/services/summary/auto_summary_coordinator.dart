@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:voicescribe_mobile/data/services/completion_notification_service.dart';
-import 'package:voicescribe_mobile/data/services/llm/llm_model_service.dart';
 import 'package:voicescribe_mobile/data/services/summary_service.dart';
 import 'package:voicescribe_mobile/domain/models/domain.dart';
 import 'package:voicescribe_mobile/domain/repositories/transcript_repository.dart';
@@ -19,8 +18,7 @@ import 'package:voicescribe_mobile/ui/core/utils/logger.dart';
 /// - it is fully transcribed (`completed`) with non-empty text,
 /// - it has no summary yet,
 /// - it isn't already being summarized (here or, best-effort, manually), and
-/// - the chosen engine is usable: the on-device model is downloaded/supported,
-///   or — for cloud — the transcript is already synced and a token is present.
+/// - the transcript is already synced and an auth token is present.
 ///
 /// The snapshot stream re-fires when sync metadata lands, so a cloud summary
 /// that wasn't yet synced is picked up automatically once `remoteId` appears
@@ -30,19 +28,16 @@ class AutoSummaryCoordinator {
   AutoSummaryCoordinator({
     required TranscriptRepository transcriptRepository,
     required SummaryService summaryService,
-    required LocalLlmModelService localLlmModelService,
     required String? Function() tokenProvider,
     CompletionNotificationService completionNotifications =
         const NoopCompletionNotificationService(),
   }) : _transcriptRepository = transcriptRepository,
        _summaryService = summaryService,
-       _localLlmModelService = localLlmModelService,
        _tokenProvider = tokenProvider,
        _completionNotifications = completionNotifications;
 
   final TranscriptRepository _transcriptRepository;
   final SummaryService _summaryService;
-  final LocalLlmModelService _localLlmModelService;
   final String? Function() _tokenProvider;
   final CompletionNotificationService _completionNotifications;
 
@@ -142,25 +137,12 @@ class AutoSummaryCoordinator {
     Transcript transcript,
     AppPreferences preferences,
   ) async {
-    final useCloud =
-        AppPreferences.normalizeSummaryProvider(preferences.summaryProvider) ==
-        'cloud';
-    if (useCloud) {
-      final remoteId = transcript.remoteId?.trim();
-      final token = _tokenProvider()?.trim();
-      return remoteId != null &&
-          remoteId.isNotEmpty &&
-          token != null &&
-          token.isNotEmpty;
-    }
-    // On-device: only attempt when the model is supported and downloaded, so we
-    // never kick off a multi-hundred-MB download as a silent side effect.
-    try {
-      return await _localLlmModelService.isSupported() &&
-          await _localLlmModelService.isDownloaded();
-    } catch (_) {
-      return false;
-    }
+    final remoteId = transcript.remoteId?.trim();
+    final token = _tokenProvider()?.trim();
+    return remoteId != null &&
+        remoteId.isNotEmpty &&
+        token != null &&
+        token.isNotEmpty;
   }
 
   Future<void> dispose() async {

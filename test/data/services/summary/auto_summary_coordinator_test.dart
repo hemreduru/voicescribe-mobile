@@ -15,13 +15,12 @@ class _RecordingSummaryService implements SummaryService {
     required Transcript transcript,
     required String transcriptText,
     required String provider,
-    SummaryProgressCallback? onProgress,
   }) async {
     calls++;
     return Summary(
       id: 'sum-${transcript.id}',
       transcriptId: transcript.id,
-      providerKey: 'local',
+      providerKey: 'cloud',
       model: 'test',
       summaryText: '{"title":"T","executive_summary":["ok"]}',
       tokenCount: null,
@@ -70,7 +69,7 @@ TranscriptSnapshot _snapshot(
   List<Transcript> transcripts,
   List<TranscriptChunk> chunks, {
   bool autoSummarize = true,
-  String provider = 'local',
+  String provider = 'cloud',
 }) {
   return TranscriptSnapshot(
     transcripts: transcripts,
@@ -89,11 +88,10 @@ void main() {
   late FakeCompletionNotificationService notifier;
   late AutoSummaryCoordinator coordinator;
 
-  AutoSummaryCoordinator build({String? token}) {
+  AutoSummaryCoordinator build({String? token = 'token-123'}) {
     return AutoSummaryCoordinator(
       transcriptRepository: repo,
       summaryService: summary,
-      localLlmModelService: FakeLocalLlmModelService(downloaded: true),
       tokenProvider: () => token,
       completionNotifications: notifier,
     );
@@ -109,12 +107,12 @@ void main() {
     await repo.dispose();
   });
 
-  test('auto-generates a summary when a transcript completes (local)', () async {
+  test('auto-generates a summary when a transcript completes and is synced', () async {
     repo = FakeTranscriptRepository(initial: _snapshot(const [], const []));
     coordinator = build()..start();
 
     repo.snapshot = _snapshot(
-      [_transcript('t1', status: TranscriptStatus.completed)],
+      [_transcript('t1', status: TranscriptStatus.completed, remoteId: 'r1')],
       [_chunk('t1', 'Hello world. This is the meeting.')],
     );
     repo.emit();
@@ -129,7 +127,7 @@ void main() {
     coordinator = build()..start();
 
     repo.snapshot = _snapshot(
-      [_transcript('t1', status: TranscriptStatus.transcribing)],
+      [_transcript('t1', status: TranscriptStatus.transcribing, remoteId: 'r1')],
       [_chunk('t1', 'partial text')],
     );
     repo.emit();
@@ -143,7 +141,7 @@ void main() {
     coordinator = build()..start();
 
     repo.snapshot = _snapshot(
-      [_transcript('t1', status: TranscriptStatus.completed)],
+      [_transcript('t1', status: TranscriptStatus.completed, remoteId: 'r1')],
       [_chunk('t1', 'Hello world.')],
       autoSummarize: false,
     );
@@ -158,7 +156,7 @@ void main() {
     coordinator = build()..start();
 
     final completed = _snapshot(
-      [_transcript('t1', status: TranscriptStatus.completed)],
+      [_transcript('t1', status: TranscriptStatus.completed, remoteId: 'r1')],
       [_chunk('t1', 'Hello world.')],
     );
     repo.snapshot = completed;
@@ -180,7 +178,6 @@ void main() {
     repo.snapshot = _snapshot(
       [_transcript('t1', status: TranscriptStatus.completed)],
       [_chunk('t1', 'Hello world.')],
-      provider: 'cloud',
     );
     repo.emit();
     await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -192,7 +189,6 @@ void main() {
         _transcript('t1', status: TranscriptStatus.completed, remoteId: 'r1'),
       ],
       [_chunk('t1', 'Hello world.')],
-      provider: 'cloud',
     );
     repo.emit();
     await Future<void>.delayed(const Duration(milliseconds: 20));
